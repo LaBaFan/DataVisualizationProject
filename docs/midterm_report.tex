@@ -1,0 +1,216 @@
+\documentclass[UTF8, a4paper, 12pt]{ctexart}
+
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+
+\geometry{left=2.5cm, right=2.5cm, top=2.6cm, bottom=2.6cm}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+\title{CourseLens：高校课程评价与选课行为可视分析系统\\中期报告}
+\author{
+  成员 A \quad 成员 B \quad 成员 C\\
+  数据可视化导论课程项目
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+本文档为 CourseLens 项目的中期报告模板。CourseLens 面向高校学生选课与教学质量分析场景，计划构建一个融合课程基本信息、历史选课数据、课程评价文本、难度评分、推荐度、工作量、教师信息和学期变化的多视图可视分析系统。本文档主要说明项目背景、分析任务、数据设计、系统设计方案、当前实现进展和后续工作计划。
+\end{abstract}
+
+\section{项目背景}
+
+高校课程选择通常涉及课程内容、教师风格、课程难度、工作量、考核方式和同学评价等多种因素。学生在选课前往往需要从课程平台、论坛、问卷反馈或同学经验中收集信息，但这些信息通常分散、非结构化，并且难以从整体上比较不同课程之间的差异。
+
+本项目拟构建 CourseLens：高校课程评价与选课行为可视分析系统。系统通过整合课程基本信息、历史选课数据、课程评价文本、难度评分、工作量评分、推荐度和学期变化等数据，帮助用户发现课程体验和教学变化中的非显然模式。例如：
+
+\begin{itemize}[leftmargin=2em]
+  \item 哪些课程虽然难度较高，但仍然获得较高推荐度；
+  \item 哪些课程工作量较低，且学生评价较好；
+  \item 某门课程在更换教师或调整考核方式后，评价是否出现明显变化；
+  \item 不同学院或课程类型之间是否存在整体负担差异。
+\end{itemize}
+
+本项目面向的主要用户包括高校学生、教学管理人员以及任课教师。学生可以使用系统辅助选课决策，教学管理人员可以观察不同学院和课程类型的课程评价特征，任课教师可以通过评论文本和趋势变化了解课程反馈。
+
+\section{分析任务定义}
+
+结合课程选课和教学质量分析场景，当前项目定义以下核心分析任务。
+
+\subsection*{T1：发现课程难度、工作量、推荐度之间的关系}
+
+分析课程在难度、工作量和推荐度之间的关系，识别高难度高推荐、低工作量高推荐、高工作量低推荐等课程类型。该任务主要帮助学生判断课程投入和收益之间的关系。
+
+\subsection*{T2：比较不同学院/课程类型的课程特征}
+
+比较不同学院、课程类别和教师维度下的课程平均评分、难度、工作量和推荐度差异。该任务用于发现不同课程群体之间的整体特征，例如某学院课程整体工作量较高，或某类通识课程推荐度较高。
+
+\subsection*{T3：追踪课程在不同学期中的变化趋势}
+
+分析单门课程或课程集合在不同学期中的指标变化，包括平均评分、难度、工作量、推荐度、选课人数和评价情感。该任务用于发现课程体验随时间变化的情况，并辅助分析变化可能与教师调整、课程内容变化或考核方式变化有关。
+
+\subsection*{T4：结合评价文本辅助课程选择与教学改进分析}
+
+对学生评论文本进行关键词提取和情感分析，结合结构化评分指标解释课程评价背后的具体原因。该任务可以辅助学生理解课程真实体验，也可以帮助教师或管理人员定位课程改进方向。
+
+\section{数据说明}
+
+\subsection{数据来源}
+
+本项目计划使用以下几类数据的组合：
+
+\begin{itemize}[leftmargin=2em]
+  \item 公开课程平台中的课程基本信息和课程评价数据；
+  \item 团队自采问卷中的课程体验反馈；
+  \item 为满足课程项目原型开发需要而构造的模拟历史课程评价数据。
+\end{itemize}
+
+所有数据仅用于课程学习和可视化分析展示。若包含自采问卷数据，后续会在数据处理阶段进行匿名化，避免保留姓名、学号、联系方式等可识别个人身份的信息。
+
+\subsection{数据字段设计}
+
+当前计划使用的数据字段如下表所示。
+
+\begin{longtable}{p{4cm}p{10cm}}
+\toprule
+字段名 & 说明 \\
+\midrule
+\endfirsthead
+\toprule
+字段名 & 说明 \\
+\midrule
+\endhead
+\texttt{course\_id} & 课程唯一标识 \\
+\texttt{course\_name} & 课程名称 \\
+\texttt{teacher} & 任课教师 \\
+\texttt{department} & 开课院系 \\
+\texttt{category} & 课程类别，例如通识课、专业课、实验课等 \\
+\texttt{semester} & 学期 \\
+\texttt{enrollment} & 选课人数 \\
+\texttt{avg\_score} & 课程平均评分 \\
+\texttt{difficulty} & 难度评分 \\
+\texttt{workload} & 工作量评分 \\
+\texttt{recommendation} & 推荐度 \\
+\texttt{comment\_text} & 学生评价文本 \\
+\texttt{sentiment} & 评论情感标签 \\
+\texttt{keywords} & 评论关键词 \\
+\texttt{created\_at} & 评论或记录创建时间 \\
+\bottomrule
+\end{longtable}
+
+\subsection{数据组织方式}
+
+项目数据计划存放在 \texttt{data/} 目录下：
+
+\begin{itemize}[leftmargin=2em]
+  \item \texttt{data/raw/}：存放原始数据；
+  \item \texttt{data/processed/}：存放清洗、聚合和文本处理后的前端可读取数据；
+  \item \texttt{scripts/preprocess.py}：计划用于字段统一、缺失值处理、关键词提取、情感标签生成和数据导出。
+\end{itemize}
+
+\section{设计方案}
+
+\subsection{总体设计}
+
+CourseLens 计划采用多视图协调的可视分析界面。系统通过筛选器、散点图、趋势图、文本分析视图和课程详情面板共同支持用户完成课程探索、异常发现、趋势追踪和文本解释。
+
+当前计划使用的技术栈如下：
+
+\begin{itemize}[leftmargin=2em]
+  \item 前端框架：React + TypeScript + Vite；
+  \item 可视化库：ECharts / D3.js；
+  \item 数据处理：Python + pandas；
+  \item 文本处理：jieba / sklearn；
+  \item 包管理工具：npm。
+\end{itemize}
+
+\subsection{主要视图}
+
+\paragraph{Overview View}
+展示课程总数、评价总数、平均评分、平均难度、平均工作量、平均推荐度，以及学院和课程类别分布。
+
+\paragraph{Scatterplot View}
+使用散点图展示课程难度、工作量、推荐度和平均评分之间的关系。当前设计中，横轴可表示难度，纵轴可表示推荐度，点大小表示选课人数，颜色表示学院或课程类别。
+
+\paragraph{Trend View}
+展示课程在不同学期中的指标变化，包括评分、难度、工作量、推荐度、选课人数和情感倾向。
+
+\paragraph{Text Analysis View}
+展示评论关键词、关键词频率、情感分布和代表性评论，用于解释结构化评分背后的具体原因。
+
+\paragraph{Course Comparison View}
+支持用户选择多门课程进行对比，比较内容包括课程基本信息、评分、难度、工作量、推荐度、评价数量、关键词和情感分布。
+
+\paragraph{Detail Panel}
+展示当前选中课程的详细信息，包括课程名称、教师、学院、课程类别、最近学期指标、历史趋势摘要和代表性评论。
+
+\subsection{交互设计}
+
+系统计划支持以下交互：
+
+\begin{itemize}[leftmargin=2em]
+  \item 点击散点图中的课程点位后，更新详情面板和趋势图；
+  \item 通过 brushing 选择课程集合后，更新课程列表和文本统计；
+  \item 筛选学院、课程类别、教师或学期后，所有视图同步刷新；
+  \item 点击关键词后，筛选包含该关键词的评论和相关课程；
+  \item 在课程对比视图中添加或移除课程后，同步更新选中状态。
+\end{itemize}
+
+\section{目前实现进展}
+
+截至中期阶段，项目已完成或正在推进的内容如下：
+
+\begin{itemize}[leftmargin=2em]
+  \item 已完成项目主题确定，明确系统名称为 CourseLens；
+  \item 已初步定义课程评价与选课行为分析场景；
+  \item 已设计核心分析任务 T1--T4；
+  \item 已完成 README 初稿，包含项目介绍、数据说明、技术栈、启动方式和当前 TODO；
+  \item 已规划前端目录结构和数据目录结构；
+  \item 已初步设计系统主要视图和多视图联动方式；
+  \item 正在整理数据字段，并准备数据预处理脚本。
+\end{itemize}
+
+当前尚未完成完整前端原型和真实数据接入，后续会优先推进数据预处理和核心可视化视图实现。
+
+\section{待完成的工作}
+
+后续计划完成以下工作：
+
+\begin{enumerate}[leftmargin=2em]
+  \item 完成数据字段设计和样例数据整理，保证数据规模和复杂度满足课程要求；
+  \item 编写 \texttt{scripts/preprocess.py}，实现字段统一、缺失值处理、关键词提取、情感标签生成和数据导出；
+  \item 搭建 React + TypeScript + Vite 前端项目结构；
+  \item 实现课程总览 Dashboard；
+  \item 实现课程难度-推荐度散点图，并支持 brushing 与点击选择；
+  \item 实现课程学期趋势视图；
+  \item 实现课程评价文本分析视图；
+  \item 实现课程详情面板和课程对比视图；
+  \item 完成多条件筛选和多视图联动；
+  \item 设计并撰写至少两个 Case Study；
+  \item 补充系统文档、AI 使用声明和最终答辩材料；
+  \item 录制 Demo 视频，并检查助教是否能在 15 分钟内完成环境搭建和系统运行。
+\end{enumerate}
+
+\section{阶段性风险与应对}
+
+\begin{itemize}[leftmargin=2em]
+  \item 数据真实性与规模风险：若真实数据不足，将使用公开数据、自采问卷和模拟数据结合的方式，并在文档中说明来源和生成逻辑。
+  \item 文本分析质量风险：若中文评论文本较短或噪声较多，将优先采用关键词提取和简单情感标签，避免过度依赖复杂模型。
+  \item 交互实现时间风险：优先保证散点图、趋势图、详情面板和筛选联动等核心交互，再逐步完善视觉样式和扩展功能。
+\end{itemize}
+
+\end{document}
