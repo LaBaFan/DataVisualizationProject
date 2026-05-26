@@ -1,4 +1,4 @@
-\documentclass[UTF8, a4paper, 12pt]{ctexart}
+\documentclass[UTF8, a4paper, 12pt, fontset=fandol]{ctexart}
 
 \usepackage{geometry}
 \usepackage{graphicx}
@@ -17,7 +17,7 @@
   citecolor=blue
 }
 
-\title{CourseLens：高校课程评价与选课行为可视分析系统\\中期报告}
+\title{FoodETA：外卖配送时效与延迟因素可视分析系统\\中期报告}
 \author{
   成员 A \quad 成员 B \quad 成员 C\\
   数据可视化导论课程项目
@@ -29,63 +29,74 @@
 \maketitle
 
 \begin{abstract}
-本文档为 CourseLens 项目的中期报告模板。CourseLens 面向高校学生选课与教学质量分析场景，计划构建一个融合课程基本信息、历史选课数据、课程评价文本、难度评分、推荐度、工作量、教师信息和学期变化的多视图可视分析系统。本文档主要说明项目背景、分析任务、数据设计、系统设计方案、当前实现进展和后续工作计划。
+本文档为 FoodETA 项目的中期报告初稿。FoodETA 面向外卖配送效率分析场景，计划基于 Kaggle 公开数据集 Food Delivery Time 构建一个多视图可视分析系统。系统从配送时间、配送距离、天气状况、交通状况、订单时间、骑手属性、车辆类型和城市差异等角度展开分析，帮助用户发现影响外卖配送时效的关键因素、识别高延迟订单模式，并比较不同条件下的配送效率差异。本文档主要说明项目背景、数据说明、分析任务、系统设计方案、当前进展和后续工作计划。
 \end{abstract}
 
 \section{项目背景}
 
-高校课程选择通常涉及课程内容、教师风格、课程难度、工作量、考核方式和同学评价等多种因素。学生在选课前往往需要从课程平台、论坛、问卷反馈或同学经验中收集信息，但这些信息通常分散、非结构化，并且难以从整体上比较不同课程之间的差异。
+外卖配送是即时物流中的典型场景。配送时效不仅受到配送距离影响，也会受到天气、交通密度、订单高峰、车辆类型、多单配送和骑手状态等因素共同影响。对于平台运营、配送调度和用户体验分析而言，仅观察平均配送时间往往不足以解释延迟订单的形成原因。
 
-本项目拟构建 CourseLens：高校课程评价与选课行为可视分析系统。系统通过整合课程基本信息、历史选课数据、课程评价文本、难度评分、工作量评分、推荐度和学期变化等数据，帮助用户发现课程体验和教学变化中的非显然模式。例如：
+本项目拟构建 FoodETA：外卖配送时效与延迟因素可视分析系统。系统计划通过多视图联动方式展示配送时间分布、距离与时长关系、时段规律、天气与交通影响、骑手和车辆因素以及城市差异。例如：
 
 \begin{itemize}[leftmargin=2em]
-  \item 哪些课程虽然难度较高，但仍然获得较高推荐度；
-  \item 哪些课程工作量较低，且学生评价较好；
-  \item 某门课程在更换教师或调整考核方式后，评价是否出现明显变化；
-  \item 不同学院或课程类型之间是否存在整体负担差异。
+  \item 哪些时段的订单更容易出现配送延迟；
+  \item 恶劣天气和高交通密度是否会显著增加平均配送时长；
+  \item 是否存在短距离但长时间的异常订单；
+  \item 多单配送、骑手评分和车辆类型是否会影响配送表现；
+  \item 不同城市或区域之间是否存在配送效率差异。
 \end{itemize}
 
-本项目面向的主要用户包括高校学生、教学管理人员以及任课教师。学生可以使用系统辅助选课决策，教学管理人员可以观察不同学院和课程类型的课程评价特征，任课教师可以通过评论文本和趋势变化了解课程反馈。
+本项目面向的主要用户包括课程项目评审者、外卖平台运营分析人员和对即时物流效率感兴趣的数据分析用户。系统当前定位为课程项目原型，重点展示数据清洗、聚合、可视化编码、多视图联动和分析叙事能力。
 
 \section{分析任务定义}
 
-结合课程选课和教学质量分析场景，当前项目定义以下核心分析任务。
+结合外卖配送时效分析场景，当前项目定义以下核心分析任务。
 
-\subsection*{T1：发现课程难度、工作量、推荐度之间的关系}
+\subsection*{T1：分析配送时间的整体分布}
 
-分析课程在难度、工作量和推荐度之间的关系，识别高难度高推荐、低工作量高推荐、高工作量低推荐等课程类型。该任务主要帮助学生判断课程投入和收益之间的关系。
+基于 \texttt{Time\_taken(min)} 或预处理生成的 \texttt{delivery\_duration\_min}，分析外卖配送时长的分布、均值、中位数、长尾订单和异常延迟订单。该任务用于建立用户对整体配送效率的初步认识。
 
-\subsection*{T2：比较不同学院/课程类型的课程特征}
+\subsection*{T2：探索距离与配送时间之间的关系}
 
-比较不同学院、课程类别和教师维度下的课程平均评分、难度、工作量和推荐度差异。该任务用于发现不同课程群体之间的整体特征，例如某学院课程整体工作量较高，或某类通识课程推荐度较高。
+基于餐厅与配送地点经纬度计算配送距离，分析 \texttt{distance\_km} 与 \texttt{delivery\_duration\_min} 之间的关系，识别“短距离但长时间”或“长距离但高效率”的异常样本。
 
-\subsection*{T3：追踪课程在不同学期中的变化趋势}
+\subsection*{T3：分析天气和交通状况对配送时效的影响}
 
-分析单门课程或课程集合在不同学期中的指标变化，包括平均评分、难度、工作量、推荐度、选课人数和评价情感。该任务用于发现课程体验随时间变化的情况，并辅助分析变化可能与教师调整、课程内容变化或考核方式变化有关。
+比较不同 \texttt{Weatherconditions} 和 \texttt{Road\_traffic\_density} 下的平均配送时长、延迟率和长尾分布，发现恶劣天气或高交通密度下的配送压力。
 
-\subsection*{T4：结合评价文本辅助课程选择与教学改进分析}
+\subsection*{T4：比较不同时段的配送效率差异}
 
-对学生评论文本进行关键词提取和情感分析，结合结构化评分指标解释课程评价背后的具体原因。该任务可以辅助学生理解课程真实体验，也可以帮助教师或管理人员定位课程改进方向。
+基于订单时间和取餐时间，分析早晨、午高峰、下午、晚高峰、夜间等时段的订单量、平均配送时长和延迟率。
+
+\subsection*{T5：分析骑手属性与配送表现之间的关系}
+
+基于 \texttt{Delivery\_person\_Age}、\texttt{Delivery\_person\_Ratings}、\texttt{multiple\_deliveries}、\texttt{Type\_of\_vehicle} 等字段，比较不同骑手群体或配送方式下的时效差异。
+
+\subsection*{T6：识别高延迟风险场景组合}
+
+通过组合筛选，例如“晚高峰 + 高交通密度 + 雨天 + 多单配送”或“远距离 + 低评分骑手 + 摩托车/自行车”，发现配送延迟风险较高的典型场景。
 
 \section{数据说明}
 
 \subsection{数据来源}
 
-本项目计划使用以下几类数据的组合：
+本项目计划使用 Kaggle 公开数据集 Food Delivery Time：
 
 \begin{itemize}[leftmargin=2em]
-  \item 公开课程平台中的课程基本信息和课程评价数据；
-  \item 团队自采问卷中的课程体验反馈；
-  \item 为满足课程项目原型开发需要而构造的模拟历史课程评价数据。
+  \item 数据集名称：Food Delivery Time；
+  \item 数据集链接：\url{https://www.kaggle.com/datasets/rajatkumar30/food-delivery-time}；
+  \item 数据来源：Kaggle 公开数据集。
 \end{itemize}
 
-所有数据仅用于课程学习和可视化分析展示。若包含自采问卷数据，后续会在数据处理阶段进行匿名化，避免保留姓名、学号、联系方式等可识别个人身份的信息。
+该数据集目标是预测配送员从餐厅到顾客位置完成配送所需时间，字段包括配送员年龄、评分、餐厅与配送位置经纬度、天气、交通密度、订单类型、车辆类型、配送时长等。数据具有时间属性、空间属性、订单属性、环境属性和骑手属性，适合用于外卖配送时效与延迟因素分析。
+
+背景材料可参考论文 Food Delivery Time Prediction in Indian Cities Using Machine Learning Models：\url{https://arxiv.org/html/2503.15177v1}。该论文提到其使用的公开 Kaggle 外卖配送数据约包含 45,000 条印度城市外卖配送记录，每条记录包含配送时间相关特征和目标变量 \texttt{Time\_taken(min)}。本项目最终记录数量以实际下载的数据文件为准。
 
 \subsection{数据字段设计}
 
-当前计划使用的数据字段如下表所示。
+字段名称以实际下载文件为准，预处理阶段会统一字段命名。当前计划使用的主要字段如下表所示。
 
-\begin{longtable}{p{4cm}p{10cm}}
+\begin{longtable}{p{4.5cm}p{9.5cm}}
 \toprule
 字段名 & 说明 \\
 \midrule
@@ -94,21 +105,34 @@
 字段名 & 说明 \\
 \midrule
 \endhead
-\texttt{course\_id} & 课程唯一标识 \\
-\texttt{course\_name} & 课程名称 \\
-\texttt{teacher} & 任课教师 \\
-\texttt{department} & 开课院系 \\
-\texttt{category} & 课程类别，例如通识课、专业课、实验课等 \\
-\texttt{semester} & 学期 \\
-\texttt{enrollment} & 选课人数 \\
-\texttt{avg\_score} & 课程平均评分 \\
-\texttt{difficulty} & 难度评分 \\
-\texttt{workload} & 工作量评分 \\
-\texttt{recommendation} & 推荐度 \\
-\texttt{comment\_text} & 学生评价文本 \\
-\texttt{sentiment} & 评论情感标签 \\
-\texttt{keywords} & 评论关键词 \\
-\texttt{created\_at} & 评论或记录创建时间 \\
+\texttt{ID} / \texttt{Order\_ID} & 订单或配送样本唯一标识 \\
+\texttt{Order\_Date} & 订单日期 \\
+\texttt{Time\_Orderd} & 下单时间，字段名按原始数据保留 \\
+\texttt{Time\_Order\_picked} & 取餐时间 \\
+\texttt{Time\_taken(min)} & 原始配送时长目标字段 \\
+\texttt{Restaurant\_latitude} & 餐厅纬度 \\
+\texttt{Restaurant\_longitude} & 餐厅经度 \\
+\texttt{Delivery\_location\_latitude} & 配送位置纬度 \\
+\texttt{Delivery\_location\_longitude} & 配送位置经度 \\
+\texttt{Delivery\_person\_ID} & 配送员标识 \\
+\texttt{Delivery\_person\_Age} & 配送员年龄 \\
+\texttt{Delivery\_person\_Ratings} & 配送员评分 \\
+\texttt{Weatherconditions} / \texttt{Weather} & 天气状态 \\
+\texttt{Road\_traffic\_density} / \texttt{Traffic\_Level} & 道路交通密度 \\
+\texttt{Festival} & 是否节日或特殊日期 \\
+\texttt{City} & 城市或区域 \\
+\texttt{Type\_of\_order} & 订单类型 \\
+\texttt{Type\_of\_vehicle} & 配送车辆类型 \\
+\texttt{Vehicle\_condition} & 车辆状态 \\
+\texttt{multiple\_deliveries} & 多单配送情况 \\
+\texttt{distance\_km} & 根据餐厅和配送位置经纬度计算的配送距离 \\
+\texttt{delivery\_duration\_min} & 清洗后的配送时长 \\
+\texttt{pickup\_delay\_min} & 下单到取餐的等待时间，若字段支持则计算 \\
+\texttt{order\_hour} & 订单小时 \\
+\texttt{time\_period} & 时段标签，例如 morning、lunch\_peak、afternoon、dinner\_peak、night \\
+\texttt{is\_delayed} & 延迟标签，可基于时长阈值或同距离分组均值生成 \\
+\texttt{distance\_bin} & 距离分箱，例如 0-2km、2-5km、5-10km、10km+ \\
+\texttt{speed\_km\_per\_hour} & 若能合理计算，则用于近似表示配送速度 \\
 \bottomrule
 \end{longtable}
 
@@ -117,90 +141,123 @@
 项目数据计划存放在 \texttt{data/} 目录下：
 
 \begin{itemize}[leftmargin=2em]
-  \item \texttt{data/raw/}：存放原始数据；
-  \item \texttt{data/processed/}：存放清洗、聚合和文本处理后的前端可读取数据；
-  \item \texttt{scripts/preprocess.py}：计划用于字段统一、缺失值处理、关键词提取、情感标签生成和数据导出。
+  \item \texttt{data/raw/}：存放原始 Kaggle 外卖配送 CSV 文件；
+  \item \texttt{data/processed/}：存放清洗、派生字段计算和聚合后的前端可读取数据；
+  \item \texttt{scripts/preprocess.py}：计划用于字段统一、缺失值处理、距离计算、延迟标签生成和数据导出。
 \end{itemize}
+
+如果完整数据量或字段不适合前端直接加载，项目会生成聚合后的 JSON/CSV 文件用于可视化。
 
 \section{设计方案}
 
 \subsection{总体设计}
 
-CourseLens 计划采用多视图协调的可视分析界面。系统通过筛选器、散点图、趋势图、文本分析视图和课程详情面板共同支持用户完成课程探索、异常发现、趋势追踪和文本解释。
+FoodETA 计划采用多视图协调的可视分析界面。系统通过总览面板、配送时长分布、距离-时间散点图、时间模式视图、天气交通影响视图、骑手车辆视图、城市/空间视图和详情面板共同支持用户完成延迟发现、因素比较和场景解释。
 
 当前计划使用的技术栈如下：
 
 \begin{itemize}[leftmargin=2em]
   \item 前端框架：React + TypeScript + Vite；
   \item 可视化库：ECharts / D3.js；
+  \item 地图可视化：Leaflet / Mapbox GL JS，可选；如果地图实现成本较高，初期先实现城市/区域对比视图；
   \item 数据处理：Python + pandas；
-  \item 文本处理：jieba / sklearn；
-  \item 包管理工具：npm。
+  \item 包管理工具：npm；
+  \item 可选工具：scikit-learn，用于简单聚类、异常检测或延迟风险分组。
 \end{itemize}
 
 \subsection{主要视图}
 
-\paragraph{Overview View}
-展示课程总数、评价总数、平均评分、平均难度、平均工作量、平均推荐度，以及学院和课程类别分布。
+\paragraph{Overview Dashboard}
+展示总订单数、平均配送时长、中位数配送时长、延迟订单比例、平均配送距离、主要城市/区域、主要天气和交通状态，并展示订单量最多的时段和配送时长最高的条件组合。
 
-\paragraph{Scatterplot View}
-使用散点图展示课程难度、工作量、推荐度和平均评分之间的关系。当前设计中，横轴可表示难度，纵轴可表示推荐度，点大小表示选课人数，颜色表示学院或课程类别。
+\paragraph{Delivery Time Distribution View}
+展示配送时长直方图、箱线图或密度分布，支持按城市、天气、交通状况、车辆类型和订单类型筛选，并突出长尾延迟订单。
 
-\paragraph{Trend View}
-展示课程在不同学期中的指标变化，包括评分、难度、工作量、推荐度、选课人数和情感倾向。
+\paragraph{Distance-Time Scatter View}
+横轴为配送距离 \texttt{distance\_km}，纵轴为配送时长 \texttt{delivery\_duration\_min}，颜色编码交通状况或天气，点大小可编码 \texttt{multiple\_deliveries} 或骑手评分。该视图计划支持 brushing，框选异常订单后联动详情面板和其他视图。
 
-\paragraph{Text Analysis View}
-展示评论关键词、关键词频率、情感分布和代表性评论，用于解释结构化评分背后的具体原因。
+\paragraph{Temporal Pattern View}
+展示订单量和平均配送时长随小时变化，支持工作日/周末或不同日期聚合，并可设计“小时 x 交通密度”或“小时 x 天气”的热力图，用于发现午高峰、晚高峰、夜间订单模式。
 
-\paragraph{Course Comparison View}
-支持用户选择多门课程进行对比，比较内容包括课程基本信息、评分、难度、工作量、推荐度、评价数量、关键词和情感分布。
+\paragraph{Weather \& Traffic Impact View}
+展示不同天气、交通密度下的配送时长和延迟率，可使用分组柱状图、堆叠柱状图、热力矩阵或箱线图，重点比较不同外部环境对配送效率的影响。
+
+\paragraph{Courier \& Vehicle View}
+展示骑手年龄、评分、车辆类型、多单配送等因素与配送时长的关系，可使用箱线图、散点图或分组柱状图，用于分析骑手属性和配送方式是否影响配送表现。
+
+\paragraph{Spatial / City View}
+如果数据包含可用经纬度，可以展示餐厅位置、配送位置或订单流向；如果地图实现成本较高，可以先做城市/区域层面的对比视图。该视图计划支持点击城市或区域后联动其他视图。
 
 \paragraph{Detail Panel}
-展示当前选中课程的详细信息，包括课程名称、教师、学院、课程类别、最近学期指标、历史趋势摘要和代表性评论。
+点击订单点、时段、天气、交通状态、城市或骑手群体后，展示订单数、平均配送时长、延迟率、距离分布、典型样本等详细统计，支持 details-on-demand。
 
 \subsection{交互设计}
 
 系统计划支持以下交互：
 
 \begin{itemize}[leftmargin=2em]
-  \item 点击散点图中的课程点位后，更新详情面板和趋势图；
-  \item 通过 brushing 选择课程集合后，更新课程列表和文本统计；
-  \item 筛选学院、课程类别、教师或学期后，所有视图同步刷新；
-  \item 点击关键词后，筛选包含该关键词的评论和相关课程；
-  \item 在课程对比视图中添加或移除课程后，同步更新选中状态。
+  \item 时间筛选：按日期、小时或自定义时段筛选订单；
+  \item 城市/区域筛选：按 \texttt{City} 或地图区域筛选订单；
+  \item 环境条件筛选：按 \texttt{Weatherconditions}、\texttt{Road\_traffic\_density}、\texttt{Festival} 等字段筛选；
+  \item 配送方式筛选：按 \texttt{Type\_of\_vehicle}、\texttt{Type\_of\_order}、\texttt{multiple\_deliveries} 筛选；
+  \item brushing \& linking：在距离-时间散点图中框选异常订单后，其他视图同步更新；
+  \item details-on-demand：点击订单点、天气类别、交通状态、时段或城市后，右侧详情面板展示对应统计；
+  \item 多条件组合筛选：支持组合查询，例如“晚高峰 + 雨天 + 高交通密度 + 多单配送”；
+  \item 延迟风险高亮：对配送时间明显高于同距离/同时段平均水平的订单或条件组合进行提示。
 \end{itemize}
+
+\section{Case Study 初步设计}
+
+\subsection*{Case Study 1：晚高峰高交通密度下的配送延迟}
+
+该案例计划展示 dinner\_peak 和 high traffic 条件下的配送时效差异。用户可以筛选晚高峰和高交通密度订单，比较其平均配送时长和延迟率是否明显高于其他时段，并在距离-时间散点图中查看远距离订单是否更容易形成长尾延迟。
+
+\subsection*{Case Study 2：恶劣天气对配送时效的影响}
+
+该案例可用于展示天气条件对配送时效的影响。用户可以比较 sunny、cloudy、rainy、stormy 等天气条件下的配送时长分布，观察恶劣天气是否导致平均配送时长上升或延迟订单比例增加。
+
+\subsection*{Case Study 3：多单配送与骑手评分对配送表现的影响}
+
+该案例计划结合 \texttt{multiple\_deliveries} 和 \texttt{Delivery\_person\_Ratings}，分析多单配送场景下，骑手评分较高的群体是否保持更稳定的配送时长。
 
 \section{目前实现进展}
 
 截至中期阶段，项目已完成或正在推进的内容如下：
 
 \begin{itemize}[leftmargin=2em]
-  \item 已完成项目主题确定，明确系统名称为 CourseLens；
-  \item 已初步定义课程评价与选课行为分析场景；
-  \item 已设计核心分析任务 T1--T4；
+  \item 已完成项目主题确定，明确系统名称为 FoodETA；
+  \item 已确定主数据集为 Kaggle 公开数据集 Food Delivery Time；
+  \item 已初步定义外卖配送时效与延迟因素分析场景；
+  \item 已设计核心分析任务 T1--T6；
   \item 已完成 README 初稿，包含项目介绍、数据说明、技术栈、启动方式和当前 TODO；
   \item 已规划前端目录结构和数据目录结构；
   \item 已初步设计系统主要视图和多视图联动方式；
   \item 正在整理数据字段，并准备数据预处理脚本。
 \end{itemize}
 
-当前尚未完成完整前端原型和真实数据接入，后续会优先推进数据预处理和核心可视化视图实现。
+当前尚未完成完整前端原型和真实数据接入，后续会优先推进数据下载、预处理和核心可视化视图实现。
 
 \section{待完成的工作}
 
 后续计划完成以下工作：
 
 \begin{enumerate}[leftmargin=2em]
-  \item 完成数据字段设计和样例数据整理，保证数据规模和复杂度满足课程要求；
-  \item 编写 \texttt{scripts/preprocess.py}，实现字段统一、缺失值处理、关键词提取、情感标签生成和数据导出；
+  \item 下载外卖配送原始数据，并确认最终字段和记录规模；
+  \item 梳理字段含义和数据字典；
+  \item 编写 \texttt{scripts/preprocess.py}，实现字段统一、缺失值处理、异常值处理、时间解析和数据导出；
+  \item 根据餐厅经纬度和配送位置经纬度计算 \texttt{distance\_km}；
+  \item 清洗 \texttt{Time\_taken(min)}，生成 \texttt{delivery\_duration\_min} 和 \texttt{is\_delayed}；
+  \item 按时间、城市、天气、交通状况、订单类型和车辆类型生成前端所需聚合数据；
   \item 搭建 React + TypeScript + Vite 前端项目结构；
-  \item 实现课程总览 Dashboard；
-  \item 实现课程难度-推荐度散点图，并支持 brushing 与点击选择；
-  \item 实现课程学期趋势视图；
-  \item 实现课程评价文本分析视图；
-  \item 实现课程详情面板和课程对比视图；
-  \item 完成多条件筛选和多视图联动；
-  \item 设计并撰写至少两个 Case Study；
+  \item 实现 Overview Dashboard；
+  \item 实现 Delivery Time Distribution View；
+  \item 实现 Distance-Time Scatter View，并支持 brushing 与点击选择；
+  \item 实现 Temporal Pattern View；
+  \item 实现 Weather \& Traffic Impact View；
+  \item 实现 Courier \& Vehicle View；
+  \item 实现 Spatial / City View 或城市对比视图；
+  \item 实现详情面板、多条件筛选和多视图联动；
+  \item 设计并撰写 2--3 个 Case Study；
   \item 补充系统文档、AI 使用声明和最终答辩材料；
   \item 录制 Demo 视频，并检查助教是否能在 15 分钟内完成环境搭建和系统运行。
 \end{enumerate}
@@ -208,9 +265,14 @@ CourseLens 计划采用多视图协调的可视分析界面。系统通过筛选
 \section{阶段性风险与应对}
 
 \begin{itemize}[leftmargin=2em]
-  \item 数据真实性与规模风险：若真实数据不足，将使用公开数据、自采问卷和模拟数据结合的方式，并在文档中说明来源和生成逻辑。
-  \item 文本分析质量风险：若中文评论文本较短或噪声较多，将优先采用关键词提取和简单情感标签，避免过度依赖复杂模型。
-  \item 交互实现时间风险：优先保证散点图、趋势图、详情面板和筛选联动等核心交互，再逐步完善视觉样式和扩展功能。
+  \item 字段质量风险：Kaggle 数据可能存在字段命名不统一、缺失值、时间格式不一致或异常经纬度。应在 \texttt{scripts/preprocess.py} 中统一字段命名、记录清洗规则，并输出可复现的处理结果。
+  \item 地图实现风险：若经纬度质量不足或地图实现成本较高，初期优先实现城市/区域对比视图，保留地图点图或流向图作为扩展功能。
+  \item 交互实现时间风险：优先保证配送时长分布、距离-时间散点图、天气交通视图、详情面板和筛选联动等核心交互，再逐步完善视觉样式和扩展功能。
+  \item 性能风险：若前端直接加载完整明细数据造成性能问题，将使用预聚合 JSON/CSV 文件，并对散点图点位进行采样或分层抽样。
 \end{itemize}
+
+\section{AI 使用说明}
+
+本项目允许使用大语言模型辅助代码生成、调试、README 初稿生成、可视化设计讨论和文档润色。核心分析任务、视图选择、多视图联动方式、case study 和最终设计决策由团队讨论确定。详细 AI 使用声明将在系统文档中说明。
 
 \end{document}

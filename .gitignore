@@ -40,3 +40,14 @@ temp/
 # Generated reports or local exports
 coverage/
 htmlcov/
+
+# LaTeX intermediate files
+*.aux
+*.fdb_latexmk
+*.fls
+*.out
+*.xdv
+*.synctex.gz
+*.toc
+*.lof
+*.lot
