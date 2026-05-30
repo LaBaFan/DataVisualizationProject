@@ -1,0 +1,42 @@
+[
+  {
+    "annotation_id": "fixed_lunch_peak",
+    "time_value": "10-14",
+    "annotation_type": "fixed_period",
+    "label": "Lunch peak",
+    "description": "Lunch delivery peak window defined by the preprocessing time-period rule.",
+    "related_metric": "time_period=lunch_peak"
+  },
+  {
+    "annotation_id": "fixed_dinner_peak",
+    "time_value": "17-21",
+    "annotation_type": "fixed_period",
+    "label": "Dinner peak",
+    "description": "Dinner delivery peak window defined by the preprocessing time-period rule.",
+    "related_metric": "time_period=dinner_peak"
+  },
+  {
+    "annotation_id": "peak_order_count",
+    "time_value": 21.0,
+    "annotation_type": "metric_peak",
+    "label": "Peak order volume",
+    "description": "Hour with the highest order count.",
+    "related_metric": "order_count=4826.0"
+  },
+  {
+    "annotation_id": "peak_avg_duration",
+    "time_value": 20.0,
+    "annotation_type": "metric_peak",
+    "label": "Peak average delivery time",
+    "description": "Hour with the highest average delivery duration.",
+    "related_metric": "avg_delivery_duration_min=31.202"
+  },
+  {
+    "annotation_id": "peak_delay_rate",
+    "time_value": 20.0,
+    "annotation_type": "metric_peak",
+    "label": "Peak delay rate",
+    "description": "Hour with the highest delay rate.",
+    "related_metric": "delay_rate=0.444"
+  }
+]

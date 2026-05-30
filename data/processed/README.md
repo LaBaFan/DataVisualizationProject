@@ -13,5 +13,8 @@
 - `weather_traffic_summary.json`：天气与交通组合统计。
 - `courier_vehicle_summary.json`：骑手和车辆相关统计。
 - `city_summary.json`：城市维度统计。
+- `risk_scenario_summary.json`：配送风险场景排序结果。
+- `delay_factor_flow.json`：延迟因素流向关系。
+- `time_annotations.json`：时间趋势注释信息。
 
 这些文件由脚本自动生成，不需要手工编辑。当前中期阶段已将处理后的 CSV 和 JSON 提交到仓库，便于课程检查和后续前端开发直接使用；若重新运行预处理脚本，相关文件会被覆盖更新。

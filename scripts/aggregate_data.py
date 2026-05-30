@@ -74,6 +74,30 @@ def _group_summary(df: pd.DataFrame, keys: list[str]) -> list[dict[str, Any]]:
     return sorted(records, key=lambda item: item["order_count"], reverse=True)
 
 
+def _normalize_series(series: pd.Series) -> pd.Series:
+    numeric = pd.to_numeric(series, errors="coerce").fillna(0)
+    min_value = numeric.min()
+    max_value = numeric.max()
+    if pd.isna(min_value) or pd.isna(max_value) or max_value == min_value:
+        return pd.Series(0.0, index=series.index)
+    return (numeric - min_value) / (max_value - min_value)
+
+
+def _multiple_deliveries_group(value: Any) -> str:
+    if pd.isna(value):
+        return "unknown"
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        text = str(value).strip()
+        return text if text else "unknown"
+    if numeric <= 0:
+        return "single"
+    if numeric == 1:
+        return "one_extra"
+    return "multiple_extra"
+
+
 def overview_summary(df: pd.DataFrame) -> dict[str, Any]:
     duration = df["delivery_duration_min"]
     distance = df["distance_km"]
@@ -189,6 +213,169 @@ def city_summary(df: pd.DataFrame) -> list[dict[str, Any]]:
     return _group_summary(df, ["city"])
 
 
+def build_risk_scenario_summary(df: pd.DataFrame) -> list[dict[str, Any]]:
+    required = [
+        "weather",
+        "traffic_density",
+        "time_period",
+        "vehicle_type",
+        "multiple_deliveries",
+    ]
+    if not all(column in df.columns for column in required):
+        return []
+
+    working = df.copy()
+    working["multiple_deliveries_num"] = pd.to_numeric(
+        working["multiple_deliveries"],
+        errors="coerce",
+    ).fillna(0)
+    working["multiple_deliveries_group"] = working["multiple_deliveries"].map(_multiple_deliveries_group)
+    working["delivery_person_ratings_num"] = pd.to_numeric(
+        working.get("delivery_person_ratings"),
+        errors="coerce",
+    )
+
+    keys = [
+        "weather",
+        "traffic_density",
+        "time_period",
+        "vehicle_type",
+        "multiple_deliveries_group",
+    ]
+    records: list[dict[str, Any]] = []
+    for values, group in working.groupby(keys, dropna=False, observed=True):
+        record = {key: _clean_value(value) for key, value in zip(keys, values)}
+        multiple_delivery_rate = (group["multiple_deliveries_num"] > 0).mean()
+        record.update(
+            {
+                "order_count": int(len(group)),
+                "avg_delivery_duration_min": _round_or_none(group["delivery_duration_min"].mean()),
+                "delay_rate": _round_or_none(group["is_delayed"].mean()),
+                "avg_distance_km": _round_or_none(group["distance_km"].mean()),
+                "multiple_delivery_rate": _round_or_none(multiple_delivery_rate),
+                "avg_rating": _round_or_none(group["delivery_person_ratings_num"].mean()),
+            }
+        )
+        records.append(record)
+
+    if not records:
+        return []
+
+    result = pd.DataFrame(records)
+    result["normalized_duration"] = _normalize_series(result["avg_delivery_duration_min"])
+    result["normalized_distance"] = _normalize_series(result["avg_distance_km"])
+    result["risk_score"] = (
+        0.4 * result["normalized_duration"]
+        + 0.3 * pd.to_numeric(result["delay_rate"], errors="coerce").fillna(0)
+        + 0.2 * result["normalized_distance"]
+        + 0.1 * pd.to_numeric(result["multiple_delivery_rate"], errors="coerce").fillna(0)
+    )
+    result = result.sort_values(["risk_score", "order_count"], ascending=[False, False]).reset_index(drop=True)
+    result["scenario_id"] = result.index.map(lambda index: f"scenario_{index + 1:04d}")
+
+    output_columns = [
+        "scenario_id",
+        "weather",
+        "traffic_density",
+        "time_period",
+        "vehicle_type",
+        "multiple_deliveries_group",
+        "order_count",
+        "avg_delivery_duration_min",
+        "delay_rate",
+        "avg_distance_km",
+        "multiple_delivery_rate",
+        "avg_rating",
+        "risk_score",
+    ]
+    result["risk_score"] = result["risk_score"].round(3)
+    return result[output_columns].where(pd.notna(result[output_columns]), None).to_dict(orient="records")
+
+
+def build_delay_factor_flow(df: pd.DataFrame) -> list[dict[str, Any]]:
+    flow_steps = [
+        ("weather", "traffic_density"),
+        ("traffic_density", "time_period"),
+        ("time_period", "is_delayed"),
+    ]
+    records: list[dict[str, Any]] = []
+
+    for level, (source_column, target_column) in enumerate(flow_steps, start=1):
+        if source_column not in df.columns or target_column not in df.columns:
+            continue
+        working = df[[source_column, target_column, "delivery_duration_min"]].copy()
+        working["_delay_flag"] = df["is_delayed"]
+        if target_column == "is_delayed":
+            working[target_column] = working[target_column].map({True: "delayed", False: "not_delayed"})
+
+        for values, group in working.groupby([source_column, target_column], dropna=False, observed=True):
+            source_value, target_value = values
+            records.append(
+                {
+                    "source": f"{source_column}:{_clean_value(source_value)}",
+                    "target": f"{target_column}:{_clean_value(target_value)}",
+                    "level": level,
+                    "order_count": int(len(group)),
+                    "avg_delivery_duration_min": _round_or_none(group["delivery_duration_min"].mean()),
+                    "delay_rate": _round_or_none(group["_delay_flag"].mean()),
+                }
+            )
+
+    return sorted(records, key=lambda item: (item["level"], -item["order_count"], item["source"], item["target"]))
+
+
+def build_time_annotations(df: pd.DataFrame) -> list[dict[str, Any]]:
+    annotations: list[dict[str, Any]] = [
+        {
+            "annotation_id": "fixed_lunch_peak",
+            "time_value": "10-14",
+            "annotation_type": "fixed_period",
+            "label": "Lunch peak",
+            "description": "Lunch delivery peak window defined by the preprocessing time-period rule.",
+            "related_metric": "time_period=lunch_peak",
+        },
+        {
+            "annotation_id": "fixed_dinner_peak",
+            "time_value": "17-21",
+            "annotation_type": "fixed_period",
+            "label": "Dinner peak",
+            "description": "Dinner delivery peak window defined by the preprocessing time-period rule.",
+            "related_metric": "time_period=dinner_peak",
+        },
+    ]
+
+    hourly = pd.DataFrame(hour_summary(df))
+    if hourly.empty:
+        return annotations
+
+    metric_specs = [
+        ("peak_order_count", "order_count", "Peak order volume", "Hour with the highest order count."),
+        (
+            "peak_avg_duration",
+            "avg_delivery_duration_min",
+            "Peak average delivery time",
+            "Hour with the highest average delivery duration.",
+        ),
+        ("peak_delay_rate", "delay_rate", "Peak delay rate", "Hour with the highest delay rate."),
+    ]
+    for annotation_id, metric, label, description in metric_specs:
+        if metric not in hourly.columns or hourly[metric].isna().all():
+            continue
+        row = hourly.loc[hourly[metric].idxmax()]
+        annotations.append(
+            {
+                "annotation_id": annotation_id,
+                "time_value": _clean_value(row["order_hour"]),
+                "annotation_type": "metric_peak",
+                "label": label,
+                "description": description,
+                "related_metric": f"{metric}={_round_or_none(row[metric])}",
+            }
+        )
+
+    return annotations
+
+
 AGGREGATIONS: dict[str, Callable[[pd.DataFrame], Any]] = {
     "overview_summary.json": overview_summary,
     "delivery_time_distribution.json": delivery_time_distribution,
@@ -198,6 +385,9 @@ AGGREGATIONS: dict[str, Callable[[pd.DataFrame], Any]] = {
     "weather_traffic_summary.json": weather_traffic_summary,
     "courier_vehicle_summary.json": courier_vehicle_summary,
     "city_summary.json": city_summary,
+    "risk_scenario_summary.json": build_risk_scenario_summary,
+    "delay_factor_flow.json": build_delay_factor_flow,
+    "time_annotations.json": build_time_annotations,
 }
 
 

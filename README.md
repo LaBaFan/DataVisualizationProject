@@ -1,8 +1,8 @@
 # FoodETA：外卖配送时效与延迟因素可视分析
 
-FoodETA 是“数据可视化导论”课程 project 的中期阶段成果。本项目基于 Kaggle 公开外卖配送时间数据，围绕配送时长、距离、天气、交通、时段、城市、骑手属性和车辆类型，设计一个后续可扩展为多视图可视分析系统的数据处理与分析方案。
+FoodETA 是“数据可视化导论”课程 project 的中期阶段成果。本项目基于 Kaggle 公开外卖配送数据，围绕配送时长、距离、天气、交通、时段、城市、骑手属性和车辆类型，搭建一个可运行的外卖配送时效与延迟因素可视分析基础框架。
 
-当前阶段只完成数据理解、预处理脚本、分析任务定义和文档草稿；React 前端、FastAPI 后端、多视图联动和交互式可视化属于后续工作，尚未在本仓库中实现。
+当前阶段已完成数据理解、预处理脚本、分析任务定义、文档草稿、React 前端 dashboard 骨架和 FastAPI 后端接口骨架。前端优先请求 `/api/*` 接口；如果后端未启动或接口失败，会回退读取仓库中的 `data/processed/` 聚合 JSON。
 
 ## 数据集来源
 
@@ -74,6 +74,9 @@ data/raw/food_delivery.csv
 - `weather_traffic_summary.json`
 - `courier_vehicle_summary.json`
 - `city_summary.json`
+- `risk_scenario_summary.json`
+- `delay_factor_flow.json`
+- `time_annotations.json`
 
 当前仓库已上传上述处理后数据文件，便于中期检查和后续前端直接读取。原始 Kaggle CSV 仍不提交到仓库。
 
@@ -85,13 +88,26 @@ data/raw/food_delivery.csv
 pip install -r requirements.txt
 ```
 
+前端使用 React + TypeScript + Vite：
+
+```bash
+npm install
+npm run dev
+```
+
+开发服务器默认运行在 `http://localhost:5173`。生产构建可运行：
+
+```bash
+npm run build
+```
+
 ## 运行脚本
 
 ```bash
-python scripts/preprocess.py
+python3 scripts/preprocess.py
 ```
 
-如果缺少 `data/raw/food_delivery.csv`，脚本会给出清晰错误提示并以非零状态退出。中期验收阶段不要求在没有真实 Kaggle CSV 的情况下运行预处理。
+如果课程机或本地环境的 Python 命令是 `python`，也可以使用 `python scripts/preprocess.py`。如果缺少 `data/raw/food_delivery.csv`，脚本会给出清晰错误提示并以非零状态退出。中期验收阶段不要求在没有真实 Kaggle CSV 的情况下运行预处理。
 
 ## 分析任务
 
@@ -114,19 +130,54 @@ python scripts/preprocess.py
 
 团队自己的设计贡献是围绕“外卖配送延迟风险场景识别”组织多视图分析流程，将单条订单数据提升为可解释的条件组合、路径关系和时段注释。
 
-## 后续前后端计划
+## 后端启动与 API
 
-后续计划使用 React + TypeScript + Vite 实现前端界面，使用 ECharts 和 D3 构建多视图可视化；如需要动态筛选和更大数据量支持，再补充 FastAPI 服务层。当前仓库没有创建完整前端或后端目录。
+仓库已提供最小 FastAPI 后端骨架，用于把 `data/processed/` 下的聚合 JSON 暴露给后续前端。后端只读取本地 JSON 文件，不包含数据库、认证或复杂业务逻辑。
 
-计划接口包括：
+安装后端依赖：
 
+```bash
+pip install -r backend/requirements.txt
+```
+
+启动后端：
+
+```bash
+cd backend
+uvicorn main:app --reload --port 8000
+```
+
+默认允许 `http://localhost:5173` 跨域访问。可用接口包括：
+
+- `GET /api/health`
 - `GET /api/overview`
 - `GET /api/delivery-time-distribution`
 - `GET /api/distance-time-sample`
 - `GET /api/time-period-summary`
+- `GET /api/hour-summary`
 - `GET /api/weather-traffic-summary`
 - `GET /api/courier-vehicle-summary`
 - `GET /api/city-summary`
+- `GET /api/risk-scenario-summary`
+- `GET /api/delay-factor-flow`
+- `GET /api/time-annotations`
+
+数据接口统一返回 `data_available`、`data` 和 `source_file`。如果对应 JSON 文件暂不存在，接口不会崩溃，会返回 `data_available: false` 和空数据兜底。
+
+## 前端页面结构
+
+当前前端是单页 dashboard：
+
+- 顶部：项目标题和简短说明。
+- 左侧：`FilterPanel`，维护城市、天气、交通、车辆和时段筛选状态。
+- 中间：多视图工作区，包含 Overview、配送时长分布、距离-时长散点、小时趋势、天气交通、骑手车辆、城市对比，以及三个设计借鉴视图。
+- 右侧：`DetailPanel`，展示当前视图和筛选状态，预留点击图元后的 details-on-demand 信息。
+
+已接入真实 processed JSON 的基础图表包括 Overview、Delivery Time Distribution、Distance-Time Scatter、Temporal Pattern、Weather & Traffic、Courier & Vehicle 和 City Comparison。Delivery Risk Ranking、Delay Factor Flow 和 Annotated Temporal Pattern 已有基础数据输出和占位展示，后续重点是完善图形表达、筛选联动和细节交互。
+
+## 后续前端计划
+
+后续计划继续在 React + TypeScript + Vite 前端中完善多视图联动，使用 ECharts 和 D3 构建更细的交互式可视化。前端可以先接入上述 FastAPI 接口，也可以在纯静态演示场景下直接读取 `data/processed/` 中的 JSON。
 
 ## 三人分工
 
@@ -141,19 +192,18 @@ python scripts/preprocess.py
 
 成员B：分析任务与可视化设计。
 
-- 明确分析任务；
-- 设计后续视图；
-- 说明每个视图对应的分析问题；
-- 规划多视图联动；
-- 中期答辩中主讲分析任务和可视化设计理由。
+- 搭建 React + TypeScript + Vite 前端；
+- 实现 Overview、配送时长分布、距离-时长散点和时间趋势等基础视图；
+- 实现 `FilterPanel`、`DetailPanel` 和图表占位联动；
+- 中期答辩中主讲视图设计和交互逻辑。
 
-成员C：文档、系统规划与后续前后端设计。
+成员C：后端 API、系统规划与文档。
 
-- 整理 README；
-- 编写 `midterm_report.tex`；
-- 编写 `future_work.md`；
-- 规划后续前端和后端架构；
-- 中期答辩中主讲系统规划、分工和后续工作。
+- 搭建 FastAPI 后端；
+- 实现 processed JSON 读取接口；
+- 实现 WeatherTraffic、CourierVehicle、CityComparison 以及三个设计借鉴视图占位；
+- 整理 README 和 docs 文档；
+- 中期答辩中主讲系统框架、设计借鉴与后续工作。
 
 ## AI 使用说明
 
@@ -167,6 +217,6 @@ python scripts/preprocess.py
 - [x] 编写中期阶段文档草稿。
 - [x] 下载并放置真实 Kaggle CSV。
 - [x] 运行预处理并检查真实输出数据。
-- [ ] 基于聚合 JSON 制作初步静态图表样例。
-- [ ] 实现 React + TypeScript + Vite 前端。
-- [ ] 根据数据规模决定是否加入 FastAPI 后端。
+- [x] 基于聚合 JSON 制作初步静态图表样例。
+- [x] 实现 React + TypeScript + Vite 前端骨架。
+- [x] 搭建最小 FastAPI 后端骨架。
