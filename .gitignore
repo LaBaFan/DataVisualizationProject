@@ -25,6 +25,7 @@ __pycache__/
 .ruff_cache/
 .venv/
 venv/
+.kagglehub/
 
 # OS and editor files
 .DS_Store
@@ -40,6 +41,11 @@ temp/
 # Generated reports or local exports
 coverage/
 htmlcov/
+
+# Project data generated locally
+data/raw/*.csv
+data/processed/*.csv
+data/processed/*.json
 
 # LaTeX intermediate files
 *.aux

@@ -1,0 +1,3 @@
+pandas
+numpy
+kagglehub==0.3.13
