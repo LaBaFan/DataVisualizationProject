@@ -26,6 +26,7 @@ __pycache__/
 .venv/
 venv/
 .kagglehub/
+.codegraph/
 
 # OS and editor files
 .DS_Store
