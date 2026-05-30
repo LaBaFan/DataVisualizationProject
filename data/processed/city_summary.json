@@ -1,0 +1,38 @@
+[
+  {
+    "city": "Metropolitian",
+    "order_count": 33785,
+    "avg_delivery_duration_min": 27.318,
+    "median_delivery_duration_min": 27.0,
+    "p75_delivery_duration_min": 33.0,
+    "avg_distance_km": 9.932,
+    "delay_rate": 0.278
+  },
+  {
+    "city": "Urban",
+    "order_count": 10032,
+    "avg_delivery_duration_min": 22.984,
+    "median_delivery_duration_min": 22.0,
+    "p75_delivery_duration_min": 28.0,
+    "avg_distance_km": 9.083,
+    "delay_rate": 0.149
+  },
+  {
+    "city": null,
+    "order_count": 1183,
+    "avg_delivery_duration_min": 22.072,
+    "median_delivery_duration_min": 21.0,
+    "p75_delivery_duration_min": 27.0,
+    "avg_distance_km": 9.206,
+    "delay_rate": 0.12
+  },
+  {
+    "city": "Semi-Urban",
+    "order_count": 162,
+    "avg_delivery_duration_min": 49.735,
+    "median_delivery_duration_min": 49.0,
+    "p75_delivery_duration_min": 52.0,
+    "avg_distance_km": 12.959,
+    "delay_rate": 1.0
+  }
+]

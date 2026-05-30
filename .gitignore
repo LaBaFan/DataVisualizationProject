@@ -44,8 +44,6 @@ htmlcov/
 
 # Project data generated locally
 data/raw/*.csv
-data/processed/*.csv
-data/processed/*.json
 
 # LaTeX intermediate files
 *.aux

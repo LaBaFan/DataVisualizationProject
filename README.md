@@ -75,6 +75,8 @@ data/raw/food_delivery.csv
 - `courier_vehicle_summary.json`
 - `city_summary.json`
 
+当前仓库已上传上述处理后数据文件，便于中期检查和后续前端直接读取。原始 Kaggle CSV 仍不提交到仓库。
+
 ## 安装依赖
 
 建议使用 Python 3.10 或更高版本。

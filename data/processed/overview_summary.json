@@ -1,0 +1,18 @@
+{
+  "total_orders": 45593,
+  "valid_orders": 45162,
+  "avg_delivery_duration_min": 26.298,
+  "median_delivery_duration_min": 26.0,
+  "delay_threshold_min": 32.0,
+  "delay_rate": 0.247,
+  "avg_distance_km": 9.735,
+  "city_count": 3,
+  "weather_categories": 6,
+  "traffic_density_categories": 4,
+  "order_count": 45162,
+  "p75_delivery_duration_min": 32.0,
+  "min_delivery_duration_min": 10.0,
+  "max_delivery_duration_min": 54.0,
+  "median_distance_km": 9.22,
+  "avg_speed_kmph": 23.81
+}

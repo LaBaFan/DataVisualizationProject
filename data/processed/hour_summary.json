@@ -1,0 +1,155 @@
+[
+  {
+    "order_hour": 0,
+    "order_count": 475,
+    "avg_delivery_duration_min": 22.278,
+    "median_delivery_duration_min": 22.0,
+    "p75_delivery_duration_min": 27.0,
+    "avg_distance_km": 11.73,
+    "delay_rate": 0.082
+  },
+  {
+    "order_hour": 8,
+    "order_count": 1875,
+    "avg_delivery_duration_min": 19.575,
+    "median_delivery_duration_min": 19.0,
+    "p75_delivery_duration_min": 24.0,
+    "avg_distance_km": 2.294,
+    "delay_rate": 0.017
+  },
+  {
+    "order_hour": 9,
+    "order_count": 2007,
+    "avg_delivery_duration_min": 19.496,
+    "median_delivery_duration_min": 19.0,
+    "p75_delivery_duration_min": 24.0,
+    "avg_distance_km": 2.289,
+    "delay_rate": 0.007
+  },
+  {
+    "order_hour": 10,
+    "order_count": 2046,
+    "avg_delivery_duration_min": 19.491,
+    "median_delivery_duration_min": 19.0,
+    "p75_delivery_duration_min": 24.0,
+    "avg_distance_km": 2.291,
+    "delay_rate": 0.011
+  },
+  {
+    "order_hour": 11,
+    "order_count": 2012,
+    "avg_delivery_duration_min": 26.281,
+    "median_delivery_duration_min": 26.0,
+    "p75_delivery_duration_min": 32.0,
+    "avg_distance_km": 2.313,
+    "delay_rate": 0.215
+  },
+  {
+    "order_hour": 12,
+    "order_count": 920,
+    "avg_delivery_duration_min": 26.951,
+    "median_delivery_duration_min": 27.0,
+    "p75_delivery_duration_min": 32.0,
+    "avg_distance_km": 5.287,
+    "delay_rate": 0.243
+  },
+  {
+    "order_hour": 13,
+    "order_count": 816,
+    "avg_delivery_duration_min": 27.68,
+    "median_delivery_duration_min": 27.0,
+    "p75_delivery_duration_min": 32.0,
+    "avg_distance_km": 6.131,
+    "delay_rate": 0.246
+  },
+  {
+    "order_hour": 14,
+    "order_count": 819,
+    "avg_delivery_duration_min": 27.554,
+    "median_delivery_duration_min": 27.0,
+    "p75_delivery_duration_min": 33.0,
+    "avg_distance_km": 6.13,
+    "delay_rate": 0.258
+  },
+  {
+    "order_hour": 15,
+    "order_count": 903,
+    "avg_delivery_duration_min": 23.241,
+    "median_delivery_duration_min": 23.0,
+    "p75_delivery_duration_min": 28.0,
+    "avg_distance_km": 6.127,
+    "delay_rate": 0.104
+  },
+  {
+    "order_hour": 16,
+    "order_count": 733,
+    "avg_delivery_duration_min": 22.933,
+    "median_delivery_duration_min": 24.0,
+    "p75_delivery_duration_min": 28.0,
+    "avg_distance_km": 6.124,
+    "delay_rate": 0.087
+  },
+  {
+    "order_hour": 17,
+    "order_count": 4378,
+    "avg_delivery_duration_min": 27.432,
+    "median_delivery_duration_min": 27.0,
+    "p75_delivery_duration_min": 34.0,
+    "avg_distance_km": 11.884,
+    "delay_rate": 0.291
+  },
+  {
+    "order_hour": 18,
+    "order_count": 4617,
+    "avg_delivery_duration_min": 27.25,
+    "median_delivery_duration_min": 27.0,
+    "p75_delivery_duration_min": 33.0,
+    "avg_distance_km": 11.859,
+    "delay_rate": 0.282
+  },
+  {
+    "order_hour": 19,
+    "order_count": 4722,
+    "avg_delivery_duration_min": 30.825,
+    "median_delivery_duration_min": 30.0,
+    "p75_delivery_duration_min": 38.0,
+    "avg_distance_km": 12.088,
+    "delay_rate": 0.431
+  },
+  {
+    "order_hour": 20,
+    "order_count": 4661,
+    "avg_delivery_duration_min": 31.202,
+    "median_delivery_duration_min": 31.0,
+    "p75_delivery_duration_min": 39.0,
+    "avg_distance_km": 12.145,
+    "delay_rate": 0.444
+  },
+  {
+    "order_hour": 21,
+    "order_count": 4826,
+    "avg_delivery_duration_min": 31.131,
+    "median_delivery_duration_min": 31.0,
+    "p75_delivery_duration_min": 39.0,
+    "avg_distance_km": 12.015,
+    "delay_rate": 0.433
+  },
+  {
+    "order_hour": 22,
+    "order_count": 4715,
+    "avg_delivery_duration_min": 23.223,
+    "median_delivery_duration_min": 22.0,
+    "p75_delivery_duration_min": 28.0,
+    "avg_distance_km": 12.036,
+    "delay_rate": 0.126
+  },
+  {
+    "order_hour": 23,
+    "order_count": 4637,
+    "avg_delivery_duration_min": 22.455,
+    "median_delivery_duration_min": 22.0,
+    "p75_delivery_duration_min": 27.0,
+    "avg_distance_km": 12.023,
+    "delay_rate": 0.103
+  }
+]
