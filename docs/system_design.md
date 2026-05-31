@@ -2,10 +2,9 @@
 
 ## 系统架构
 
-FoodETA 当前采用轻量前后端分离结构：
+FoodETA 当前采用纯前端静态数据架构：
 
 - 前端：React + TypeScript + Vite，负责 dashboard 布局、基础图表、筛选状态和空状态展示。
-- 后端：FastAPI，负责读取 `data/processed/` 下的 JSON 文件并提供 `/api/*` 接口。
 - 数据处理：Python + pandas + numpy，负责从 `data/raw/food_delivery.csv` 生成清洗数据和聚合 JSON。
 - 数据文件：当前已提交 processed CSV/JSON，原始 Kaggle CSV 不提交。
 
@@ -15,9 +14,8 @@ FoodETA 当前采用轻量前后端分离结构：
 
 1. 用户从 Kaggle 下载 Food Delivery Dataset，并将原始 CSV 放入 `data/raw/food_delivery.csv`。
 2. 运行 `python3 scripts/preprocess.py`（或按本地环境使用 `python scripts/preprocess.py`），生成 `orders_clean.csv` 和多个聚合 JSON。
-3. FastAPI 从 `data/processed/` 读取 JSON，并通过 `/api/*` 返回给前端。
-4. React 前端优先请求 `http://localhost:8000/api`；如果请求失败，会回退到仓库中的静态 processed JSON。
-5. 图表组件根据 API 或静态 JSON 渲染基础视图；缺失数据时显示 EmptyState。
+3. React 前端通过 Vite 读取 `data/processed/` 下的静态 JSON。
+4. 图表组件根据静态 JSON 渲染基础视图；缺失数据时显示 EmptyState。
 
 ## 前端视图
 
@@ -36,31 +34,9 @@ FoodETA 当前采用轻量前后端分离结构：
 
 左侧 `FilterPanel` 维护全局筛选状态，右侧 `DetailPanel` 预留 details-on-demand 信息。当前筛选状态已经有 Context，但大多数图表尚未按筛选条件真实过滤。
 
-## 后端 API
+## 静态数据模块
 
-后端入口为 `backend/main.py`。启动方式：
-
-```bash
-cd backend
-uvicorn main:app --reload --port 8000
-```
-
-已提供接口：
-
-- `GET /api/health`
-- `GET /api/overview`
-- `GET /api/delivery-time-distribution`
-- `GET /api/distance-time-sample`
-- `GET /api/time-period-summary`
-- `GET /api/hour-summary`
-- `GET /api/weather-traffic-summary`
-- `GET /api/courier-vehicle-summary`
-- `GET /api/city-summary`
-- `GET /api/risk-scenario-summary`
-- `GET /api/delay-factor-flow`
-- `GET /api/time-annotations`
-
-已有 JSON 文件会返回真实数据；如果某个 processed JSON 尚未生成或被删除，接口会返回 `data_available: false` 和空数组，不会导致后端崩溃。当前基础版风险场景、因素流和时间注释文件均已由预处理脚本生成。
+前端数据读取集中在 `src/data/client.ts`。该文件通过 `import.meta.glob` 收集 `data/processed/*.json`，并向各视图提供统一的数据读取函数，例如 overview、配送时长分布、天气交通统计、风险场景、因素流和时间注释。当前基础版风险场景、因素流和时间注释文件均已由预处理脚本生成。
 
 ## 多视图联动
 

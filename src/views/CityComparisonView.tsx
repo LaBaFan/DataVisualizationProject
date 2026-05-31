@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { EChartsOption } from 'echarts';
-import { getCitySummary } from '../api/client';
+import { getCitySummary } from '../data/client';
 import ChartCard from '../components/ChartCard';
 import { CitySummary } from '../types/data';
 import { labelOf } from '../utils/format';

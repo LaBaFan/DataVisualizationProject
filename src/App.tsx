@@ -52,7 +52,7 @@ export default function App() {
         <div>
           <p className="eyebrow">Data Visualization Project</p>
           <h1>FoodETA 外卖配送时效可视分析</h1>
-          <p>基于 processed 聚合数据构建的单页 dashboard 骨架，支持后续接入 FastAPI 与多视图联动。</p>
+          <p>基于 processed 聚合数据构建的纯前端单页 dashboard，支持多视图联动扩展。</p>
         </div>
       </header>
       <main className="dashboard-layout">

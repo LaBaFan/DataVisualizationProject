@@ -44,7 +44,7 @@ export default function FilterPanel() {
           </select>
         </label>
       ))}
-      <p className="panel-note">筛选状态已全局保存；当前静态骨架主要用于视图联动接口占位。</p>
+      <p className="panel-note">筛选状态已全局保存；当前静态骨架主要用于视图联动状态占位。</p>
     </aside>
   );
 }

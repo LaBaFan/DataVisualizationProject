@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getRiskScenarioSummary } from '../api/client';
+import { getRiskScenarioSummary } from '../data/client';
 import EmptyState from '../components/EmptyState';
 import { RiskScenarioSummary } from '../types/data';
 import { formatNumber, formatPercent, labelOf } from '../utils/format';

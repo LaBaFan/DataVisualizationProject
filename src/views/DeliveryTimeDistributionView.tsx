@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { EChartsOption } from 'echarts';
-import { getDeliveryTimeDistribution } from '../api/client';
+import { getDeliveryTimeDistribution } from '../data/client';
 import ChartCard from '../components/ChartCard';
 import { DeliveryTimeDistribution } from '../types/data';
 

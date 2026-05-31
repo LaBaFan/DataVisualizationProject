@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { EChartsOption } from 'echarts';
-import { getDistanceTimeSample } from '../api/client';
+import { getDistanceTimeSample } from '../data/client';
 import ChartCard from '../components/ChartCard';
 import { DistanceTimePoint } from '../types/data';
 

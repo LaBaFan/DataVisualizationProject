@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { EChartsOption } from 'echarts';
-import { getDelayFactorFlow } from '../api/client';
+import { getDelayFactorFlow } from '../data/client';
 import ChartCard from '../components/ChartCard';
 import { DelayFactorFlow } from '../types/data';
 

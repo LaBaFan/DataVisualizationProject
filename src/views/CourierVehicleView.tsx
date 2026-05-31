@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { EChartsOption } from 'echarts';
-import { getCourierVehicleSummary } from '../api/client';
+import { getCourierVehicleSummary } from '../data/client';
 import ChartCard from '../components/ChartCard';
 import { CourierVehicleSummary } from '../types/data';
 import { labelOf } from '../utils/format';

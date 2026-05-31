@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { EChartsOption } from 'echarts';
-import { getHourSummary, getTimeAnnotations } from '../api/client';
+import { getHourSummary, getTimeAnnotations } from '../data/client';
 import ChartCard from '../components/ChartCard';
 import { HourSummary, TimeAnnotation } from '../types/data';
 

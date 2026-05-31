@@ -2,7 +2,7 @@
 
 ## 前端计划
 
-前端已采用 React + TypeScript + Vite 搭建单页 dashboard 骨架。当前版本默认加载 `data/processed/` 中的聚合 JSON，并预留 `/api/*` 请求路径，方便后续切换到 FastAPI。
+前端已采用 React + TypeScript + Vite 搭建单页 dashboard 骨架。当前版本直接加载 `data/processed/` 中的聚合 JSON。
 
 计划视图包括：
 
@@ -32,26 +32,33 @@
 - details-on-demand：点击或框选后查看订单样本和局部统计。
 - 延迟订单高亮。
 
-## 后端计划
+## 经典设计借鉴与适配
 
-当前仓库已经加入最小 FastAPI 后端骨架，负责读取 `data/processed/` 下的聚合 JSON，并向前端提供稳定 API。后端现阶段不引入数据库、认证、动态查询或复杂业务逻辑，重点是保证课程演示期间接口可启动、可跨域、缺少数据文件时不崩溃。
+后续系统会借鉴已有可视分析设计，但不会直接复用原系统，而是将其交互思想适配到外卖配送时效分析场景。
 
-已规划并暴露的接口包括：
+### Delivery Risk Ranking View：借鉴 LineUp
 
-- `GET /api/health`
-- `GET /api/overview`
-- `GET /api/delivery-time-distribution`
-- `GET /api/distance-time-sample`
-- `GET /api/time-period-summary`
-- `GET /api/hour-summary`
-- `GET /api/weather-traffic-summary`
-- `GET /api/courier-vehicle-summary`
-- `GET /api/city-summary`
-- `GET /api/risk-scenario-summary`
-- `GET /api/delay-factor-flow`
-- `GET /api/time-annotations`
+该部分用于支持 T7“高延迟风险场景排序与解释”。LineUp 的多属性排序思想适合展示和比较多个指标，因此 Delivery Risk Ranking View 将把天气、交通密度、时段、距离区间、车辆类型、多单配送等条件组合成配送风险场景。
 
-当前数据处理脚本已经生成 `risk_scenario_summary.json`、`delay_factor_flow.json` 和 `time_annotations.json`。如果这些文件被删除或尚未运行预处理，对应接口仍会返回 `data_available: false` 和空数组，保证前后端不会崩溃。
+每个场景展示 `order_count`、`avg_delivery_duration_min`、`delay_rate`、`avg_distance_km`、`multiple_delivery_rate`、`avg_rating` 和 `risk_score` 等指标。后续需要完善的功能包括风险评分说明、指标排序、权重调整、场景对比和点击后的详情面板。
+
+### Delay Factor Flow View：借鉴 Parallel Sets / Sankey
+
+该部分用于支持 T8“配送条件路径与延迟结果流向分析”。Parallel Sets 和 Sankey 适合表达多类别变量之间的路径关系，因此 Delay Factor Flow View 将展示 `weather -> traffic_density -> time_period -> is_delayed`、`vehicle_type -> multiple_deliveries -> is_delayed` 等路径。
+
+路径宽度表示订单数量，颜色表示延迟率或平均配送时长。后续需要完善路径布局、颜色编码、路径高亮、条件筛选和路径详情，使用户能比较不同配送条件组合最终流向延迟或非延迟结果的比例差异。
+
+### Annotated Temporal Pattern View：借鉴 TimeNotes
+
+该部分用于增强时间模式解释。TimeNotes 的时间序列注释思想适合解释峰值、阶段和异常点，因此 Annotated Temporal Pattern View 将在小时趋势中标注午高峰、晚高峰、订单量峰值、平均配送时长峰值和延迟率峰值。
+
+后续需要将 `time_annotations.json` 与前端时间趋势图联动，使趋势图不仅显示数值变化，也解释高峰和异常出现的业务语境。
+
+## 静态数据加载计划
+
+当前项目保持纯前端架构。前端通过 Vite 的静态 JSON 导入能力读取 `data/processed/` 下的聚合结果，不规划数据库、认证或动态查询服务。课程演示时只需要保证 processed JSON 已生成并提交，页面即可在本地开发服务器或构建产物中运行。
+
+当前数据处理脚本已经生成 `risk_scenario_summary.json`、`delay_factor_flow.json` 和 `time_annotations.json`。如果某个 processed JSON 缺失，对应视图应显示空状态，而不是阻塞其他视图渲染。
 
 ## 后续数据处理计划
 

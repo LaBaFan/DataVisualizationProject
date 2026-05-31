@@ -1,8 +1,8 @@
 # FoodETA 外卖配送时效可视分析
 
-FoodETA 是一个用于“数据可视化导论”课程 project 的外卖配送数据可视分析系统。项目基于 Kaggle Food Delivery Dataset，围绕配送时长、配送距离、天气、交通、时段、城市、骑手属性和车辆类型，构建可运行的 React dashboard，并提供一个可选的 FastAPI 数据接口层。
+FoodETA 是一个用于“数据可视化导论”课程 project 的外卖配送数据可视分析系统。项目基于 Kaggle Food Delivery Dataset，围绕配送时长、配送距离、天气、交通、时段、城市、骑手属性和车辆类型，构建可运行的纯前端 React dashboard。
 
-前端会优先请求本地后端的 `/api/*` 接口；如果后端没有启动或接口不可用，会自动回退到仓库中的 `data/processed/*.json` 静态聚合数据。因此，只想查看前端效果时不必先启动后端。
+前端直接读取仓库中的 `data/processed/*.json` 静态聚合数据，因此只需启动 Vite 开发服务器即可查看完整 dashboard。
 
 ## 功能概览
 
@@ -10,12 +10,10 @@ FoodETA 是一个用于“数据可视化导论”课程 project 的外卖配送
 - 左侧筛选面板：维护城市、天气、交通、车辆和时段筛选状态。
 - 右侧详情面板：展示当前视图和筛选状态，预留图元点击后的 details-on-demand 信息。
 - 数据处理脚本：清洗 Kaggle CSV，计算配送距离、时段、延迟标签、速度等派生字段，并输出前端可直接使用的聚合 JSON。
-- 可选后端 API：用 FastAPI 将 `data/processed/` 下的 JSON 暴露为接口，便于前后端联调。
 
 ## 技术栈
 
 - 前端：React 18、TypeScript、Vite、ECharts
-- 后端：FastAPI、Uvicorn
 - 数据处理：Python、pandas、numpy
 - 数据来源：Kaggle Food Delivery Dataset
 
@@ -36,16 +34,15 @@ data/raw/food_delivery.csv
 
 ```text
 .
-├── backend/               # FastAPI 后端，读取 processed JSON 并提供 /api 接口
 ├── data/
 │   ├── raw/               # 本地原始 CSV，仓库不提交 data/raw/*.csv
 │   └── processed/         # 已清洗 CSV 和聚合 JSON，前端可静态读取
-├── docs/                  # 数据说明、分析任务、系统设计和中期报告
+├── docs/                  # 数据说明、分析任务、前端设计和中期报告
 ├── scripts/               # 数据清洗、距离计算和聚合脚本
 ├── src/                   # React + TypeScript 前端源码
 ├── package.json           # 前端依赖和 npm scripts
 ├── requirements.txt       # 数据处理脚本依赖
-└── vite.config.ts         # Vite 配置，含 /api 到 8000 端口的代理
+└── vite.config.ts         # Vite 配置
 ```
 
 ## 快速开始
@@ -70,7 +67,7 @@ npm run dev
 http://localhost:5173
 ```
 
-此时即使不启动后端，前端也会读取 `data/processed/` 中已经提交的聚合 JSON。
+前端会读取 `data/processed/` 中已经提交的聚合 JSON。
 
 ### 3. 构建生产版本
 
@@ -83,50 +80,6 @@ npm run build
 ```bash
 npm run preview
 ```
-
-## 可选：启动后端 API
-
-如果需要测试前后端接口联通，先安装后端依赖：
-
-```bash
-pip install -r backend/requirements.txt
-```
-
-启动后端：
-
-```bash
-cd backend
-uvicorn main:app --reload --port 8000
-```
-
-后端默认允许 `http://localhost:5173` 和 `http://127.0.0.1:5173` 跨域访问。前端开发服务器也配置了 `/api` 代理到 `http://localhost:8000`。
-
-可用接口：
-
-- `GET /api/health`
-- `GET /api/overview`
-- `GET /api/delivery-time-distribution`
-- `GET /api/distance-time-sample`
-- `GET /api/time-period-summary`
-- `GET /api/hour-summary`
-- `GET /api/weather-traffic-summary`
-- `GET /api/courier-vehicle-summary`
-- `GET /api/city-summary`
-- `GET /api/risk-scenario-summary`
-- `GET /api/delay-factor-flow`
-- `GET /api/time-annotations`
-
-数据接口统一返回：
-
-```json
-{
-  "data_available": true,
-  "data": {},
-  "source_file": "data/processed/example.json"
-}
-```
-
-如果对应 JSON 文件不存在，接口会返回 `data_available: false` 和空数据，而不是让服务崩溃。
 
 ## 可选：重新生成数据
 
@@ -230,10 +183,12 @@ python scripts/preprocess.py
 
 - T1：分析配送时间整体分布。
 - T2：探索配送距离与配送时间关系。
-- T3：比较天气和交通状况对配送时效的影响。
-- T4：分析不同时段的配送效率差异。
-- T5：分析骑手属性与车辆类型对配送表现的影响。
-- T6：识别高延迟风险场景组合。
+- T3：分析天气与交通影响。
+- T4：分析不同时段效率差异。
+- T5：分析骑手属性与车辆类型影响。
+- T6：分析同距离条件下的相对延迟。
+- T7：进行高延迟风险场景排序与解释，对应 LineUp 借鉴。
+- T8：分析配送条件路径与延迟结果流向，对应 Parallel Sets / Sankey。
 
 详细定义见 `docs/analysis_tasks.md`。
 
@@ -251,7 +206,7 @@ python scripts/preprocess.py
 
 - `docs/data_description.md`：数据字段和处理说明。
 - `docs/analysis_tasks.md`：分析任务定义。
-- `docs/system_design.md`：系统结构和前后端设计。
+- `docs/system_design.md`：纯前端系统结构和数据流设计。
 - `docs/future_work.md`：后续计划。
 - `docs/midterm_report.md`：中期报告草稿。
 

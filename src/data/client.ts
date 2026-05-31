@@ -13,7 +13,6 @@ import {
 } from '../types/data';
 import { labelOf } from '../utils/format';
 
-const API_BASE_URL = 'http://localhost:8000/api';
 const processedModules = import.meta.glob('../../data/processed/*.json', { eager: true });
 
 function staticJson<T>(fileName: string, fallback: T): T {
@@ -22,74 +21,45 @@ function staticJson<T>(fileName: string, fallback: T): T {
   return moduleValue?.default ?? fallback;
 }
 
-async function requestJson<T>(path: string, fallback: T): Promise<T> {
-  try {
-    const response = await fetch(`${API_BASE_URL}${path}`);
-    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-    const payload = await response.json();
-    if (payload && typeof payload === 'object' && payload.data_available === false) {
-      return fallback;
-    }
-    if (payload && typeof payload === 'object' && 'data' in payload) {
-      return (payload.data ?? fallback) as T;
-    }
-    return payload as T;
-  } catch {
-    return fallback;
-  }
-}
-
 export async function getHealth(): Promise<{ status: string; source: string }> {
-  return requestJson('/health', { status: 'unavailable', source: 'static-processed-json' });
+  return { status: 'ok', source: 'static-processed-json' };
 }
 
 export function getOverview(): Promise<OverviewSummary | null> {
-  return requestJson('/overview', staticJson<OverviewSummary | null>('overview_summary.json', null));
+  return Promise.resolve(staticJson<OverviewSummary | null>('overview_summary.json', null));
 }
 
 export function getDeliveryTimeDistribution(): Promise<DeliveryTimeDistribution | null> {
-  return requestJson(
-    '/delivery-time-distribution',
-    staticJson<DeliveryTimeDistribution | null>('delivery_time_distribution.json', null)
-  );
+  return Promise.resolve(staticJson<DeliveryTimeDistribution | null>('delivery_time_distribution.json', null));
 }
 
 export function getDistanceTimeSample(): Promise<DistanceTimePoint[]> {
-  return requestJson(
-    '/distance-time-sample',
-    staticJson<DistanceTimePoint[]>('distance_time_sample.json', [])
-  );
+  return Promise.resolve(staticJson<DistanceTimePoint[]>('distance_time_sample.json', []));
 }
 
 export function getHourSummary(): Promise<HourSummary[]> {
-  return requestJson('/hour-summary', staticJson<HourSummary[]>('hour_summary.json', []));
+  return Promise.resolve(staticJson<HourSummary[]>('hour_summary.json', []));
 }
 
 export function getTimePeriodSummary(): Promise<TimePeriodSummary[]> {
-  return requestJson('/time-period-summary', staticJson<TimePeriodSummary[]>('time_period_summary.json', []));
+  return Promise.resolve(staticJson<TimePeriodSummary[]>('time_period_summary.json', []));
 }
 
 export function getWeatherTrafficSummary(): Promise<WeatherTrafficSummary[]> {
-  return requestJson(
-    '/weather-traffic-summary',
-    staticJson<WeatherTrafficSummary[]>('weather_traffic_summary.json', [])
-  );
+  return Promise.resolve(staticJson<WeatherTrafficSummary[]>('weather_traffic_summary.json', []));
 }
 
 export function getCourierVehicleSummary(): Promise<CourierVehicleSummary | null> {
-  return requestJson(
-    '/courier-vehicle-summary',
-    staticJson<CourierVehicleSummary | null>('courier_vehicle_summary.json', null)
-  );
+  return Promise.resolve(staticJson<CourierVehicleSummary | null>('courier_vehicle_summary.json', null));
 }
 
 export function getCitySummary(): Promise<CitySummary[]> {
-  return requestJson('/city-summary', staticJson<CitySummary[]>('city_summary.json', []));
+  return Promise.resolve(staticJson<CitySummary[]>('city_summary.json', []));
 }
 
 export async function getRiskScenarioSummary(): Promise<RiskScenarioSummary[]> {
-  const apiData = await requestJson<RiskScenarioSummary[] | null>('/risk-scenario-summary', null);
-  if (apiData) return apiData;
+  const data = staticJson<RiskScenarioSummary[] | null>('risk_scenario_summary.json', null);
+  if (data) return data;
   const weatherTraffic = staticJson<WeatherTrafficSummary[]>('weather_traffic_summary.json', []);
   return weatherTraffic
     .slice()
@@ -110,8 +80,8 @@ export async function getRiskScenarioSummary(): Promise<RiskScenarioSummary[]> {
 }
 
 export async function getDelayFactorFlow(): Promise<DelayFactorFlow[]> {
-  const apiData = await requestJson<DelayFactorFlow[] | null>('/delay-factor-flow', null);
-  if (apiData) return apiData;
+  const data = staticJson<DelayFactorFlow[] | null>('delay_factor_flow.json', null);
+  if (data) return data;
   const weatherTraffic = staticJson<WeatherTrafficSummary[]>('weather_traffic_summary.json', []);
   return weatherTraffic.slice(0, 10).flatMap((item, index) => [
     {
@@ -134,8 +104,8 @@ export async function getDelayFactorFlow(): Promise<DelayFactorFlow[]> {
 }
 
 export async function getTimeAnnotations(): Promise<TimeAnnotation[]> {
-  const apiData = await requestJson<TimeAnnotation[] | null>('/time-annotations', null);
-  if (apiData) return apiData;
+  const data = staticJson<TimeAnnotation[] | null>('time_annotations.json', null);
+  if (data) return data;
   const hours = staticJson<HourSummary[]>('hour_summary.json', []);
   if (!hours.length) return [];
   const peakOrders = hours.reduce((best, item) => (item.order_count > best.order_count ? item : best), hours[0]);

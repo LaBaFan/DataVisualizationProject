@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { EChartsOption } from 'echarts';
-import { getWeatherTrafficSummary } from '../api/client';
+import { getWeatherTrafficSummary } from '../data/client';
 import ChartCard from '../components/ChartCard';
 import { WeatherTrafficSummary } from '../types/data';
 import { labelOf } from '../utils/format';
