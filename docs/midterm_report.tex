@@ -112,8 +112,6 @@ python3 scripts/preprocess.py
 
 \section{设计方案}
 
-\subsection{系统架构与数据流}
-
 系统采用纯前端静态数据架构。数据处理层由 Python、pandas 和 numpy 组成，负责从 \texttt{data/raw/food\_delivery.csv} 生成清洗后的订单数据和聚合 JSON。前端使用 React、TypeScript、Vite 和 ECharts 构建单页 dashboard，并直接读取仓库中的 \texttt{data/processed/*.json} 静态聚合数据。
 
 \section{目前实现进展}
