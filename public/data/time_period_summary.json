@@ -1,0 +1,47 @@
+[
+  {
+    "time_period": "dinner_peak",
+    "order_count": 18378,
+    "avg_delivery_duration_min": 29.214,
+    "median_delivery_duration_min": 29.0,
+    "p75_delivery_duration_min": 36.0,
+    "avg_distance_km": 11.996,
+    "delay_rate": 0.364
+  },
+  {
+    "time_period": "night",
+    "order_count": 14653,
+    "avg_delivery_duration_min": 25.554,
+    "median_delivery_duration_min": 24.0,
+    "p75_delivery_duration_min": 31.0,
+    "avg_distance_km": 12.015,
+    "delay_rate": 0.218
+  },
+  {
+    "time_period": "lunch_peak",
+    "order_count": 5794,
+    "avg_delivery_duration_min": 24.187,
+    "median_delivery_duration_min": 24.0,
+    "p75_delivery_duration_min": 29.0,
+    "avg_distance_km": 3.315,
+    "delay_rate": 0.152
+  },
+  {
+    "time_period": "breakfast",
+    "order_count": 3882,
+    "avg_delivery_duration_min": 19.534,
+    "median_delivery_duration_min": 19.0,
+    "p75_delivery_duration_min": 24.0,
+    "avg_distance_km": 2.291,
+    "delay_rate": 0.012
+  },
+  {
+    "time_period": "afternoon",
+    "order_count": 2455,
+    "avg_delivery_duration_min": 24.588,
+    "median_delivery_duration_min": 25.0,
+    "p75_delivery_duration_min": 30.0,
+    "avg_distance_km": 6.127,
+    "delay_rate": 0.15
+  }
+]

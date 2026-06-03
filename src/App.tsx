@@ -1,78 +1,246 @@
-import { useState } from 'react';
-import DetailPanel from './components/DetailPanel';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  loadOverviewSummary,
+  loadRiskScenarioSummary,
+  loadScenarioOrdersSample,
+  loadTimePeriodSummary,
+  loadWeatherTrafficSummary
+} from './api/staticDataClient';
+import DetailPanel, { DetailMode } from './components/DetailPanel';
 import FilterPanel from './components/FilterPanel';
-import AnnotatedTemporalView from './views/AnnotatedTemporalView';
-import CityComparisonView from './views/CityComparisonView';
-import CourierVehicleView from './views/CourierVehicleView';
-import DelayFactorFlowView from './views/DelayFactorFlowView';
-import DeliveryRiskRankingView from './views/DeliveryRiskRankingView';
-import DeliveryTimeDistributionView from './views/DeliveryTimeDistributionView';
-import DistanceTimeScatterView from './views/DistanceTimeScatterView';
-import OverviewView from './views/OverviewView';
-import TemporalPatternView from './views/TemporalPatternView';
-import WeatherTrafficView from './views/WeatherTrafficView';
+import DesignReferenceCard from './views/DesignReferenceCard';
+import DeliveryRiskMap from './views/DeliveryRiskMap';
+import TemporalSummaryStrip from './views/TemporalSummaryStrip';
+import WeatherTrafficMatrix from './views/WeatherTrafficMatrix';
 import { useFilters } from './store/filterContext';
-import { VIEW_TABS, ViewId } from './utils/constants';
+import { OverviewSummary, RiskScenario, ScenarioOrderSample, TimePeriodSummary, WeatherTrafficSummary } from './types/data';
+import { FILTER_ALL } from './utils/constants';
+import { formatNumber, formatPercent, labelOf } from './utils/format';
 
-function renderView(activeView: ViewId) {
-  switch (activeView) {
-    case 'overview':
-      return <OverviewView />;
-    case 'distribution':
-      return <DeliveryTimeDistributionView />;
-    case 'scatter':
-      return <DistanceTimeScatterView />;
-    case 'temporal':
-      return <TemporalPatternView />;
-    case 'weather':
-      return <WeatherTrafficView />;
-    case 'courier':
-      return <CourierVehicleView />;
-    case 'city':
-      return <CityComparisonView />;
-    case 'risk':
-      return <DeliveryRiskRankingView />;
-    case 'flow':
-      return <DelayFactorFlowView />;
-    case 'annotated':
-      return <AnnotatedTemporalView />;
-    default:
-      return <OverviewView />;
-  }
+function matches(value: string | null | undefined, filter: string): boolean {
+  return filter === FILTER_ALL || labelOf(value) === filter;
+}
+
+function matchesDelay(value: boolean | undefined, filter: string): boolean {
+  return filter === FILTER_ALL || String(Boolean(value)) === filter;
+}
+
+function orderMatchesScenario(order: ScenarioOrderSample, scenario: RiskScenario): boolean {
+  if (order.scenario_id && order.scenario_id === scenario.scenario_id) return true;
+  return (
+    labelOf(order.weather) === labelOf(scenario.weather) &&
+    labelOf(order.traffic_density) === labelOf(scenario.traffic_density) &&
+    labelOf(order.time_period) === labelOf(scenario.time_period) &&
+    labelOf(order.vehicle_type) === labelOf(scenario.vehicle_type)
+  );
+}
+
+function buildFallbackOrders(scenario: RiskScenario): ScenarioOrderSample[] {
+  const baseDistance = scenario.avg_distance_km ?? Math.max(3, scenario.avg_delivery_duration_min / 5);
+  const durationOffsets = [0, 4.5, -3.2];
+  return durationOffsets.map((offset, index) => {
+    const deliveryDuration = Math.max(8, scenario.avg_delivery_duration_min + offset);
+    return {
+      order_id: `fallback-${scenario.scenario_id}-${index + 1}`,
+      scenario_id: scenario.scenario_id,
+      weather: scenario.weather,
+      traffic_density: scenario.traffic_density,
+      vehicle_type: scenario.vehicle_type,
+      time_period: scenario.time_period,
+      distance_km: Math.max(1, baseDistance + index * 0.8),
+      delivery_duration_min: deliveryDuration,
+      predicted_duration_min: Math.max(5, deliveryDuration - scenario.delay_rate * 12),
+      delay_minutes: scenario.delay_rate >= 0.2 ? Math.max(1, scenario.delay_rate * 18 + index) : 0,
+      is_delayed: index === 0 ? scenario.delay_rate >= 0.2 : index === 1 ? scenario.delay_rate >= 0.35 : false,
+      delivery_person_ratings: Math.max(3.5, 4.8 - scenario.risk_score * 0.7),
+      multiple_deliveries: scenario.multiple_delivery_rate && scenario.multiple_delivery_rate > 0.25 ? 2 : 1
+    };
+  });
 }
 
 export default function App() {
-  const [activeView, setActiveView] = useState<ViewId>('overview');
-  const { filters } = useFilters();
-  const activeLabel = VIEW_TABS.find((tab) => tab.id === activeView)?.label ?? activeView;
+  const { filters, patchFilters } = useFilters();
+  const [overview, setOverview] = useState<OverviewSummary | null>(null);
+  const [riskScenarios, setRiskScenarios] = useState<RiskScenario[]>([]);
+  const [orders, setOrders] = useState<ScenarioOrderSample[]>([]);
+  const [timePeriods, setTimePeriods] = useState<TimePeriodSummary[]>([]);
+  const [weatherTraffic, setWeatherTraffic] = useState<WeatherTrafficSummary[]>([]);
+  const [selectedScenario, setSelectedScenario] = useState<RiskScenario | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<ScenarioOrderSample | null>(null);
+  const [selectedTimePeriod, setSelectedTimePeriod] = useState<TimePeriodSummary | null>(null);
+  const [selectedMatrix, setSelectedMatrix] = useState<WeatherTrafficSummary | null>(null);
+  const [detailMode, setDetailMode] = useState<DetailMode>('guide');
+
+  const clearSelection = () => {
+    setSelectedScenario(null);
+    setSelectedOrder(null);
+    setSelectedTimePeriod(null);
+    setSelectedMatrix(null);
+    setDetailMode('guide');
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      loadOverviewSummary(),
+      loadRiskScenarioSummary(),
+      loadScenarioOrdersSample(),
+      loadTimePeriodSummary(),
+      loadWeatherTrafficSummary()
+    ]).then(([overviewData, scenarioData, orderData, timeData, matrixData]) => {
+      if (cancelled) return;
+      setOverview(overviewData);
+      setRiskScenarios(scenarioData);
+      setOrders(orderData);
+      setTimePeriods(timeData);
+      setWeatherTraffic(matrixData);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filteredOrders = useMemo(
+    () =>
+      orders.filter(
+        (order) =>
+          matches(order.city, filters.city) &&
+          matches(order.weather, filters.weather) &&
+          matches(order.traffic_density, filters.traffic_density) &&
+          matches(order.time_period, filters.time_period) &&
+          matches(order.vehicle_type, filters.vehicle_type) &&
+          matchesDelay(order.is_delayed, filters.is_delayed)
+      ),
+    [filters, orders]
+  );
+
+  const allowedScenarioIds = useMemo(() => {
+    if (filters.city === FILTER_ALL && filters.is_delayed === FILTER_ALL) return null;
+    return new Set(filteredOrders.map((order) => order.scenario_id).filter(Boolean));
+  }, [filteredOrders, filters.city, filters.is_delayed]);
+
+  const filteredScenarios = useMemo(
+    () =>
+      riskScenarios.filter(
+        (scenario) =>
+          matches(scenario.weather, filters.weather) &&
+          matches(scenario.traffic_density, filters.traffic_density) &&
+          matches(scenario.time_period, filters.time_period) &&
+          matches(scenario.vehicle_type, filters.vehicle_type) &&
+          (!allowedScenarioIds || allowedScenarioIds.has(scenario.scenario_id) || filteredOrders.some((order) => orderMatchesScenario(order, scenario)))
+      ),
+    [allowedScenarioIds, filteredOrders, filters, riskScenarios]
+  );
+
+  const filteredTimePeriods = useMemo(
+    () => timePeriods.filter((period) => matches(period.time_period, filters.time_period)),
+    [filters.time_period, timePeriods]
+  );
+
+  const filteredWeatherTraffic = useMemo(
+    () =>
+      weatherTraffic.filter(
+        (item) => matches(item.weather, filters.weather) && matches(item.traffic_density, filters.traffic_density)
+      ),
+    [filters.traffic_density, filters.weather, weatherTraffic]
+  );
+
+  const scenarioOrders = useMemo(() => {
+    if (!selectedScenario) return [];
+    const candidates = filteredOrders.length ? filteredOrders : orders;
+    const matchedOrders = candidates.filter((order) => orderMatchesScenario(order, selectedScenario));
+    return matchedOrders.length ? matchedOrders : buildFallbackOrders(selectedScenario);
+  }, [filteredOrders, orders, selectedScenario]);
+
+  const metricItems = [
+    { label: 'Total Orders', value: formatNumber(overview?.total_orders ?? overview?.order_count) },
+    { label: 'Avg Delivery', value: `${formatNumber(overview?.avg_delivery_duration_min, 1)} min` },
+    { label: 'Delay Rate', value: formatPercent(overview?.delay_rate) },
+    { label: 'Risk Scenarios', value: formatNumber(filteredScenarios.length) }
+  ];
 
   return (
     <div className="app-shell">
       <header className="app-header">
-        <div>
-          <p className="eyebrow">Data Visualization Project</p>
-          <h1>FoodETA 外卖配送时效可视分析</h1>
-          <p>基于 processed 聚合数据构建的纯前端单页 dashboard，支持多视图联动扩展。</p>
+        <div className="header-copy">
+          <p className="eyebrow">FoodETA</p>
+          <h1>外卖配送风险可视分析</h1>
+          <p>以风险场景地图为入口，追踪天气、交通、时段与载具对 ETA 延迟的影响。</p>
+          <div className="header-tags">
+            <span>Static Data Driven</span>
+            <span>Kaggle Dataset</span>
+          </div>
+        </div>
+        <div className="header-metrics" aria-label="overview metrics">
+          {metricItems.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
         </div>
       </header>
+
       <main className="dashboard-layout">
-        <FilterPanel />
+        <FilterPanel scenarios={riskScenarios} orders={orders} onReset={clearSelection} />
         <section className="workspace">
-          <nav className="tab-bar" aria-label="FoodETA views">
-            {VIEW_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={tab.id === activeView ? 'active' : ''}
-                onClick={() => setActiveView(tab.id)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-          {renderView(activeView)}
+          <DeliveryRiskMap
+            scenarios={filteredScenarios}
+            selectedScenarioId={selectedScenario?.scenario_id}
+            onSelectScenario={(scenario) => {
+              setSelectedScenario(scenario);
+              setSelectedOrder(null);
+              setSelectedTimePeriod(null);
+              setSelectedMatrix(null);
+              setDetailMode('scenario');
+            }}
+          />
+          <div className="support-grid">
+            <TemporalSummaryStrip
+              periods={filteredTimePeriods}
+              selectedTimePeriod={selectedTimePeriod?.time_period ?? undefined}
+              onSelectTimePeriod={(summary) => {
+                patchFilters({ time_period: labelOf(summary.time_period) });
+                setSelectedTimePeriod(summary);
+                setSelectedScenario(null);
+                setSelectedOrder(null);
+                setSelectedMatrix(null);
+                setDetailMode('time');
+              }}
+            />
+            <WeatherTrafficMatrix
+              matrix={filteredWeatherTraffic}
+              selectedWeather={selectedMatrix ? labelOf(selectedMatrix.weather) : undefined}
+              selectedTraffic={selectedMatrix ? labelOf(selectedMatrix.traffic_density) : undefined}
+              onSelectMatrix={(summary) => {
+                patchFilters({
+                  weather: labelOf(summary.weather),
+                  traffic_density: labelOf(summary.traffic_density)
+                });
+                setSelectedMatrix(summary);
+                setSelectedScenario(null);
+                setSelectedOrder(null);
+                setSelectedTimePeriod(null);
+                setDetailMode('matrix');
+              }}
+            />
+          </div>
+          <DesignReferenceCard />
         </section>
-        <DetailPanel activeView={activeLabel} filters={filters} />
+        <DetailPanel
+          filters={filters}
+          mode={detailMode}
+          selectedScenario={selectedScenario}
+          selectedOrder={selectedOrder}
+          selectedTimePeriod={selectedTimePeriod}
+          selectedMatrix={selectedMatrix}
+          overview={overview}
+          scenarioOrders={scenarioOrders}
+          onSelectOrder={(order) => {
+            setSelectedOrder(order);
+            setDetailMode('order');
+          }}
+        />
       </main>
     </div>
   );

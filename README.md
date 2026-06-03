@@ -1,21 +1,64 @@
 # FoodETA 外卖配送时效可视分析
 
-FoodETA 是一个用于“数据可视化导论”课程 project 的外卖配送数据可视分析系统。项目基于 Kaggle Food Delivery Dataset，围绕配送时长、配送距离、天气、交通、时段、城市、骑手属性和车辆类型，构建可运行的纯前端 React dashboard。
+FoodETA 是一个用于“数据可视化导论”课程 project 的外卖配送数据可视分析系统。项目基于 Kaggle Food Delivery Dataset，围绕配送时长、配送距离、天气、交通、时段、城市、骑手属性和车辆类型，构建可运行的纯前端 React 应用。
 
-前端直接读取仓库中的 `data/processed/*.json` 静态聚合数据，因此只需启动 Vite 开发服务器即可查看完整 dashboard。
+当前主页不再以普通 dashboard 作为入口，而是以 **Delivery Risk Map** 作为主要工作区：先从高延迟风险场景进入，再查看时段、天气交通组合和右侧详情解释。
 
 ## 功能概览
 
-- 多视图 dashboard：总览、配送时长分布、距离-时长散点、小时趋势、天气交通、骑手车辆、城市对比、风险排序、延迟因素流和时间注释。
-- 左侧筛选面板：维护城市、天气、交通、车辆和时段筛选状态。
-- 右侧详情面板：展示当前视图和筛选状态，预留图元点击后的 details-on-demand 信息。
-- 数据处理脚本：清洗 Kaggle CSV，计算配送距离、时段、延迟标签、速度等派生字段，并输出前端可直接使用的聚合 JSON。
+- Delivery Risk Map：用矩形面积表示订单规模，用颜色表示风险分，点击任一风险场景可在右侧查看风险解释、样例订单和延迟构成。
+- Temporal Summary Strip：按时段展示订单量、平均配送时长和延迟率；点击时段会更新筛选状态，并联动右侧详情。
+- Weather × Traffic Matrix：展示天气与交通组合下的延迟率和风险分；点击矩阵单元会同步天气、交通筛选，并联动右侧详情。
+- 左侧筛选面板：维护城市、天气、交通、车辆、时段和是否延迟等筛选状态。
+- 右侧详情面板：根据当前点击的风险场景、时段条、天气交通矩阵或订单样例展示 details-on-demand 信息。
+
+## 架构说明
+
+项目采用静态数据驱动架构，不需要 FastAPI、数据库或服务端动态查询。前端通过 Vite 提供的静态资源路径直接读取：
+
+```text
+public/data/*.json
+```
+
+如果对应 JSON 缺失或加载失败，前端会使用内置 mock 数据兜底，保证页面仍可打开和演示。当前数据聚合脚本会生成可供前端使用的 JSON 结果；需要接入真实静态数据时，将对应文件放到 `public/data/` 下即可。
 
 ## 技术栈
 
 - 前端：React 18、TypeScript、Vite、ECharts
 - 数据处理：Python、pandas、numpy
 - 数据来源：Kaggle Food Delivery Dataset
+
+## 快速开始
+
+### 1. 安装前端依赖
+
+```bash
+npm install
+```
+
+### 2. 启动前端开发服务器
+
+```bash
+npm run dev
+```
+
+默认地址是：
+
+```text
+http://localhost:5173
+```
+
+### 3. 构建生产版本
+
+```bash
+npm run build
+```
+
+本地预览构建结果：
+
+```bash
+npm run preview
+```
 
 ## 数据集来源
 
@@ -36,7 +79,7 @@ data/raw/food_delivery.csv
 .
 ├── data/
 │   ├── raw/               # 本地原始 CSV，仓库不提交 data/raw/*.csv
-│   └── processed/         # 已清洗 CSV 和聚合 JSON，前端可静态读取
+│   └── processed/         # 清洗后的 CSV 和聚合 JSON
 ├── docs/                  # 数据说明、分析任务、前端设计和中期报告
 ├── scripts/               # 数据清洗、距离计算和聚合脚本
 ├── src/                   # React + TypeScript 前端源码
@@ -45,55 +88,13 @@ data/raw/food_delivery.csv
 └── vite.config.ts         # Vite 配置
 ```
 
-## 快速开始
-
-### 1. 安装前端依赖
-
-项目使用 npm，仓库已包含 `package-lock.json`：
-
-```bash
-npm install
-```
-
-### 2. 启动前端开发服务器
-
-```bash
-npm run dev
-```
-
-默认地址是：
-
-```text
-http://localhost:5173
-```
-
-前端会读取 `data/processed/` 中已经提交的聚合 JSON。
-
-### 3. 构建生产版本
-
-```bash
-npm run build
-```
-
-构建产物会输出到 `dist/`。本地预览构建结果：
-
-```bash
-npm run preview
-```
-
 ## 可选：重新生成数据
 
-仓库已经提交了 `data/processed/` 中的处理后数据，可以直接运行前端。只有需要重新清洗 Kaggle 原始数据时，才需要执行本节。
+仓库保留了 `data/processed/` 中的处理后数据。只有需要重新清洗 Kaggle 原始数据时，才需要执行本节。
 
 ### 1. 准备原始数据
 
-从 Kaggle 下载 Food Delivery Dataset：
-
-```text
-https://www.kaggle.com/datasets/gauravmalik26/food-delivery-dataset
-```
-
-解压后找到 `train.csv`，重命名为：
+从 Kaggle 下载 Food Delivery Dataset，解压后找到 `train.csv`，重命名为：
 
 ```text
 food_delivery.csv
@@ -104,8 +105,6 @@ food_delivery.csv
 ```text
 data/raw/food_delivery.csv
 ```
-
-原始 CSV 不提交到仓库，`.gitignore` 已忽略 `data/raw/*.csv`。
 
 ### 2. 安装数据处理依赖
 
@@ -121,46 +120,7 @@ pip install -r requirements.txt
 python3 scripts/preprocess.py
 ```
 
-如果本地环境使用 `python` 命令，也可以运行：
-
-```bash
-python scripts/preprocess.py
-```
-
 脚本会读取 `data/raw/food_delivery.csv`，并覆盖更新 `data/processed/` 下的清洗 CSV 和聚合 JSON。
-
-## 数据处理逻辑
-
-预处理流程主要包括：
-
-1. 读取 `data/raw/food_delivery.csv`。
-2. 将字段名标准化为 snake_case，并兼容常见空格、大小写差异和 NaN 字符串。
-3. 从 `Time_taken(min)` 中提取配送时长数字，兼容 `(min) 24` 和 `24` 等格式。
-4. 校验餐厅和配送位置经纬度，删除明显异常或缺失记录。
-5. 使用 haversine 公式计算 `distance_km`。
-6. 解析订单小时；若 `Time_Orderd` 缺失，则尝试 `Time_Order_picked`。
-7. 根据 `Order_Date` 解析 `weekday`。
-8. 生成时段、延迟标签、配送速度等派生字段。
-9. 输出订单级清洗数据和多个聚合 JSON。
-
-核心派生字段：
-
-- `delivery_duration_min`：配送时长，单位分钟。
-- `distance_km`：餐厅到配送地点的球面距离，单位千米。
-- `order_hour`：订单小时。
-- `weekday`：订单日期对应星期。
-- `time_period`：`breakfast`、`lunch_peak`、`afternoon`、`dinner_peak`、`night` 或 `unknown`。
-- `is_delayed`：配送时长是否严格大于 75 分位数阈值。
-- `speed_kmph`：配送速度，异常值会置空。
-
-时段规则：
-
-- 06:00-10:00：`breakfast`
-- 10:00-14:00：`lunch_peak`
-- 14:00-17:00：`afternoon`
-- 17:00-21:00：`dinner_peak`
-- 21:00-06:00：`night`
-- 无法解析：`unknown`
 
 ## 处理后数据文件
 
@@ -169,7 +129,7 @@ python scripts/preprocess.py
 - `orders_clean.csv`：清洗后的订单级数据。
 - `overview_summary.json`：总体概览指标。
 - `delivery_time_distribution.json`：配送时长分布。
-- `distance_time_sample.json`：距离与配送时长散点采样数据，最多 5000 条。
+- `distance_time_sample.json`：距离与配送时长散点采样数据。
 - `time_period_summary.json`：按时段聚合的统计结果。
 - `hour_summary.json`：按小时聚合的统计结果。
 - `weather_traffic_summary.json`：天气与交通组合统计。
@@ -179,28 +139,13 @@ python scripts/preprocess.py
 - `delay_factor_flow.json`：延迟因素流向关系。
 - `time_annotations.json`：时间趋势注释信息。
 
-## 分析任务
+当前首页主要读取 `overview_summary.json`、`risk_scenario_summary.json`、`time_period_summary.json` 和 `weather_traffic_summary.json`。前端也会尝试读取 `scenario_orders_sample.json` 作为详情样例数据；该文件缺失时会使用 mock 或基于场景生成的 fallback 样例。
 
-- T1：分析配送时间整体分布。
-- T2：探索配送距离与配送时间关系。
-- T3：分析天气与交通影响。
-- T4：分析不同时段效率差异。
-- T5：分析骑手属性与车辆类型影响。
-- T6：分析同距离条件下的相对延迟。
-- T7：进行高延迟风险场景排序与解释，对应 LineUp 借鉴。
-- T8：分析配送条件路径与延迟结果流向，对应 Parallel Sets / Sankey。
+## 后续计划
 
-详细定义见 `docs/analysis_tasks.md`。
-
-## 可视化设计参考
-
-项目的多视图设计借鉴了三个经典系统的思想，但没有直接复用其实现：
-
-- LineUp：借鉴多属性排序思想，设计 Delivery Risk Ranking View，将天气、交通密度、时段、距离、多单配送和骑手评分组合为配送延迟风险场景，并按风险分数、延迟率或平均配送时长排序。
-- Parallel Sets：借鉴多类别路径关系表达，设计 Delay Factor Flow View，展示 `weather -> traffic_density -> time_period -> is_delayed` 等条件路径。
-- TimeNotes：借鉴时间序列注释思想，设计 Annotated Temporal Pattern View，在小时趋势中标注午高峰、晚高峰、订单量峰值和延迟率峰值。
-
-团队自己的设计重点是围绕“外卖配送延迟风险场景识别”组织多视图分析流程，将单条订单数据提升为可解释的条件组合、路径关系和时段注释。
+- 继续完善 Delivery Risk Map、时段条、天气交通矩阵与详情面板之间的多视图联动。
+- 补充围绕高风险配送场景的 case study，用于课程展示和最终报告。
+- 根据真实静态数据接入情况，整理 `public/data/` 与 `data/processed/` 之间的数据发布流程。
 
 ## 相关文档
 
@@ -208,7 +153,7 @@ python scripts/preprocess.py
 - `docs/analysis_tasks.md`：分析任务定义。
 - `docs/system_design.md`：纯前端系统结构和数据流设计。
 - `docs/future_work.md`：后续计划。
-- `docs/midterm_report.md`：中期报告草稿。
+- `docs/midterm_report.tex` / `docs/midterm_report.pdf`：中期报告。
 
 ## AI 使用说明
 

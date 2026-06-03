@@ -10,22 +10,28 @@ export interface MetricSummary {
 }
 
 export interface OverviewSummary {
-  total_orders: number;
-  valid_orders: number;
-  avg_delivery_duration_min: number;
-  median_delivery_duration_min: number;
-  delay_threshold_min: number;
-  delay_rate: number;
-  avg_distance_km: number;
-  city_count: number;
-  weather_categories: number;
-  traffic_density_categories: number;
-  order_count: number;
-  p75_delivery_duration_min: number;
-  min_delivery_duration_min: number;
-  max_delivery_duration_min: number;
-  median_distance_km: number;
-  avg_speed_kmph: number;
+  total_orders?: number;
+  valid_orders?: number;
+  order_count?: number;
+  avg_delivery_duration_min?: number;
+  median_delivery_duration_min?: number;
+  p75_delivery_duration_min?: number;
+  min_delivery_duration_min?: number;
+  max_delivery_duration_min?: number;
+  delay_threshold_min?: number;
+  delay_rate?: number;
+  avg_distance_km?: number;
+  median_distance_km?: number;
+  avg_speed_kmph?: number;
+  city_count?: number;
+  weather_categories?: number;
+  traffic_density_categories?: number;
+  vehicle_type_categories?: number;
+  time_period_categories?: number;
+  delayed_orders?: number;
+  on_time_orders?: number;
+  high_risk_scenario_count?: number;
+  generated_at?: string;
 }
 
 export interface DistributionBin {
@@ -63,6 +69,7 @@ export interface TimePeriodSummary extends MetricSummary {
 export interface WeatherTrafficSummary extends MetricSummary {
   weather: Nullable<string>;
   traffic_density: Nullable<string>;
+  risk_score?: number;
 }
 
 export interface CourierVehicleSummary {
@@ -75,14 +82,38 @@ export interface CitySummary extends MetricSummary {
   city: Nullable<string>;
 }
 
-export interface RiskScenarioSummary extends MetricSummary {
+export interface RiskScenario extends MetricSummary {
   scenario_id: string;
-  weather: Nullable<string>;
-  traffic_density: Nullable<string>;
-  time_period: Nullable<string>;
+  label: string;
+  weather?: Nullable<string>;
+  traffic_density?: Nullable<string>;
+  time_period?: Nullable<string>;
   vehicle_type?: Nullable<string>;
   multiple_deliveries_group?: Nullable<string>;
+  multiple_delivery_rate?: number;
+  avg_rating?: number;
   risk_score: number;
+}
+
+export interface RiskScenarioSummary extends Omit<RiskScenario, 'label'> {
+  label?: string;
+}
+
+export interface ScenarioOrderSample {
+  order_id: string;
+  scenario_id?: string;
+  city?: Nullable<string>;
+  weather?: Nullable<string>;
+  traffic_density?: Nullable<string>;
+  time_period?: Nullable<string>;
+  vehicle_type?: Nullable<string>;
+  distance_km: number;
+  delivery_duration_min: number;
+  predicted_duration_min?: Nullable<number>;
+  delay_minutes?: Nullable<number>;
+  is_delayed?: boolean;
+  delivery_person_ratings?: Nullable<number>;
+  multiple_deliveries?: Nullable<number>;
 }
 
 export interface DelayFactorFlow {
@@ -106,6 +137,10 @@ export interface TimeAnnotation {
 export interface Filters {
   city: string;
   weather: string;
+  traffic_density: string;
+  time_period: string;
+  vehicle_type: string;
+  is_delayed: string;
   traffic: string;
   vehicle: string;
   timePeriod: string;

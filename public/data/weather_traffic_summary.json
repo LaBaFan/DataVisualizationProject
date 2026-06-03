@@ -1,0 +1,292 @@
+[
+  {
+    "weather": "Stormy",
+    "traffic_density": "Low",
+    "order_count": 2684,
+    "avg_delivery_duration_min": 20.678,
+    "median_delivery_duration_min": 21.0,
+    "p75_delivery_duration_min": 25.0,
+    "avg_distance_km": 8.249,
+    "delay_rate": 0.013
+  },
+  {
+    "weather": "Sandstorms",
+    "traffic_density": "Low",
+    "order_count": 2595,
+    "avg_delivery_duration_min": 20.297,
+    "median_delivery_duration_min": 20.0,
+    "p75_delivery_duration_min": 25.0,
+    "avg_distance_km": 8.088,
+    "delay_rate": 0.012
+  },
+  {
+    "weather": "Cloudy",
+    "traffic_density": "Low",
+    "order_count": 2586,
+    "avg_delivery_duration_min": 22.193,
+    "median_delivery_duration_min": 20.0,
+    "p75_delivery_duration_min": 26.0,
+    "avg_distance_km": 8.335,
+    "delay_rate": 0.125
+  },
+  {
+    "weather": "Fog",
+    "traffic_density": "Low",
+    "order_count": 2576,
+    "avg_delivery_duration_min": 22.304,
+    "median_delivery_duration_min": 20.0,
+    "p75_delivery_duration_min": 26.0,
+    "avg_distance_km": 8.193,
+    "delay_rate": 0.131
+  },
+  {
+    "weather": "Windy",
+    "traffic_density": "Low",
+    "order_count": 2467,
+    "avg_delivery_duration_min": 20.674,
+    "median_delivery_duration_min": 21.0,
+    "p75_delivery_duration_min": 25.0,
+    "avg_distance_km": 8.182,
+    "delay_rate": 0.02
+  },
+  {
+    "weather": "Sunny",
+    "traffic_density": "Low",
+    "order_count": 2458,
+    "avg_delivery_duration_min": 21.472,
+    "median_delivery_duration_min": 20.0,
+    "p75_delivery_duration_min": 26.0,
+    "avg_distance_km": 8.0,
+    "delay_rate": 0.081
+  },
+  {
+    "weather": "Fog",
+    "traffic_density": "Jam",
+    "order_count": 2416,
+    "avg_delivery_duration_min": 36.811,
+    "median_delivery_duration_min": 37.0,
+    "p75_delivery_duration_min": 43.0,
+    "avg_distance_km": 12.111,
+    "delay_rate": 0.69
+  },
+  {
+    "weather": "Sandstorms",
+    "traffic_density": "Jam",
+    "order_count": 2376,
+    "avg_delivery_duration_min": 30.023,
+    "median_delivery_duration_min": 29.0,
+    "p75_delivery_duration_min": 36.0,
+    "avg_distance_km": 11.984,
+    "delay_rate": 0.368
+  },
+  {
+    "weather": "Windy",
+    "traffic_density": "Jam",
+    "order_count": 2339,
+    "avg_delivery_duration_min": 30.227,
+    "median_delivery_duration_min": 29.0,
+    "p75_delivery_duration_min": 37.0,
+    "avg_distance_km": 12.162,
+    "delay_rate": 0.386
+  },
+  {
+    "weather": "Cloudy",
+    "traffic_density": "Jam",
+    "order_count": 2332,
+    "avg_delivery_duration_min": 36.721,
+    "median_delivery_duration_min": 37.0,
+    "p75_delivery_duration_min": 43.0,
+    "avg_distance_km": 12.105,
+    "delay_rate": 0.676
+  },
+  {
+    "weather": "Stormy",
+    "traffic_density": "Jam",
+    "order_count": 2308,
+    "avg_delivery_duration_min": 29.855,
+    "median_delivery_duration_min": 29.0,
+    "p75_delivery_duration_min": 36.0,
+    "avg_distance_km": 12.16,
+    "delay_rate": 0.368
+  },
+  {
+    "weather": "Sunny",
+    "traffic_density": "Jam",
+    "order_count": 2276,
+    "avg_delivery_duration_min": 23.061,
+    "median_delivery_duration_min": 21.0,
+    "p75_delivery_duration_min": 28.0,
+    "avg_distance_km": 11.88,
+    "delay_rate": 0.139
+  },
+  {
+    "weather": "Windy",
+    "traffic_density": "Medium",
+    "order_count": 1844,
+    "avg_delivery_duration_min": 27.884,
+    "median_delivery_duration_min": 27.0,
+    "p75_delivery_duration_min": 32.0,
+    "avg_distance_km": 10.998,
+    "delay_rate": 0.235
+  },
+  {
+    "weather": "Fog",
+    "traffic_density": "Medium",
+    "order_count": 1841,
+    "avg_delivery_duration_min": 28.085,
+    "median_delivery_duration_min": 29.0,
+    "p75_delivery_duration_min": 37.0,
+    "avg_distance_km": 11.146,
+    "delay_rate": 0.391
+  },
+  {
+    "weather": "Cloudy",
+    "traffic_density": "Medium",
+    "order_count": 1829,
+    "avg_delivery_duration_min": 28.481,
+    "median_delivery_duration_min": 30.0,
+    "p75_delivery_duration_min": 36.0,
+    "avg_distance_km": 11.128,
+    "delay_rate": 0.394
+  },
+  {
+    "weather": "Stormy",
+    "traffic_density": "Medium",
+    "order_count": 1821,
+    "avg_delivery_duration_min": 27.676,
+    "median_delivery_duration_min": 27.0,
+    "p75_delivery_duration_min": 32.0,
+    "avg_distance_km": 11.068,
+    "delay_rate": 0.24
+  },
+  {
+    "weather": "Sandstorms",
+    "traffic_density": "Medium",
+    "order_count": 1776,
+    "avg_delivery_duration_min": 27.749,
+    "median_delivery_duration_min": 27.0,
+    "p75_delivery_duration_min": 32.0,
+    "avg_distance_km": 11.011,
+    "delay_rate": 0.231
+  },
+  {
+    "weather": "Sunny",
+    "traffic_density": "Medium",
+    "order_count": 1772,
+    "avg_delivery_duration_min": 20.196,
+    "median_delivery_duration_min": 19.0,
+    "p75_delivery_duration_min": 24.0,
+    "avg_distance_km": 11.134,
+    "delay_rate": 0.052
+  },
+  {
+    "weather": "Fog",
+    "traffic_density": "High",
+    "order_count": 771,
+    "avg_delivery_duration_min": 28.419,
+    "median_delivery_duration_min": 28.0,
+    "p75_delivery_duration_min": 32.0,
+    "avg_distance_km": 4.414,
+    "delay_rate": 0.236
+  },
+  {
+    "weather": "Cloudy",
+    "traffic_density": "High",
+    "order_count": 738,
+    "avg_delivery_duration_min": 28.951,
+    "median_delivery_duration_min": 29.0,
+    "p75_delivery_duration_min": 33.0,
+    "avg_distance_km": 4.381,
+    "delay_rate": 0.255
+  },
+  {
+    "weather": "Sunny",
+    "traffic_density": "High",
+    "order_count": 732,
+    "avg_delivery_duration_min": 23.402,
+    "median_delivery_duration_min": 20.0,
+    "p75_delivery_duration_min": 25.0,
+    "avg_distance_km": 4.43,
+    "delay_rate": 0.171
+  },
+  {
+    "weather": "Windy",
+    "traffic_density": "High",
+    "order_count": 732,
+    "avg_delivery_duration_min": 26.986,
+    "median_delivery_duration_min": 27.0,
+    "p75_delivery_duration_min": 32.0,
+    "avg_distance_km": 4.442,
+    "delay_rate": 0.243
+  },
+  {
+    "weather": "Stormy",
+    "traffic_density": "High",
+    "order_count": 731,
+    "avg_delivery_duration_min": 27.814,
+    "median_delivery_duration_min": 28.0,
+    "p75_delivery_duration_min": 33.0,
+    "avg_distance_km": 4.361,
+    "delay_rate": 0.289
+  },
+  {
+    "weather": "Sandstorms",
+    "traffic_density": "High",
+    "order_count": 695,
+    "avg_delivery_duration_min": 27.704,
+    "median_delivery_duration_min": 28.0,
+    "p75_delivery_duration_min": 33.0,
+    "avg_distance_km": 4.414,
+    "delay_rate": 0.271
+  },
+  {
+    "weather": null,
+    "traffic_density": null,
+    "order_count": 454,
+    "avg_delivery_duration_min": 26.645,
+    "median_delivery_duration_min": 26.0,
+    "p75_delivery_duration_min": 33.0,
+    "avg_distance_km": 9.749,
+    "delay_rate": 0.271
+  },
+  {
+    "weather": null,
+    "traffic_density": "Low",
+    "order_count": 6,
+    "avg_delivery_duration_min": 21.0,
+    "median_delivery_duration_min": 20.0,
+    "p75_delivery_duration_min": 21.5,
+    "avg_distance_km": 7.955,
+    "delay_rate": 0.167
+  },
+  {
+    "weather": null,
+    "traffic_density": "Jam",
+    "order_count": 3,
+    "avg_delivery_duration_min": 35.333,
+    "median_delivery_duration_min": 35.0,
+    "p75_delivery_duration_min": 40.5,
+    "avg_distance_km": 8.987,
+    "delay_rate": 0.667
+  },
+  {
+    "weather": null,
+    "traffic_density": "Medium",
+    "order_count": 3,
+    "avg_delivery_duration_min": 22.333,
+    "median_delivery_duration_min": 22.0,
+    "p75_delivery_duration_min": 23.5,
+    "avg_distance_km": 11.142,
+    "delay_rate": 0.0
+  },
+  {
+    "weather": null,
+    "traffic_density": "High",
+    "order_count": 1,
+    "avg_delivery_duration_min": 49.0,
+    "median_delivery_duration_min": 49.0,
+    "p75_delivery_duration_min": 49.0,
+    "avg_distance_km": 6.054,
+    "delay_rate": 1.0
+  }
+]

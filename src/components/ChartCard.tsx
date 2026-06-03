@@ -11,6 +11,8 @@ interface ChartCardProps {
   height?: number;
   children?: ReactNode;
   isEmpty?: boolean;
+  className?: string;
+  onChartClick?: (params: unknown) => void;
 }
 
 export default function ChartCard({
@@ -19,24 +21,32 @@ export default function ChartCard({
   option,
   height = 320,
   children,
-  isEmpty = false
+  isEmpty = false,
+  className = '',
+  onChartClick
 }: ChartCardProps) {
   const chartRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!chartRef.current || !option || isEmpty) return undefined;
     const chart = echarts.init(chartRef.current);
-    chart.setOption(option);
+    chart.setOption(option, true);
+    if (onChartClick) {
+      chart.on('click', onChartClick);
+    }
     const onResize = () => chart.resize();
     window.addEventListener('resize', onResize);
     return () => {
       window.removeEventListener('resize', onResize);
+      if (onChartClick) {
+        chart.off('click', onChartClick);
+      }
       chart.dispose();
     };
-  }, [option, isEmpty]);
+  }, [option, isEmpty, onChartClick]);
 
   return (
-    <section className="chart-card">
+    <section className={`chart-card ${className}`.trim()}>
       <div className="card-heading">
         <h2>{title}</h2>
         {description ? <p>{description}</p> : null}
