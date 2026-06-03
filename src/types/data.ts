@@ -46,6 +46,7 @@ export interface DeliveryTimeDistribution {
 
 export interface DistanceTimePoint {
   order_id: string;
+  scenario_id?: string;
   distance_km: number;
   delivery_duration_min: number;
   weather: Nullable<string>;
@@ -145,3 +146,111 @@ export interface Filters {
   vehicle: string;
   timePeriod: string;
 }
+
+export type MapModuleType =
+  | 'restaurant'
+  | 'building'
+  | 'road'
+  | 'weather'
+  | 'risk_zone'
+  | 'customer_area'
+  | 'order_point'
+  | 'rider';
+
+export interface MapModule {
+  id: string;
+  type: MapModuleType;
+  label: string;
+  description?: string;
+  shape: 'rect' | 'polygon' | 'circle' | 'path';
+  coords: number[] | string;
+  scenario_id?: string;
+  weather?: string;
+  traffic_density?: string;
+  time_period?: string;
+  vehicle_type?: string;
+  order_count?: number;
+  avg_delivery_duration_min?: number;
+  delay_rate?: number;
+  avg_distance_km?: number;
+  risk_score?: number;
+}
+
+export interface ScenarioOrderPoint {
+  order_id: string;
+  distance_km: number;
+  delivery_duration_min: number;
+  is_delayed: boolean;
+  weather?: string;
+  traffic_density?: string;
+  vehicle_type?: string;
+  time_period?: string;
+  delivery_person_ratings?: number;
+}
+
+export interface TrafficSegment {
+  id: string;
+  label: string;
+  path: string;
+  traffic_density: 'Low' | 'Medium' | 'High' | 'Jam' | 'Unknown';
+  order_count: number;
+  avg_delivery_duration_min: number;
+  delay_rate: number;
+  risk_score: number;
+}
+
+export interface OrderDot {
+  id: string;
+  x: number;
+  y: number;
+  order_count?: number;
+  order_id?: string;
+  distance_km?: number;
+  delivery_duration_min: number;
+  delay_rate?: number;
+  is_delayed?: boolean;
+  weather?: string;
+  traffic_density?: string;
+  time_period?: string;
+  vehicle_type?: string;
+}
+
+export interface ScenarioAnchor {
+  id: string;
+  scenario_id?: string;
+  label: string;
+  x: number;
+  y: number;
+  radius: number;
+  order_count: number;
+  avg_delivery_duration_min: number;
+  delay_rate: number;
+  risk_score: number;
+  weather?: string;
+  traffic_density?: string;
+  time_period?: string;
+  vehicle_type?: string;
+}
+
+export interface MiniMetricTag {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  delay_rate?: number;
+  avg_delivery_duration_min?: number;
+  order_count?: number;
+  risk_score?: number;
+  scenario_id?: string;
+  weather?: string;
+  traffic_density?: string;
+  time_period?: string;
+  vehicle_type?: string;
+}
+
+export type MapSelection =
+  | { type: 'module'; item: MapModule }
+  | { type: 'traffic_segment'; item: TrafficSegment }
+  | { type: 'order_dot'; item: OrderDot }
+  | { type: 'risk_pulse'; item: ScenarioAnchor }
+  | { type: 'metric_tag'; item: MiniMetricTag };

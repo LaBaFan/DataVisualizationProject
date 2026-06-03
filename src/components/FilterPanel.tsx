@@ -91,8 +91,11 @@ export default function FilterPanel({ scenarios = [], orders = [], onReset }: Fi
         <button
           type="button"
           onClick={() => {
-            resetFilters();
-            onReset?.();
+            if (onReset) {
+              onReset();
+            } else {
+              resetFilters();
+            }
           }}
         >
           重置配送条件

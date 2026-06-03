@@ -1,4 +1,5 @@
 import {
+  DistanceTimePoint,
   OverviewSummary,
   RiskScenario,
   ScenarioOrderSample,
@@ -112,6 +113,21 @@ const mockScenarioOrders: ScenarioOrderSample[] = [
     multiple_deliveries: 0
   }
 ];
+
+const mockDistanceTimeSample: DistanceTimePoint[] = mockScenarioOrders.map((order) => ({
+  order_id: order.order_id,
+  scenario_id: order.scenario_id,
+  city: order.city ?? null,
+  weather: order.weather ?? null,
+  traffic_density: order.traffic_density ?? null,
+  time_period: order.time_period ?? null,
+  vehicle_type: order.vehicle_type ?? null,
+  distance_km: order.distance_km,
+  delivery_duration_min: order.delivery_duration_min,
+  delivery_person_ratings: order.delivery_person_ratings === undefined ? null : String(order.delivery_person_ratings),
+  multiple_deliveries: order.multiple_deliveries === undefined ? null : String(order.multiple_deliveries),
+  is_delayed: Boolean(order.is_delayed)
+}));
 
 const mockTimePeriods: TimePeriodSummary[] = [
   {
@@ -248,6 +264,10 @@ export function loadRiskScenarioSummary(): Promise<RiskScenario[]> {
 
 export function loadScenarioOrdersSample(): Promise<ScenarioOrderSample[]> {
   return fetchJson<ScenarioOrderSample[]>('scenario_orders_sample.json', mockScenarioOrders);
+}
+
+export function loadDistanceTimeSample(): Promise<DistanceTimePoint[]> {
+  return fetchJson<DistanceTimePoint[]>('distance_time_sample.json', mockDistanceTimeSample);
 }
 
 export function loadTimePeriodSummary(): Promise<TimePeriodSummary[]> {

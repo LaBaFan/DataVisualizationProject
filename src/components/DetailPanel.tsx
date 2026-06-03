@@ -6,7 +6,6 @@ import {
   TimePeriodSummary,
   WeatherTrafficSummary
 } from '../types/data';
-import FoodIcon from './FoodIcon';
 import { FILTER_ALL } from '../utils/constants';
 import { formatNumber, formatPercent, labelOf } from '../utils/format';
 
@@ -22,6 +21,7 @@ interface DetailPanelProps {
   overview?: OverviewSummary | null;
   scenarioOrders: ScenarioOrderSample[];
   onSelectOrder: (order: ScenarioOrderSample) => void;
+  onOpenScenarioDetail?: () => void;
 }
 
 function MetricPill({ label, value }: { label: string; value: string }) {
@@ -35,7 +35,7 @@ function MetricPill({ label, value }: { label: string; value: string }) {
 
 function TicketRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="ticket-row">
+    <div className="summary-row">
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
@@ -120,7 +120,8 @@ export default function DetailPanel({
   selectedMatrix,
   overview,
   scenarioOrders,
-  onSelectOrder
+  onSelectOrder,
+  onOpenScenarioDetail
 }: DetailPanelProps) {
   const globalAvgDuration = overview?.avg_delivery_duration_min ?? selectedScenario?.avg_delivery_duration_min ?? 0;
   const globalDelayRate = overview?.delay_rate ?? selectedScenario?.delay_rate ?? 0;
@@ -129,8 +130,8 @@ export default function DetailPanel({
     <aside className="side-panel detail-panel">
       <div className="panel-heading">
         <div>
-          <span className="panel-kicker">Inspector</span>
-          <h2>ETA Risk Ticket / 配送单小票</h2>
+          <span className="panel-kicker">Scene Summary</span>
+          <h2>风险场景摘要</h2>
         </div>
       </div>
 
@@ -138,19 +139,16 @@ export default function DetailPanel({
 
       {mode === 'guide' ? (
         <div className="detail-copy">
-          <strong>今日配送风险概览</strong>
-          <p>点击中间的配送延迟风险地图场景块，查看风险解释、样例订单和延迟构成。</p>
-          <p>也可以点击时段条带或天气交通矩阵，右侧会切换为对应摘要并同步筛选条件。</p>
+          <strong>FoodETA Risk Console</strong>
+          <p>首页聚焦风险总览和重点入口。先从 Top Risk Scenarios 找到高延迟组合，再在这里查看摘要。</p>
+          <p>完整分析按需打开，避免在首页堆叠过多图表和碎片化色块。</p>
         </div>
       ) : null}
 
       {mode === 'scenario' && selectedScenario ? (
         <div className="detail-stack">
-          <div className={`ticket-status ${riskStatus(selectedScenario.risk_score).className}`}>
-            <span>
-              <FoodIcon name="ticket" />
-              ETA Risk Ticket
-            </span>
+          <div className={`status-card ${riskStatus(selectedScenario.risk_score).className}`}>
+            <span>Risk Status</span>
             <strong>{riskStatus(selectedScenario.risk_score).label}</strong>
           </div>
           <div>
@@ -162,15 +160,14 @@ export default function DetailPanel({
               {selectedScenario.risk_score >= 0.7 ? '这是需要优先调度关注的高风险组合。' : '当前风险相对可控，可作为对照场景。'}
             </p>
           </div>
-          <div className="receipt-metrics">
+          <div className="summary-metrics">
             <TicketRow label="订单数" value={formatNumber(selectedScenario.order_count)} />
             <TicketRow label="平均配送时长" value={`${formatNumber(selectedScenario.avg_delivery_duration_min, 1)} min`} />
             <TicketRow label="延迟率" value={formatPercent(selectedScenario.delay_rate)} />
-            <TicketRow label="平均距离" value={`${formatNumber(selectedScenario.avg_distance_km, 1)} km`} />
             <TicketRow label="风险评分" value={formatNumber(selectedScenario.risk_score, 2)} />
           </div>
           <div className="comparison-block">
-            <span className="detail-label">当前场景 vs 全局平均</span>
+            <span className="detail-label">摘要判断</span>
             <p className="delta-note">
               {deltaText(
                 selectedScenario.avg_delivery_duration_min,
@@ -179,53 +176,20 @@ export default function DetailPanel({
               )}
               ；{deltaText(selectedScenario.delay_rate, globalDelayRate, (value) => formatPercent(value))}。
             </p>
-            <BaselineComparisonBar
-              label="平均配送时长"
-              current={selectedScenario.avg_delivery_duration_min}
-              baseline={globalAvgDuration}
-              formatter={(value) => `${formatNumber(value, 1)}m`}
-            />
-            <BaselineComparisonBar
-              label="延迟率"
-              current={selectedScenario.delay_rate}
-              baseline={globalDelayRate}
-              formatter={(value) => formatPercent(value)}
-            />
+            <p className="detail-copy">
+              当前可用样例订单 {formatNumber(scenarioOrders.length)} 条，完整散点图和订单表已移入详情分析。
+            </p>
           </div>
-          <div className="comparison-block">
-            <span className="detail-label">场景内部指标</span>
-            <ComparisonBar label="延迟率" value={selectedScenario.delay_rate} />
-            <ComparisonBar label="多单率" value={selectedScenario.multiple_delivery_rate ?? 0} />
-            <ComparisonBar label="P75 时长" value={selectedScenario.p75_delivery_duration_min ?? 0} max={80} />
-          </div>
-          <div className="sample-orders">
-            <span className="detail-label">样例订单</span>
-            {scenarioOrders.length ? (
-              scenarioOrders.slice(0, 5).map((order) => (
-                <button className="sample-ticket" key={order.order_id} type="button" onClick={() => onSelectOrder(order)}>
-                  <strong>{order.order_id}</strong>
-                  <span>
-                    {formatNumber(order.delivery_duration_min, 1)}m / {order.is_delayed ? '延迟' : '准时'}
-                  </span>
-                  <small>
-                    {labelOf(order.weather)} · {labelOf(order.traffic_density)} · {formatNumber(order.distance_km, 1)}km
-                  </small>
-                </button>
-              ))
-            ) : (
-              <p className="detail-copy">当前场景暂无样例订单。</p>
-            )}
-          </div>
+          <button className="primary-detail-button" type="button" onClick={onOpenScenarioDetail}>
+            查看完整分析
+          </button>
         </div>
       ) : null}
 
       {mode === 'order' && selectedOrder ? (
         <div className="detail-stack">
-          <div className={`ticket-status ${selectedOrder.is_delayed ? 'high' : 'low'}`}>
-            <span>
-              <FoodIcon name="ticket" />
-              ETA Risk Ticket
-            </span>
+          <div className={`status-card ${selectedOrder.is_delayed ? 'high' : 'low'}`}>
+            <span>Order Status</span>
             <strong>{selectedOrder.is_delayed ? 'High Delay Risk' : 'Low Delay Risk'}</strong>
           </div>
           <div>
