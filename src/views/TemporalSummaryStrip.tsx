@@ -95,9 +95,16 @@ export default function TemporalSummaryStrip({
     [periods, selectedTimePeriod]
   );
 
+  const timeNotes = [
+    'Breakfast',
+    'Lunch Rush',
+    'Dinner Rush',
+    'Night Delivery'
+  ];
+
   return (
     <ChartCard
-      title="Temporal Summary Strip"
+      title="配送时段节奏 / ETA by Time Period"
       description="按时段扫视订单峰值、平均配送时长与延迟率。"
       option={option}
       height={250}
@@ -108,6 +115,12 @@ export default function TemporalSummaryStrip({
         const period = raw ?? fallback;
         if (period) onSelectTimePeriod(period);
       }}
-    />
+    >
+      <div className="time-notes" aria-hidden="true">
+        {timeNotes.map((note) => (
+          <span key={note}>{note}</span>
+        ))}
+      </div>
+    </ChartCard>
   );
 }

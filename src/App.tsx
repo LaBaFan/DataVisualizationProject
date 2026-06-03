@@ -8,6 +8,7 @@ import {
 } from './api/staticDataClient';
 import DetailPanel, { DetailMode } from './components/DetailPanel';
 import FilterPanel from './components/FilterPanel';
+import RouteDecoration from './components/RouteDecoration';
 import DesignReferenceCard from './views/DesignReferenceCard';
 import DeliveryRiskMap from './views/DeliveryRiskMap';
 import TemporalSummaryStrip from './views/TemporalSummaryStrip';
@@ -153,22 +154,24 @@ export default function App() {
   }, [filteredOrders, orders, selectedScenario]);
 
   const metricItems = [
-    { label: 'Total Orders', value: formatNumber(overview?.total_orders ?? overview?.order_count) },
-    { label: 'Avg Delivery', value: `${formatNumber(overview?.avg_delivery_duration_min, 1)} min` },
-    { label: 'Delay Rate', value: formatPercent(overview?.delay_rate) },
-    { label: 'Risk Scenarios', value: formatNumber(filteredScenarios.length) }
+    { label: '总订单数', value: formatNumber(overview?.total_orders ?? overview?.order_count) },
+    { label: '平均配送时长', value: `${formatNumber(overview?.avg_delivery_duration_min, 1)} min` },
+    { label: '延迟率', value: formatPercent(overview?.delay_rate) },
+    { label: '平均距离', value: `${formatNumber(overview?.avg_distance_km, 1)} km` }
   ];
 
   return (
     <div className="app-shell">
       <header className="app-header">
+        <RouteDecoration />
         <div className="header-copy">
-          <p className="eyebrow">FoodETA</p>
-          <h1>外卖配送风险可视分析</h1>
-          <p>以风险场景地图为入口，追踪天气、交通、时段与载具对 ETA 延迟的影响。</p>
+          <p className="eyebrow">ETA Risk Console</p>
+          <h1>FoodETA</h1>
+          <h2>外卖配送时效与延迟因素可视分析系统</h2>
+          <p>从订单、天气、交通与骑手因素中识别高延迟配送场景。</p>
           <div className="header-tags">
-            <span>Static Data Driven</span>
-            <span>Kaggle Dataset</span>
+            <span>Kaggle Food Delivery Dataset</span>
+            <span>Static JSON Driven</span>
           </div>
         </div>
         <div className="header-metrics" aria-label="overview metrics">

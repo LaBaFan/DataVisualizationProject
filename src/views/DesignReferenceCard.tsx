@@ -2,17 +2,17 @@ const references = [
   {
     name: 'LineUp',
     title: '多指标排序',
-    text: '将风险分、延迟率、订单量和时长放在同一决策语境中，支持从排名跳转到场景解释。'
+    text: '把订单量、延迟率、时长和风险评分放在同一配送调度语境中，帮助团队先看最该处理的路线组合。'
   },
   {
     name: 'Parallel Sets',
     title: '类别路径',
-    text: '天气、交通、时段、载具被视作配送风险路径，而不是孤立筛选项。'
+    text: '将天气、交通、时段、载具视作一条配送条件路径，适配运营、数据分析与调度协作。'
   },
   {
     name: 'TimeNotes',
     title: '时间注释',
-    text: '时段条带把峰值、延迟率和平均时长叠加展示，帮助定位午晚高峰异常。'
+    text: '用早餐、午高峰、晚高峰与夜间标签标注节奏变化，快速定位 ETA 异常时段。'
   }
 ];
 
@@ -20,8 +20,8 @@ export default function DesignReferenceCard() {
   return (
     <section className="design-reference">
       <div className="card-heading">
-        <h2>设计借鉴</h2>
-        <p>三个可视分析思路被压缩到首页入口与联动细节中。</p>
+        <h2>可视分析参考 / Design References</h2>
+        <p>LineUp、Parallel Sets 与 TimeNotes 被简化为首页的排序、路径理解与时段注释能力。</p>
       </div>
       <div className="reference-list">
         {references.map((item) => (

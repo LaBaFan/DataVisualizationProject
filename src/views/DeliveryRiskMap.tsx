@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import type { EChartsOption } from 'echarts';
 import ChartCard from '../components/ChartCard';
+import FoodIcon from '../components/FoodIcon';
+import RouteDecoration from '../components/RouteDecoration';
 import { RiskScenario } from '../types/data';
 import { formatNumber, formatPercent, labelOf } from '../utils/format';
 
@@ -17,6 +19,16 @@ function riskColor(score: number): string {
   return '#268b8f';
 }
 
+function scenarioCodes(scenario: RiskScenario): string[] {
+  const codes = [`WX ${labelOf(scenario.weather)}`, `TR ${labelOf(scenario.traffic_density)}`];
+  const time = labelOf(scenario.time_period);
+  if (/dinner|night|evening/i.test(time)) codes.push(`ETA ${time}`);
+  codes.push(`VEH ${labelOf(scenario.vehicle_type)}`);
+  if ((scenario.multiple_delivery_rate ?? 0) >= 0.25) codes.push('MULTI');
+  if (scenario.risk_score >= 0.7) codes.push('HIGH');
+  return codes;
+}
+
 export default function DeliveryRiskMap({ scenarios, selectedScenarioId, onSelectScenario }: DeliveryRiskMapProps) {
   const option = useMemo<EChartsOption>(
     () => ({
@@ -29,13 +41,14 @@ export default function DeliveryRiskMap({ scenarios, selectedScenarioId, onSelec
           const scenario = (item.data as { raw?: RiskScenario }).raw;
           if (!scenario) return '';
           return [
-            `<strong>${scenario.label}</strong>`,
+            '<strong>配送场景</strong>',
+            `场景：${scenario.label}`,
+            `编码：${scenarioCodes(scenario).join(' · ')}`,
             `订单量：${formatNumber(scenario.order_count)}`,
-            `风险分：${formatNumber(scenario.risk_score, 2)}`,
-            `延迟率：${formatPercent(scenario.delay_rate)}`,
             `平均时长：${formatNumber(scenario.avg_delivery_duration_min, 1)} 分钟`,
-            `P75 时长：${formatNumber(scenario.p75_delivery_duration_min, 1)} 分钟`,
-            `天气 / 交通：${labelOf(scenario.weather)} / ${labelOf(scenario.traffic_density)}`
+            `延迟率：${formatPercent(scenario.delay_rate)}`,
+            `平均距离：${formatNumber(scenario.avg_distance_km, 1)} km`,
+            `风险评分：${formatNumber(scenario.risk_score, 2)}`
           ].join('<br/>');
         }
       },
@@ -57,7 +70,8 @@ export default function DeliveryRiskMap({ scenarios, selectedScenarioId, onSelec
             formatter: ({ data }) => {
               const scenario = (data as { raw?: RiskScenario }).raw;
               if (!scenario) return '';
-              return `{name|${scenario.label}}\n{metric|${formatPercent(scenario.delay_rate, 0)} delay}`;
+              const codeLine = scenarioCodes(scenario).slice(0, 3).join(' · ');
+              return `{name|${scenario.label}}\n{metric|${formatPercent(scenario.delay_rate, 0)} delay · ${codeLine}}`;
             },
             rich: {
               name: { fontSize: 13, fontWeight: 800, lineHeight: 18 },
@@ -99,8 +113,8 @@ export default function DeliveryRiskMap({ scenarios, selectedScenarioId, onSelec
 
   return (
     <ChartCard
-      title="Delivery Risk Map"
-      description="面积代表订单规模，颜色代表风险分。点击任一风险场景进入右侧详情分析。"
+      title="配送延迟风险地图 / Delivery Risk Map"
+      description="面积 = 订单量，颜色 = 延迟风险。点击任一配送场景进入右侧 ETA Risk Ticket。"
       option={option}
       height={460}
       isEmpty={!scenarios.length}
@@ -110,10 +124,15 @@ export default function DeliveryRiskMap({ scenarios, selectedScenarioId, onSelec
         if (scenario) onSelectScenario(scenario);
       }}
     >
+      <RouteDecoration compact />
       <div className="risk-legend" aria-hidden="true">
         <span>低风险</span>
         <i />
         <span>高风险</span>
+      </div>
+      <div className={`selected-route-chip ${selectedScenarioId ? 'active' : ''}`.trim()} aria-hidden="true">
+        <FoodIcon name={selectedScenarioId ? 'risk' : 'rider'} />
+        <span>{selectedScenarioId ? '当前分析场景 / Selected Route' : '等待选择配送场景'}</span>
       </div>
     </ChartCard>
   );

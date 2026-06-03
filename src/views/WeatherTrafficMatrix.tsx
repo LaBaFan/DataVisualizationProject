@@ -32,11 +32,13 @@ export default function WeatherTrafficMatrix({
           const raw = (item.data as { raw?: WeatherTrafficSummary }).raw;
           if (!raw) return '';
           return [
-            `<strong>${labelOf(raw.weather)} / ${labelOf(raw.traffic_density)}</strong>`,
+            `<strong>天气 × 交通压力</strong>`,
+            `组合：${labelOf(raw.weather)} / ${labelOf(raw.traffic_density)}`,
             `订单量：${formatNumber(raw.order_count)}`,
             `延迟率：${formatPercent(raw.delay_rate)}`,
-            `风险分：${formatNumber(raw.risk_score, 2)}`,
-            `平均时长：${formatNumber(raw.avg_delivery_duration_min, 1)} 分钟`
+            `风险评分：${formatNumber(raw.risk_score, 2)}`,
+            `平均配送时长：${formatNumber(raw.avg_delivery_duration_min, 1)} 分钟`,
+            `平均距离：${formatNumber(raw.avg_distance_km, 1)} km`
           ].join('<br/>');
         }
       },
@@ -100,7 +102,7 @@ export default function WeatherTrafficMatrix({
 
   return (
     <ChartCard
-      title="Weather × Traffic Matrix"
+      title="天气 × 交通压力矩阵 / Weather × Traffic Pressure"
       description="点击天气与交通组合，快速锁定高延迟组合。"
       option={option}
       height={250}

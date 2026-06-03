@@ -20,6 +20,9 @@ body {
   margin: 0;
   min-width: 320px;
   background:
+    radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.9), transparent 24%),
+    radial-gradient(circle at 78% 12%, rgba(31, 122, 122, 0.12), transparent 30%),
+    radial-gradient(circle at 64% 88%, rgba(213, 161, 30, 0.1), transparent 34%),
     linear-gradient(135deg, rgba(204, 86, 56, 0.12), transparent 28%),
     linear-gradient(315deg, rgba(31, 122, 122, 0.12), transparent 32%),
     #f6f4ee;
@@ -42,6 +45,8 @@ button {
 }
 
 .app-header {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(420px, 0.9fr);
   gap: 26px;
@@ -53,10 +58,24 @@ button {
     repeating-linear-gradient(120deg, rgba(31, 122, 122, 0.08) 0 1px, transparent 1px 34px);
 }
 
+.header-copy,
+.header-metrics {
+  position: relative;
+  z-index: 1;
+}
+
 .header-copy h1 {
   margin: 2px 0 8px;
   font-size: 34px;
   line-height: 1.12;
+  letter-spacing: 0;
+}
+
+.header-copy h2 {
+  margin: 0 0 8px;
+  color: #31413b;
+  font-size: 19px;
+  line-height: 1.25;
   letter-spacing: 0;
 }
 
@@ -92,6 +111,84 @@ button {
   font-size: 12px;
   font-weight: 800;
   padding: 5px 10px;
+}
+
+.food-icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: 0 0 auto;
+}
+
+.route-decoration {
+  position: absolute;
+  inset: 12px 28px auto auto;
+  width: min(44vw, 520px);
+  height: 150px;
+  color: var(--teal);
+  opacity: 0.18;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.route-decoration svg {
+  width: 100%;
+  height: 100%;
+}
+
+.route-decoration circle {
+  fill: currentColor;
+}
+
+.route-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-dasharray: 9 10;
+  stroke-linecap: round;
+}
+
+.route-line.secondary {
+  stroke: var(--warm);
+  stroke-width: 1.4;
+  stroke-dasharray: 3 11;
+}
+
+.route-node {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: rgba(255, 253, 247, 0.72);
+}
+
+.route-node.restaurant {
+  left: 6%;
+  top: 58%;
+}
+
+.route-node.rider {
+  left: 47%;
+  top: 42%;
+}
+
+.route-node.customer {
+  right: 4%;
+  top: 20%;
+}
+
+.route-decoration.compact {
+  inset: 66px 18px 20px 18px;
+  width: auto;
+  height: auto;
+  opacity: 0.08;
 }
 
 .header-metrics {
@@ -215,6 +312,18 @@ button {
   font-weight: 800;
 }
 
+.filter-control > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.filter-control .food-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--teal);
+}
+
 .filter-control select {
   width: 100%;
   min-height: 38px;
@@ -267,6 +376,30 @@ button {
   mask-image: linear-gradient(to bottom, transparent, black 16%, black 86%, transparent);
 }
 
+.risk-map-card::after {
+  content: "";
+  position: absolute;
+  inset: 92px 28px 28px;
+  pointer-events: none;
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(135deg, transparent 0 22px, rgba(204, 86, 56, 0.09) 22px 23px, transparent 23px 48px);
+  opacity: 0.35;
+  z-index: 0;
+}
+
+.chart-card > div[style] {
+  position: relative;
+  z-index: 1;
+}
+
+.risk-map-card .card-heading,
+.risk-map-card .risk-legend,
+.risk-map-card .selected-route-chip {
+  position: relative;
+  z-index: 2;
+}
+
 .risk-legend {
   position: absolute;
   right: 18px;
@@ -287,6 +420,26 @@ button {
   background: linear-gradient(90deg, #268b8f, #d5a11e, #c2412d);
 }
 
+.selected-route-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: -4px 0 8px;
+  border: 1px solid rgba(31, 122, 122, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 10px;
+}
+
+.selected-route-chip.active {
+  border-color: rgba(204, 86, 56, 0.34);
+  background: #fff6ef;
+  color: var(--warm);
+}
+
 .empty-state {
   display: grid;
   place-items: center;
@@ -302,6 +455,12 @@ button {
 
 .empty-state.compact {
   min-height: 120px;
+}
+
+.empty-state .food-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--teal);
 }
 
 .empty-state strong {
@@ -332,6 +491,89 @@ button {
   line-height: 1.2;
 }
 
+.ticket-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid rgba(55, 62, 57, 0.12);
+  border-radius: 7px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.86), rgba(255, 251, 241, 0.86)),
+    repeating-linear-gradient(90deg, rgba(23, 32, 38, 0.09) 0 1px, transparent 1px 9px);
+  padding: 10px;
+}
+
+.ticket-status span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ticket-status strong {
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: #fff;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.ticket-status.high strong {
+  background: var(--warm);
+}
+
+.ticket-status.medium strong {
+  background: var(--amber);
+}
+
+.ticket-status.low strong {
+  background: var(--teal);
+}
+
+.receipt-metrics {
+  display: grid;
+  gap: 0;
+  border: 1px solid rgba(55, 62, 57, 0.14);
+  border-radius: 8px;
+  background:
+    linear-gradient(#fffef9, #fffaf0),
+    repeating-linear-gradient(90deg, rgba(23, 32, 38, 0.18) 0 2px, transparent 2px 6px);
+  overflow: hidden;
+}
+
+.receipt-metrics::after {
+  content: "";
+  display: block;
+  height: 26px;
+  margin: 2px 12px 10px;
+  background: repeating-linear-gradient(90deg, #27312d 0 2px, transparent 2px 5px, #27312d 5px 6px, transparent 6px 12px);
+  opacity: 0.24;
+}
+
+.ticket-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px dashed rgba(55, 62, 57, 0.2);
+}
+
+.ticket-row span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ticket-row strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
 .metric-pill-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -345,6 +587,13 @@ button {
 .comparison-block {
   display: grid;
   gap: 10px;
+}
+
+.delta-note {
+  margin: 0;
+  color: #43524d;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .baseline-row {
@@ -430,10 +679,26 @@ button {
   text-align: left;
 }
 
+.sample-orders .sample-ticket {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  background:
+    linear-gradient(90deg, #f9fbf7, #fffaf0),
+    repeating-linear-gradient(90deg, rgba(31, 122, 122, 0.12) 0 1px, transparent 1px 10px);
+}
+
 .sample-orders button span {
   color: var(--muted);
   font-size: 12px;
   white-space: nowrap;
+}
+
+.sample-orders button small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .detail-list {
@@ -476,6 +741,23 @@ button {
 .reference-list strong {
   display: block;
   margin-top: 4px;
+}
+
+.time-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -6px 0 4px;
+}
+
+.time-notes span {
+  border: 1px solid rgba(213, 161, 30, 0.28);
+  border-radius: 999px;
+  background: #fff8e8;
+  color: #8a5f08;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 3px 8px;
 }
 
 .risk-bar {

@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
+import FoodIcon from './FoodIcon';
 import { useFilters } from '../store/filterContext';
 import { RiskScenario, ScenarioOrderSample } from '../types/data';
 import { FILTER_ALL } from '../utils/constants';
+import type { FoodIconName } from '../utils/iconMap';
 
 interface FilterPanelProps {
   scenarios?: RiskScenario[];
@@ -58,13 +60,22 @@ export default function FilterPanel({ scenarios = [], orders = [], onReset }: Fi
     () => [
       { key: 'city' as const, label: '城市', options: optionGroups.city },
       { key: 'weather' as const, label: '天气', options: optionGroups.weather },
-      { key: 'traffic_density' as const, label: '交通密度', options: optionGroups.traffic_density },
+      { key: 'traffic_density' as const, label: '交通压力', options: optionGroups.traffic_density },
       { key: 'time_period' as const, label: '配送时段', options: optionGroups.time_period },
-      { key: 'vehicle_type' as const, label: '配送载具', options: optionGroups.vehicle_type },
-      { key: 'is_delayed' as const, label: '是否延迟', options: optionGroups.is_delayed }
+      { key: 'vehicle_type' as const, label: '载具', options: optionGroups.vehicle_type },
+      { key: 'is_delayed' as const, label: '延迟', options: optionGroups.is_delayed }
     ],
     [optionGroups]
   );
+
+  const itemIcons: Record<(typeof filterItems)[number]['key'], FoodIconName> = {
+    city: 'area',
+    weather: 'weather',
+    traffic_density: 'traffic',
+    time_period: 'time',
+    vehicle_type: 'vehicle',
+    is_delayed: 'delay'
+  };
 
   const activeFilters = filterItems
     .filter((item) => filters[item.key] !== FILTER_ALL)
@@ -75,7 +86,7 @@ export default function FilterPanel({ scenarios = [], orders = [], onReset }: Fi
       <div className="panel-heading">
         <div>
           <span className="panel-kicker">Control Tower</span>
-          <h2>筛选雷达</h2>
+          <h2>配送条件筛选 / Delivery Filters</h2>
         </div>
         <button
           type="button"
@@ -84,13 +95,16 @@ export default function FilterPanel({ scenarios = [], orders = [], onReset }: Fi
             onReset?.();
           }}
         >
-          重置
+          重置配送条件
         </button>
       </div>
       <div className="filter-stack">
         {filterItems.map((item) => (
           <label className="filter-control" key={item.key}>
-            <span>{item.label}</span>
+            <span>
+              <FoodIcon name={itemIcons[item.key]} />
+              {item.label}
+            </span>
             <select value={filters[item.key]} onChange={(event) => setFilter(item.key, event.target.value)}>
               <option value={FILTER_ALL}>全部</option>
               {item.options.map((option) => (
@@ -103,8 +117,8 @@ export default function FilterPanel({ scenarios = [], orders = [], onReset }: Fi
         ))}
       </div>
       <div className="filter-summary">
-        <span>当前条件</span>
-        <strong>{activeFilters.length ? activeFilters.join(' / ') : '全域风险场景'}</strong>
+        <span>当前分析</span>
+        <strong>{activeFilters.length ? activeFilters.join(' / ') : '全量订单'}</strong>
       </div>
     </aside>
   );
