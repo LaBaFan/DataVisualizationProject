@@ -34,6 +34,22 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Local AI agent / assistant workspaces
+.agent/
+.claude/
+.codebuddy/
+.codex/
+.continue/
+.cursor/
+.gemini/
+.kiro/
+.opencode/
+.qoder/
+.roo/
+.trae/
+.windsurf/
+.github/prompts/
+
 # Temporary files
 tmp/
 temp/
