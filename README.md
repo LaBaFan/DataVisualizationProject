@@ -2,18 +2,26 @@
 
 FoodETA 是一个用于“数据可视化导论”课程 project 的外卖配送数据可视分析系统。项目基于 Kaggle Food Delivery Dataset，围绕配送时长、配送距离、天气、交通、时段、城市、骑手属性和车辆类型，构建可运行的纯前端 React 应用。
 
-当前主页调整为 **Delivery Operation Map / 外卖配送城市运行图**：打开页面首先看到 `public/assets/delivery_city_map.png` 背景图，而不是传统 dashboard、卡片墙、treemap 或天气交通矩阵。背景图内部已包含主标题，因此页面外层只保留小号 FoodETA 标识和操作提示。前端在背景图上叠加 SVG 透明交互热区，将餐厅、建筑、道路、天气区域、高风险场景和客户区域定义为可点击模块，点击后显示轻量 **ETA Risk Ticket**。
+当前主页调整为 **滚动式 Delivery Operation Map 可视分析界面**：页面不再是传统 dashboard、卡片墙、treemap 或天气交通矩阵，而是由固定控制区和滚动分析区组成。左侧是 Weather Panel，顶部是 Time Selector，右侧是 Data Overview，中间主区域通过 6 个滚动 section 组织外卖配送风险分析。
 
 ## 功能概览
 
-- 极简 Header：外层只保留小号 FoodETA 和交互说明，完整标题由背景图内部承担，避免重复。
-- Delivery Operation Map：主体使用 `/assets/delivery_city_map.png` 作为宽幅城市运行图背景。
+- Sticky Time Selector：顶部固定展示 All、Morning、Noon、Afternoon、Evening、Night 等时间筛选。
+- Sticky Weather Panel：左侧固定展示 All、Sunny、Fog、Cloudy、Stormy、Sandstorms、Windy、Unknown 等天气筛选。
+- Sticky Data Overview：右侧根据当前滚动 section、天气筛选、时间筛选和选中对象展示最多 5 个关键指标与解释。
+- Scrollytelling Sections：中间滚动区域包含 6 个分析 section，依次为配送运行总览、天气影响、交通压力、时间节奏、高风险场景解释和异常订单。
+- Delivery Operation Map：第一屏主体使用 `/assets/delivery_city_map.png` 作为宽幅城市运行图背景。
 - SVG 交互层：`src/data/mapModules.ts` 集中维护模块坐标，页面按 `1600 x 1000` viewBox 渲染透明热区；坐标需要微调时只改该文件。
 - 轻量数据 Overlay：`src/data/mapOverlayData.ts` 集中维护交通压力线段、订单密度点、高风险脉冲圈和微型指标标签，让背景图体现交通拥挤度、订单压力、延迟率和风险评分等可视化映射。
+- 筛选驱动变化：点击天气会高亮地图中的相关天气区域、订单点、风险脉冲和微型标签，并降低不相关图层透明度；点击时间会改变地图色调、交通线段亮度/线宽和订单点缩放，同时联动 Time Rhythm section。
 - Hover Tooltip：鼠标悬停时显示模块轮廓、半透明高亮和简要指标。
 - ETA Risk Ticket：点击餐厅、道路、天气区域、风险区域或客户区域后展示订单数、平均配送时长、延迟率、平均距离、风险评分和解释文本。
 - Scenario Analysis Drawer：在 ETA Risk Ticket 中点击“查看完整分析”后，从右侧打开深度解释面板，包含场景概览、全局平均对比、距离-配送时长散点图、风险因素拆解和样例订单表。
 - 路线清理：页面不再额外绘制不符合底图道路结构的粗大装饰路线，道路模块默认透明，仅在 hover 或 selected 时以细线高亮。
+
+当前滚动式界面强调“筛选条件驱动的可视分析故事线”。点击左侧天气后，地图中的对应天气区域、风险脉冲、订单点和微型标签会保持突出，不相关风险标签与订单点降低透明度，右侧 Data Overview 同步切换到该天气的订单量、平均配送时长、延迟率和高风险组合解释。点击顶部时间后，地图色调、交通线段亮度/宽度、订单点 fade/scale 状态和 Time Rhythm 时间带会同步变化，右侧指标更新为对应时段语境。滚动进入不同 section 时，`activeSection` 会驱动右侧标题、分析问题和指标解释更新。
+
+需要区分的是：当前已实现的是 scrollytelling 交互框架、SVG 地图热区、overlay 数据编码和 section 联动。部分 section 仍使用前端 mock / overlay 配置数据，后续可将 `public/data/*.json` 中的真实聚合结果接入 Weather Ranking、Traffic Roads、Outlier Scatter 和 Scenario Analysis Drawer。
 
 ## 架构说明
 
@@ -24,6 +32,8 @@ public/data/*.json
 ```
 
 如果对应 JSON 缺失或加载失败，前端会使用内置 mock 数据兜底，保证页面仍可打开和演示。当前数据聚合脚本会生成可供前端使用的 JSON 结果；需要接入真实静态数据时，将对应文件放到 `public/data/` 下即可。
+
+当前主页仍遵循该架构：天气、时间和滚动 section 的联动均在 React 前端本地完成，不需要后端状态、数据库查询或服务端动态计算。
 
 ## 技术栈
 
@@ -142,7 +152,7 @@ python3 scripts/preprocess.py
 - `delay_factor_flow.json`：延迟因素流向关系。
 - `time_annotations.json`：时间趋势注释信息。
 
-当前首页主要使用 `src/data/mapModules.ts` 中的 mock 模块数据驱动交互热区。后续可将 `overview_summary.json`、`risk_scenario_summary.json`、`time_period_summary.json`、`weather_traffic_summary.json`、`distance_time_sample.json` 和 `scenario_orders_sample.json` 的真实聚合结果接入这些模块。
+当前首页主要使用 `src/data/mapModules.ts` 与 `src/data/mapOverlayData.ts` 中的 mock/overlay 数据驱动交互热区和滚动 section。前端仍保持纯静态数据架构：优先读取 `public/data/*.json`，缺失时使用内置 mock，不需要后端、数据库或服务端动态查询。
 
 Delivery Operation Map 的当前映射如下：
 
@@ -152,6 +162,22 @@ Delivery Operation Map 的当前映射如下：
 - 紧凑图例：地图角落保留小型半透明 legend，解释线条颜色、点大小、红橙风险和脉冲圈含义，不恢复大型 dashboard 图例。
 - 视觉反馈：模块类型决定 hover 边框颜色；`order_count`、`avg_delivery_duration_min`、`delay_rate`、`avg_distance_km` 和 `risk_score` 展示在 tooltip 与 ETA Risk Ticket 中。
 - 坐标系统：所有热区和 overlay 元素使用 `1600 x 1000` viewBox，后续微调只需要修改 `mapModules.ts` 或 `mapOverlayData.ts`。
+
+当前页面结构为：
+
+```text
+Top Time Selector
+Left Weather Panel | Scrolling Analysis Sections | Right Data Overview
+```
+
+中间 6 个 section 包括：
+
+- Operation Overview：Delivery Operation Map 背景图 + SVG overlay + tooltip + ETA Risk Ticket。
+- Weather Impact：天气风险横向排行，点击天气行会同步左侧天气筛选。
+- Traffic Pressure：简化道路 overlay，颜色表示交通压力，线宽表示订单量。
+- Time Rhythm：Morning 到 Night 的时间带，宽度表示订单量，颜色表示延迟率。
+- Risk Scenario Explain：Top 高风险场景排行，表达多属性条件组合风险。
+- Outlier Orders：距离-配送时长散点图，用于定位异常订单。
 
 当前交互流程为：
 

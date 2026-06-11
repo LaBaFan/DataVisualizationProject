@@ -5,6 +5,8 @@ interface OrderDotLayerProps {
   dots: OrderDot[];
   hoveredId?: string | null;
   selectedId?: string | null;
+  selectedWeather?: string;
+  selectedTimePeriod?: string;
   onHover: (dot: OrderDot, event: MouseEvent<SVGElement>) => void;
   onLeave: () => void;
   onSelect: (dot: OrderDot) => void;
@@ -25,15 +27,26 @@ function dotOpacity(dot: OrderDot) {
   return Math.max(0.58, Math.min(0.9, 0.54 + (dot.delay_rate ?? 0.35) * 0.42));
 }
 
-export default function OrderDotLayer({ dots, hoveredId, selectedId, onHover, onLeave, onSelect }: OrderDotLayerProps) {
+export default function OrderDotLayer({
+  dots,
+  hoveredId,
+  selectedId,
+  selectedWeather = 'All',
+  selectedTimePeriod = 'All',
+  onHover,
+  onLeave,
+  onSelect
+}: OrderDotLayerProps) {
   return (
     <svg className="map-data-layer order-dot-layer" viewBox="0 0 1600 1000" preserveAspectRatio="none" aria-hidden="false">
       {dots.map((dot) => {
         const active = hoveredId === dot.id || selectedId === dot.id;
+        const weatherMuted = selectedWeather !== 'All' && Boolean(dot.weather) && dot.weather !== selectedWeather;
+        const timeMuted = selectedTimePeriod !== 'All' && Boolean(dot.time_period) && dot.time_period !== selectedTimePeriod;
         return (
           <circle
             key={dot.id}
-            className={`order-density-dot${active ? ' is-active' : ''}`}
+            className={`order-density-dot${active ? ' is-active' : ''}${weatherMuted || timeMuted ? ' is-filter-muted' : ''}${!weatherMuted && !timeMuted && selectedTimePeriod !== 'All' ? ' is-time-focused' : ''}`}
             cx={dot.x}
             cy={dot.y}
             r={dotRadius(dot)}

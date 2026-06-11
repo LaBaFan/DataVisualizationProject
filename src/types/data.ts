@@ -73,6 +73,18 @@ export interface WeatherTrafficSummary extends MetricSummary {
   risk_score?: number;
 }
 
+export interface WeatherImpactSummary extends MetricSummary {
+  weather: Nullable<string>;
+  risk_score?: number;
+}
+
+export interface TrafficSegmentSummary extends MetricSummary {
+  segment_id: string;
+  label?: string;
+  traffic_density: Nullable<string>;
+  risk_score?: number;
+}
+
 export interface CourierVehicleSummary {
   by_vehicle_type: Array<MetricSummary & { vehicle_type: Nullable<string> }>;
   by_rating_bin: Array<MetricSummary & { rating_bin: Nullable<string> }>;
@@ -254,3 +266,5 @@ export type MapSelection =
   | { type: 'order_dot'; item: OrderDot }
   | { type: 'risk_pulse'; item: ScenarioAnchor }
   | { type: 'metric_tag'; item: MiniMetricTag };
+
+export type ActiveSection = 'overview' | 'weather' | 'traffic' | 'time' | 'risk' | 'outlier';

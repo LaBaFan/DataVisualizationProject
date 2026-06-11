@@ -5,6 +5,8 @@ interface MapInteractionLayerProps {
   modules: MapModule[];
   hoveredId?: string | null;
   selectedId?: string | null;
+  selectedWeather?: string;
+  selectedTimePeriod?: string;
   onHover: (module: MapModule, event: MouseEvent<SVGElement>) => void;
   onLeave: () => void;
   onSelect: (module: MapModule | null) => void;
@@ -29,6 +31,8 @@ function renderShape(
   module: MapModule,
   active: boolean,
   hovered: boolean,
+  filtered: boolean,
+  timeFiltered: boolean,
   handlers: {
     onMouseMove: (event: MouseEvent<SVGElement>) => void;
     onMouseLeave: () => void;
@@ -36,7 +40,7 @@ function renderShape(
   }
 ) {
   const color = typeColors[module.type];
-  const className = `map-hotspot map-hotspot-${module.type}${active ? ' is-selected' : ''}${hovered ? ' is-hovered' : ''}`;
+  const className = `map-hotspot map-hotspot-${module.type}${active ? ' is-selected' : ''}${hovered ? ' is-hovered' : ''}${filtered ? ' is-filter-muted' : ''}${timeFiltered ? ' is-time-muted' : ''}`;
   const common = {
     className,
     style: { '--module-color': color } as CSSProperties,
@@ -69,6 +73,8 @@ export default function MapInteractionLayer({
   modules,
   hoveredId,
   selectedId,
+  selectedWeather = 'All',
+  selectedTimePeriod = 'All',
   onHover,
   onLeave,
   onSelect
@@ -86,14 +92,21 @@ export default function MapInteractionLayer({
       }}
     >
       {modules.map((module) =>
-        renderShape(module, selectedId === module.id, hoveredId === module.id, {
-          onMouseMove: (event) => onHover(module, event),
-          onMouseLeave: onLeave,
-          onClick: (event) => {
-            event.stopPropagation();
-            onSelect(module);
+        renderShape(
+          module,
+          selectedId === module.id,
+          hoveredId === module.id,
+          selectedWeather !== 'All' && Boolean(module.weather) && module.weather !== selectedWeather,
+          selectedTimePeriod !== 'All' && Boolean(module.time_period) && module.time_period !== selectedTimePeriod,
+          {
+            onMouseMove: (event) => onHover(module, event),
+            onMouseLeave: onLeave,
+            onClick: (event) => {
+              event.stopPropagation();
+              onSelect(module);
+            }
           }
-        })
+        )
       )}
     </svg>
   );

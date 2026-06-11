@@ -5,6 +5,8 @@ interface MiniMetricTagLayerProps {
   tags: MiniMetricTag[];
   hoveredId?: string | null;
   selectedId?: string | null;
+  selectedWeather?: string;
+  selectedTimePeriod?: string;
   onHover: (tag: MiniMetricTag, event: MouseEvent<SVGElement>) => void;
   onLeave: () => void;
   onSelect: (tag: MiniMetricTag) => void;
@@ -18,15 +20,26 @@ function minutes(value: number | undefined) {
   return typeof value === 'number' ? `${Math.round(value)}m` : '-';
 }
 
-export default function MiniMetricTagLayer({ tags, hoveredId, selectedId, onHover, onLeave, onSelect }: MiniMetricTagLayerProps) {
+export default function MiniMetricTagLayer({
+  tags,
+  hoveredId,
+  selectedId,
+  selectedWeather = 'All',
+  selectedTimePeriod = 'All',
+  onHover,
+  onLeave,
+  onSelect
+}: MiniMetricTagLayerProps) {
   return (
     <svg className="map-data-layer mini-metric-tag-layer" viewBox="0 0 1600 1000" preserveAspectRatio="none" aria-hidden="false">
       {tags.map((tag) => {
         const active = hoveredId === tag.id || selectedId === tag.id;
+        const weatherMuted = selectedWeather !== 'All' && Boolean(tag.weather) && tag.weather !== selectedWeather;
+        const timeMuted = selectedTimePeriod !== 'All' && Boolean(tag.time_period) && tag.time_period !== selectedTimePeriod;
         return (
           <g
             key={tag.id}
-            className={`mini-metric-tag${active ? ' is-active' : ''}`}
+            className={`mini-metric-tag${active ? ' is-active' : ''}${weatherMuted || timeMuted ? ' is-filter-muted' : ''}`}
             transform={`translate(${tag.x} ${tag.y})`}
             role="button"
             tabIndex={0}

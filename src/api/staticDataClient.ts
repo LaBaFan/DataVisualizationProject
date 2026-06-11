@@ -4,8 +4,11 @@ import {
   RiskScenario,
   ScenarioOrderSample,
   TimePeriodSummary,
+  TrafficSegmentSummary,
+  WeatherImpactSummary,
   WeatherTrafficSummary
 } from '../types/data';
+import { trafficSegments } from '../data/mapOverlayData';
 
 const DATA_BASE_PATH = '/data';
 
@@ -204,6 +207,27 @@ const mockWeatherTraffic: WeatherTrafficSummary[] = [
   }
 ];
 
+const mockWeatherImpact: WeatherImpactSummary[] = [
+  { weather: 'Sunny', order_count: 2120, avg_delivery_duration_min: 27.8, delay_rate: 0.16, risk_score: 0.28 },
+  { weather: 'Fog', order_count: 1420, avg_delivery_duration_min: 40.2, delay_rate: 0.62, risk_score: 0.76 },
+  { weather: 'Cloudy', order_count: 1880, avg_delivery_duration_min: 38.6, delay_rate: 0.54, risk_score: 0.68 },
+  { weather: 'Rainy', order_count: 1510, avg_delivery_duration_min: 43.6, delay_rate: 0.71, risk_score: 0.84 },
+  { weather: 'Stormy', order_count: 980, avg_delivery_duration_min: 46.4, delay_rate: 0.79, risk_score: 0.91 },
+  { weather: 'Sandstorms', order_count: 460, avg_delivery_duration_min: 41.1, delay_rate: 0.58, risk_score: 0.7 },
+  { weather: 'Windy', order_count: 610, avg_delivery_duration_min: 35.8, delay_rate: 0.39, risk_score: 0.5 },
+  { weather: 'Unknown', order_count: 320, avg_delivery_duration_min: 34.4, delay_rate: 0.31, risk_score: 0.42 }
+];
+
+const mockTrafficSegments: TrafficSegmentSummary[] = trafficSegments.map((segment) => ({
+  segment_id: segment.id,
+  label: segment.label,
+  traffic_density: segment.traffic_density,
+  order_count: segment.order_count,
+  avg_delivery_duration_min: segment.avg_delivery_duration_min,
+  delay_rate: segment.delay_rate,
+  risk_score: segment.risk_score
+}));
+
 const mockOverview: OverviewSummary = {
   total_orders: 15420,
   valid_orders: 15108,
@@ -280,4 +304,12 @@ export function loadWeatherTrafficSummary(): Promise<WeatherTrafficSummary[]> {
 
 export function loadOverviewSummary(): Promise<OverviewSummary> {
   return fetchJson<OverviewSummary>('overview_summary.json', mockOverview);
+}
+
+export function loadWeatherImpactSummary(): Promise<WeatherImpactSummary[]> {
+  return fetchJson<WeatherImpactSummary[]>('weather_impact_summary.json', mockWeatherImpact);
+}
+
+export function loadTrafficSegmentSummary(): Promise<TrafficSegmentSummary[]> {
+  return fetchJson<TrafficSegmentSummary[]>('traffic_segment_summary.json', mockTrafficSegments);
 }

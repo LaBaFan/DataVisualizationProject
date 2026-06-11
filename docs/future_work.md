@@ -1,109 +1,140 @@
 # 后续工作计划
 
-## 前端计划
+FoodETA 当前已经完成滚动式可视分析界面的交互框架：左侧 Weather Panel、顶部 Time Selector、右侧 Data Overview 和中间 6 个 scrollytelling section 已经可以联动。当前仍需补强的是数据生产链路。部分地图 overlay、Weather Ranking、Traffic Roads、Outlier Scatter 和 Scenario Drawer 使用前端 mock / overlay 配置，后续应由预处理脚本生成稳定的静态 JSON 替换。
 
-前端已采用 React + TypeScript + Vite 搭建单页 dashboard 骨架。当前版本直接加载 `data/processed/` 中的聚合 JSON。
+## 数据输出规划
 
-计划视图包括：
+后续数据处理应继续保持纯前端静态数据架构：Python 预处理脚本生成 JSON，React 前端通过 `public/data/*.json` 读取，不引入后端、数据库或动态查询服务。
 
-- Overview：已展示总订单数、平均配送时长、延迟率、平均距离等指标，并加入小时趋势小图。
-- Delivery Time Distribution：已展示配送时长分布和长尾延迟。
-- Distance-Time Scatter：已展示距离与配送时长关系，后续补充 brushing 和异常点详情。
-- Temporal Pattern：已展示小时维度的平均时长和延迟率，后续补充时段聚合联动。
-- Weather & Traffic：已展示天气与交通组合对配送时效的影响。
-- Courier & Vehicle：已展示车辆类型对配送表现的影响，后续补充骑手评分和多单配送联动。
-- City Summary：已比较不同城市或区域的配送表现。
-- Delivery Risk Ranking View：已有借鉴 LineUp 的可识别占位，并已接入 `risk_scenario_summary.json`；后续完善排序交互、权重调整和场景详情。
-- Delay Factor Flow View：已有借鉴 Parallel Sets 的路径占位，并已接入 `delay_factor_flow.json`；后续完善 Sankey / Parallel Sets 式路径布局和颜色编码。
-- Annotated Temporal Pattern View：已有借鉴 TimeNotes 的时间注释占位，并已接入 `time_annotations.json`；后续完善峰值标注、注释编辑和与小时趋势的联动。
+建议补充以下文件。
 
-## 可视化技术
+### `weather_impact_summary.json`
 
-后续计划使用 ECharts 和 D3。ECharts 适合快速实现柱状图、折线图、箱线图和热力图；D3 适合定制散点 brushing、联动状态和特殊布局。地图视图可根据时间选择 Leaflet 或 Mapbox GL JS，也可以先以城市对比视图替代地图实现。
+用于 Weather Impact section 和 Data Overview 的天气语境统计。
 
-## 多视图联动
-
-后续交互重点包括：
-
-- 时间、城市、天气、交通、车辆类型筛选。
-- 距离-时间散点图 brushing。
-- 点击图表元素后联动其他视图。
-- 条件组合筛选与详情面板。
-- details-on-demand：点击或框选后查看订单样本和局部统计。
-- 延迟订单高亮。
-
-## 经典设计借鉴与适配
-
-后续系统会借鉴已有可视分析设计，但不会直接复用原系统，而是将其交互思想适配到外卖配送时效分析场景。
-
-### Delivery Risk Ranking View：借鉴 LineUp
-
-该部分用于支持 T7“高延迟风险场景排序与解释”。LineUp 的多属性排序思想适合展示和比较多个指标，因此 Delivery Risk Ranking View 将把天气、交通密度、时段、距离区间、车辆类型、多单配送等条件组合成配送风险场景。
-
-每个场景展示 `order_count`、`avg_delivery_duration_min`、`delay_rate`、`avg_distance_km`、`multiple_delivery_rate`、`avg_rating` 和 `risk_score` 等指标。后续需要完善的功能包括风险评分说明、指标排序、权重调整、场景对比和点击后的详情面板。
-
-### Delay Factor Flow View：借鉴 Parallel Sets / Sankey
-
-该部分用于支持 T8“配送条件路径与延迟结果流向分析”。Parallel Sets 和 Sankey 适合表达多类别变量之间的路径关系，因此 Delay Factor Flow View 将展示 `weather -> traffic_density -> time_period -> is_delayed`、`vehicle_type -> multiple_deliveries -> is_delayed` 等路径。
-
-路径宽度表示订单数量，颜色表示延迟率或平均配送时长。后续需要完善路径布局、颜色编码、路径高亮、条件筛选和路径详情，使用户能比较不同配送条件组合最终流向延迟或非延迟结果的比例差异。
-
-### Annotated Temporal Pattern View：借鉴 TimeNotes
-
-该部分用于增强时间模式解释。TimeNotes 的时间序列注释思想适合解释峰值、阶段和异常点，因此 Annotated Temporal Pattern View 将在小时趋势中标注午高峰、晚高峰、订单量峰值、平均配送时长峰值和延迟率峰值。
-
-后续需要将 `time_annotations.json` 与前端时间趋势图联动，使趋势图不仅显示数值变化，也解释高峰和异常出现的业务语境。
-
-## 静态数据加载计划
-
-当前项目保持纯前端架构。前端通过 Vite 的静态 JSON 导入能力读取 `data/processed/` 下的聚合结果，不规划数据库、认证或动态查询服务。课程演示时只需要保证 processed JSON 已生成并提交，页面即可在本地开发服务器或构建产物中运行。
-
-当前数据处理脚本已经生成 `risk_scenario_summary.json`、`delay_factor_flow.json` 和 `time_annotations.json`。如果某个 processed JSON 缺失，对应视图应显示空状态，而不是阻塞其他视图渲染。
-
-## 后续数据处理计划
-
-为了支持 Delivery Risk Ranking View，当前已经生成基础版 `risk_scenario_summary.json`。后续计划继续完善风险场景定义、权重配置和可解释排序说明。该文件按天气、交通、时段、车辆类型和多单配送等条件组合聚合配送风险场景，字段包括：
-
-- `scenario_id`
-- `weather`
-- `traffic_density`
-- `time_period`
-- `vehicle_type`
-- `multiple_deliveries_group`
-- `order_count`
-- `avg_delivery_duration_min`
-- `delay_rate`
-- `avg_distance_km`
-- `multiple_delivery_rate`
-- `avg_rating`
-- `risk_score`
-
-其中 `risk_score` 暂定为：
-
-```text
-risk_score =
-0.4 * normalized_avg_delivery_duration
-+ 0.3 * delay_rate
-+ 0.2 * normalized_avg_distance
-+ 0.1 * multiple_delivery_rate
+```json
+[
+  {
+    "weather": "Fog",
+    "order_count": 3200,
+    "avg_delivery_duration_min": 41.2,
+    "delay_rate": 0.68,
+    "risk_score": 0.78
+  }
+]
 ```
 
-该评分不是机器学习模型，而是用于可解释排序的可视分析指标，后续可根据课程反馈调整权重。
+该文件可替换当前天气排行中的 mock 数据。前端将使用 `weather` 作为筛选键，使用 `delay_rate` 作为排行条长度，使用 `avg_delivery_duration_min` 和 `order_count` 作为辅助解释指标。
 
-为了支持 Delay Factor Flow View，当前已经生成基础版 `delay_factor_flow.json`。后续计划补充更多可选路径和前端路径布局。字段包括：
+### `traffic_segment_summary.json`
 
-- `source`
-- `target`
-- `level`
-- `order_count`
-- `avg_delivery_duration_min`
-- `delay_rate`
+用于 Traffic Pressure section 和地图道路流量线段。
 
-为了支持 Annotated Temporal Pattern View，当前已经生成基础版 `time_annotations.json`。后续计划将注释与可视化峰值检测和业务时段说明进一步结合。字段包括：
+```json
+[
+  {
+    "segment_id": "main_jam_road",
+    "traffic_density": "Jam",
+    "order_count": 5200,
+    "avg_delivery_duration_min": 39.8,
+    "delay_rate": 0.64,
+    "risk_score": 0.81
+  }
+]
+```
 
-- `annotation_id`
-- `time_value`
-- `annotation_type`
-- `label`
-- `description`
-- `related_metric`
+该文件可替换当前 `mapOverlayData.ts` 中的交通段配置。道路坐标仍可保留在前端配置中，统计字段由 JSON 覆盖：颜色映射 `traffic_density`，线宽映射 `order_count`，透明度或亮度映射 `delay_rate`。
+
+### `scenario_orders_sample.json`
+
+用于 ETA Risk Ticket、Scenario Analysis Drawer 和样例订单表。
+
+```json
+{
+  "Cloudy|Jam|Night|Motorcycle": [
+    {
+      "order_id": "0x4607",
+      "distance_km": 9.3,
+      "delivery_duration_min": 45,
+      "weather": "Cloudy",
+      "traffic_density": "Jam",
+      "vehicle_type": "motorcycle",
+      "time_period": "night",
+      "is_delayed": true,
+      "delivery_person_ratings": 4.2
+    }
+  ]
+}
+```
+
+该文件应按 `scenario_id` 分组保存代表订单。前端点击风险场景后，可以直接读取对应订单样本，替换当前 Drawer 中基于模块指标生成的 mock 订单。
+
+### `scenario_distance_time_points.json`
+
+用于 Outlier Orders section 和 Scenario Analysis Drawer 中的距离-配送时长散点图。
+
+```json
+{
+  "Cloudy|Jam|Night|Motorcycle": [
+    {
+      "order_id": "0x4607",
+      "distance_km": 9.3,
+      "delivery_duration_min": 45,
+      "is_delayed": true
+    }
+  ]
+}
+```
+
+该文件应保留订单级散点数据，并可附带天气、交通、时段和车辆类型字段以支持筛选。前端使用 `distance_km` 作为横轴、`delivery_duration_min` 作为纵轴、`is_delayed` 作为颜色编码。
+
+### `scenario_factor_summary.json`
+
+用于 Risk Scenario Explain section 和 Scenario Analysis Drawer 的因素解释。
+
+```json
+{
+  "Cloudy|Jam|Night|Motorcycle": [
+    {
+      "factor": "traffic_density",
+      "value": "Jam",
+      "avg_delivery_duration_min": 44.5,
+      "delay_rate": 0.989,
+      "description": "堵塞交通条件下配送延迟率较高。"
+    },
+    {
+      "factor": "time_period",
+      "value": "Night",
+      "avg_delivery_duration_min": 43.2,
+      "delay_rate": 0.81,
+      "description": "夜间配送订单量较少，但延迟率偏高。"
+    }
+  ]
+}
+```
+
+该文件用于把当前的解释文案从前端规则迁移到数据层。它不需要成为机器学习归因结果；课程项目阶段可以先采用可解释聚合指标，例如各条件下的平均时长、延迟率和相对全局平均的差值。
+
+## 前端接入顺序
+
+建议按风险和收益排序推进：
+
+1. 接入 `weather_impact_summary.json`，替换 Weather Ranking 的 mock 数据。
+2. 接入 `traffic_segment_summary.json`，让道路压力线段使用真实交通聚合指标。
+3. 接入 `scenario_distance_time_points.json`，替换 Outlier Scatter 的 mock 散点。
+4. 接入 `scenario_orders_sample.json`，让 Scenario Drawer 展示真实样例订单。
+5. 接入 `scenario_factor_summary.json`，完善高风险场景解释和因素拆解。
+
+每一步都应保留 mock fallback。若对应 JSON 缺失，页面继续使用当前前端 overlay 配置，避免课程演示时因数据文件缺失导致页面空白。
+
+## 预处理脚本规划
+
+当前不需要改变前端架构。后续可在 `scripts/preprocess.py` 或新增聚合脚本中补充以下输出逻辑：
+
+- 按 `weather` 聚合订单量、平均配送时长、延迟率和风险评分，输出 `weather_impact_summary.json`。
+- 按道路段或前端预定义 segment 映射聚合交通压力，输出 `traffic_segment_summary.json`。
+- 按 `scenario_id` 抽样代表订单，输出 `scenario_orders_sample.json`。
+- 按 `scenario_id` 抽样距离-时间散点，输出 `scenario_distance_time_points.json`。
+- 按场景拆解天气、交通、时段、车辆类型等因素，输出 `scenario_factor_summary.json`。
+
+这些输出完成后，FoodETA 的 scrollytelling 页面将从“已实现交互框架 + mock/overlay 数据”升级为“静态真实聚合数据驱动的可视分析系统”。

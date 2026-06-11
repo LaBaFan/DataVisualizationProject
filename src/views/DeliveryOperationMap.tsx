@@ -10,16 +10,23 @@ import ScenarioAnalysisDrawer from '../components/ScenarioAnalysisDrawer';
 import TrafficOverlayLayer from '../components/TrafficOverlayLayer';
 import { mapModules } from '../data/mapModules';
 import { miniMetricTags, orderDots, scenarioAnchors, trafficSegments } from '../data/mapOverlayData';
+import { useInteraction } from '../store/interactionContext';
 import { MapModule, MapSelection, MiniMetricTag, OrderDot, ScenarioAnchor, TrafficSegment } from '../types/data';
 
 const CITY_MAP_SRC = '/assets/delivery_city_map.png';
 
 export default function DeliveryOperationMap() {
   const [hoveredSelection, setHoveredSelection] = useState<MapSelection | null>(null);
-  const [selectedSelection, setSelectedSelection] = useState<MapSelection | null>(null);
   const [isAnalysisDrawerOpen, setIsAnalysisDrawerOpen] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const {
+    selectedWeather,
+    selectedTimePeriod,
+    selectedItem: selectedSelection,
+    selectedOrderId,
+    setSelectedItem,
+    setSelectedOrderId
+  } = useInteraction();
 
   const selectedKey = selectedSelection ? `${selectedSelection.type}:${selectedSelection.item.id}` : null;
   const hoveredKey = hoveredSelection ? `${hoveredSelection.type}:${hoveredSelection.item.id}` : null;
@@ -40,7 +47,7 @@ export default function DeliveryOperationMap() {
 
   const handleSelect = (selection: MapSelection | null) => {
     if (!selection && isAnalysisDrawerOpen) return;
-    setSelectedSelection(selection);
+    setSelectedItem(selection);
     setSelectedOrderId(null);
     if (!selection) {
       setHoveredSelection(null);
@@ -62,7 +69,7 @@ export default function DeliveryOperationMap() {
 
       <main className="map-stage" aria-label="外卖配送城市运行图">
         <div
-          className="map-canvas"
+          className={`map-canvas time-tone-${selectedTimePeriod}`}
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               handleSelect(null);
@@ -74,6 +81,8 @@ export default function DeliveryOperationMap() {
             modules={modules}
             hoveredId={hoveredKey?.startsWith('module:') ? hoveredKey.replace('module:', '') : null}
             selectedId={selectedKey?.startsWith('module:') ? selectedKey.replace('module:', '') : null}
+            selectedWeather={selectedWeather}
+            selectedTimePeriod={selectedTimePeriod}
             onHover={(module, event) => handleHover({ type: 'module', item: module }, event)}
             onLeave={() => setHoveredSelection(null)}
             onSelect={(module) => handleSelect(module ? { type: 'module', item: module } : null)}
@@ -82,6 +91,8 @@ export default function DeliveryOperationMap() {
             anchors={scenarioAnchors}
             hoveredId={hoveredKey?.startsWith('risk_pulse:') ? hoveredKey.replace('risk_pulse:', '') : null}
             selectedId={selectedKey?.startsWith('risk_pulse:') ? selectedKey.replace('risk_pulse:', '') : null}
+            selectedWeather={selectedWeather}
+            selectedTimePeriod={selectedTimePeriod}
             onHover={(anchor, event) => handleHover({ type: 'risk_pulse', item: anchor }, event)}
             onLeave={() => setHoveredSelection(null)}
             onSelect={(anchor) => handleSelect({ type: 'risk_pulse', item: anchor })}
@@ -90,6 +101,8 @@ export default function DeliveryOperationMap() {
             segments={trafficSegments}
             hoveredId={hoveredKey?.startsWith('traffic_segment:') ? hoveredKey.replace('traffic_segment:', '') : null}
             selectedId={selectedKey?.startsWith('traffic_segment:') ? selectedKey.replace('traffic_segment:', '') : null}
+            selectedWeather={selectedWeather}
+            selectedTimePeriod={selectedTimePeriod}
             onHover={(segment, event) => handleHover({ type: 'traffic_segment', item: segment }, event)}
             onLeave={() => setHoveredSelection(null)}
             onSelect={(segment) => handleSelect({ type: 'traffic_segment', item: segment })}
@@ -98,6 +111,8 @@ export default function DeliveryOperationMap() {
             dots={orderDots}
             hoveredId={hoveredKey?.startsWith('order_dot:') ? hoveredKey.replace('order_dot:', '') : null}
             selectedId={selectedKey?.startsWith('order_dot:') ? selectedKey.replace('order_dot:', '') : null}
+            selectedWeather={selectedWeather}
+            selectedTimePeriod={selectedTimePeriod}
             onHover={(dot, event) => handleHover({ type: 'order_dot', item: dot }, event)}
             onLeave={() => setHoveredSelection(null)}
             onSelect={(dot) => handleSelect({ type: 'order_dot', item: dot })}
@@ -106,6 +121,8 @@ export default function DeliveryOperationMap() {
             tags={miniMetricTags}
             hoveredId={hoveredKey?.startsWith('metric_tag:') ? hoveredKey.replace('metric_tag:', '') : null}
             selectedId={selectedKey?.startsWith('metric_tag:') ? selectedKey.replace('metric_tag:', '') : null}
+            selectedWeather={selectedWeather}
+            selectedTimePeriod={selectedTimePeriod}
             onHover={(tag, event) => handleHover({ type: 'metric_tag', item: tag }, event)}
             onLeave={() => setHoveredSelection(null)}
             onSelect={(tag) => handleSelect({ type: 'metric_tag', item: tag })}
@@ -114,7 +131,7 @@ export default function DeliveryOperationMap() {
           <ETARiskTicket
             selection={selectedSelection}
             onClose={() => {
-              setSelectedSelection(null);
+              setSelectedItem(null);
               setIsAnalysisDrawerOpen(false);
               setSelectedOrderId(null);
             }}
