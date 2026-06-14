@@ -1,67 +1,119 @@
+import { useEffect, useMemo, useState } from 'react';
+import { loadRiskScenarioSummary } from '../api/staticDataClient';
+import RiskScenarioBubblePlot from '../components/RiskScenarioBubblePlot';
+import RiskScenarioDetailPanel from '../components/RiskScenarioDetailPanel';
 import SectionTitle from '../components/SectionTitle';
-import { mapModules } from '../data/mapModules';
-import { scenarioAnchors } from '../data/mapOverlayData';
+import TopCriticalScenarios from '../components/TopCriticalScenarios';
 import { useInteraction } from '../store/interactionContext';
-import { MapModule, ScenarioAnchor } from '../types/data';
+import { MapSelection, RiskScenario } from '../types/data';
 
-function anchorToModule(anchor: ScenarioAnchor): MapModule {
+function normalizeRate(value: number | undefined) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
+  return value > 1 ? value / 100 : value;
+}
+
+function isMatchingFilter(row: RiskScenario, weather: string, timePeriod: string) {
+  const weatherMatch = weather === 'All' || row.weather === weather;
+  const timeMatch = timePeriod === 'All' || row.time_period === timePeriod;
+  return weatherMatch && timeMatch;
+}
+
+function scenarioSelection(row: RiskScenario): MapSelection {
   return {
-    id: anchor.id,
-    type: 'risk_zone',
-    label: anchor.label,
-    shape: 'circle',
-    coords: [anchor.x, anchor.y, anchor.radius],
-    scenario_id: anchor.scenario_id,
-    weather: anchor.weather,
-    traffic_density: anchor.traffic_density,
-    time_period: anchor.time_period,
-    vehicle_type: anchor.vehicle_type,
-    order_count: anchor.order_count,
-    avg_delivery_duration_min: anchor.avg_delivery_duration_min,
-    delay_rate: anchor.delay_rate,
-    risk_score: anchor.risk_score
+    type: 'module',
+    item: {
+      id: row.scenario_id,
+      type: 'risk_zone',
+      label: row.label,
+      shape: 'circle',
+      coords: [0, 0, 0],
+      scenario_id: row.scenario_id,
+      weather: row.weather ?? undefined,
+      traffic_density: row.traffic_density ?? undefined,
+      time_period: row.time_period ?? undefined,
+      vehicle_type: row.vehicle_type ?? undefined,
+      order_count: row.order_count,
+      avg_delivery_duration_min: row.avg_delivery_duration_min,
+      delay_rate: row.delay_rate,
+      avg_distance_km: row.avg_distance_km,
+      risk_score: row.risk_score
+    }
   };
 }
 
 export default function RiskScenarioSection() {
-  const { selectedWeather, selectedTimePeriod, selectedScenarioId, setSelectedItem } = useInteraction();
-  const rows = [...mapModules.filter((module) => module.risk_score), ...scenarioAnchors.map(anchorToModule)]
-    .filter((module) => selectedWeather === 'All' || !module.weather || module.weather === selectedWeather)
-    .filter((module) => selectedTimePeriod === 'All' || !module.time_period || module.time_period === selectedTimePeriod)
-    .sort((a, b) => (b.risk_score ?? 0) - (a.risk_score ?? 0))
-    .slice(0, 8);
+  const {
+    selectedWeather,
+    selectedTimePeriod,
+    selectedScenarioId,
+    selectedItem,
+    setSelectedItem,
+    setSelectedScenarioId
+  } = useInteraction();
+  const [rows, setRows] = useState<RiskScenario[]>([]);
+
+  useEffect(() => {
+    loadRiskScenarioSummary().then(setRows);
+  }, []);
+
+  const rankedRows = useMemo(
+    () =>
+      rows
+        .slice()
+        .map((row) => ({
+          ...row,
+          delay_rate: normalizeRate(row.delay_rate),
+          highlighted: isMatchingFilter(row, selectedWeather, selectedTimePeriod)
+        }))
+        .sort((a, b) => (b.risk_score ?? 0) - (a.risk_score ?? 0)),
+    [rows, selectedTimePeriod, selectedWeather]
+  );
+
+  const selectedScenario = useMemo(
+    () => rankedRows.find((row) => row.scenario_id === selectedScenarioId) ?? null,
+    [rankedRows, selectedScenarioId]
+  );
+  const fallbackScenario = rankedRows[0] ?? null;
+  const bubbleScenarios = useMemo(() => {
+    const matching = rankedRows.filter((row) => row.highlighted);
+    const selectedPool = matching.length ? matching : rankedRows;
+    const topMatching = selectedPool.slice(0, 14);
+    const filler = rankedRows
+      .filter((row) => !topMatching.some((item) => item.scenario_id === row.scenario_id))
+      .slice(0, Math.max(0, 18 - topMatching.length));
+
+    return [...topMatching, ...filler];
+  }, [rankedRows]);
+
+  const handleSelectScenario = (scenario: RiskScenario) => {
+    setSelectedItem(scenarioSelection(scenario));
+    setSelectedScenarioId(scenario.scenario_id);
+  };
 
   return (
     <section id="section-risk" data-section-id="risk" className="story-section risk-scenario-section">
-      <SectionTitle eyebrow="Section 05" title="Risk Scenario Explain / 高风险场景解释">
-        用排行形式表达多属性组合风险，先支持 LineUp 式排序，后续可升级为 Parallel Sets 流向图。
+      <SectionTitle eyebrow="Section 05" title="High Risk Scenarios / 高风险场景">
+        用气泡图查看天气、交通、时段和车辆类型如何叠加成延迟风险。底部只保留 Top 5 关键组合，支持快速点选。
       </SectionTitle>
-      <div className="story-panel scenario-ranking">
-        {rows.map((row, index) => {
-          const active = selectedScenarioId === row.scenario_id || selectedScenarioId === row.id;
-          return (
-            <button
-              key={`${row.id}-${index}`}
-              type="button"
-              className={`scenario-row${active ? ' is-active' : ''}`}
-              onClick={() => setSelectedItem({ type: 'module', item: row })}
-            >
-              <span className="scenario-index">{String(index + 1).padStart(2, '0')}</span>
-              <span className="scenario-copy">
-                <strong>{row.label}</strong>
-                <em>{[row.weather, row.traffic_density, row.time_period, row.vehicle_type].filter(Boolean).join(' · ')}</em>
-              </span>
-              <span className="scenario-score-track">
-                <span style={{ width: `${Math.max(8, (row.risk_score ?? 0) * 100)}%` }} />
-              </span>
-              <span className="scenario-values">
-                <strong>{(row.risk_score ?? 0).toFixed(2)}</strong>
-                <em>{Math.round((row.delay_rate ?? 0) * 100)}% delay</em>
-              </span>
-            </button>
-          );
-        })}
+      <div className="story-panel risk-scenario-workbench">
+        <div className="risk-scenario-main">
+          <RiskScenarioBubblePlot
+            scenarios={bubbleScenarios}
+            selectedScenarioId={selectedScenarioId}
+            onSelectScenario={handleSelectScenario}
+          />
+        </div>
+        <RiskScenarioDetailPanel
+          scenario={selectedScenario}
+          fallbackScenario={fallbackScenario}
+          selected={Boolean(selectedItem && 'scenario_id' in selectedItem.item)}
+        />
       </div>
+      <TopCriticalScenarios
+        scenarios={rankedRows}
+        selectedScenarioId={selectedScenarioId}
+        onSelectScenario={handleSelectScenario}
+      />
     </section>
   );
 }

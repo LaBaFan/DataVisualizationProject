@@ -24,15 +24,15 @@ FoodETA 当前采用纯前端静态数据架构：
 本系统主页采用滚动叙事结构组织 Delivery Operation Map。不同于传统 dashboard 中多个图表并列堆叠的形式，本设计将外卖配送城市运行图作为第一屏风险总览入口，并在其后通过滚动 section 依次展开天气影响、交通压力、配送时间节奏、高风险场景解释和异常订单分析。页面左侧固定 Weather Panel，顶部固定 Time Selector，右侧固定 Data Overview，中间为可滚动分析内容。用户可以先在城市运行图中发现风险，再通过滚动进入不同分析主题，形成“总览 -> 筛选 -> 局部解释 -> 订单详情”的 details-on-demand 流程。
 
 - Top Time Selector：固定在页面顶部，用于选择 All、Morning、Noon、Afternoon、Evening、Night 等时段。
-- Left Weather Panel：固定在页面左侧，用于选择 All、Sunny、Fog、Cloudy、Stormy、Sandstorms、Windy、Unknown 等天气条件。
+- Left Weather Panel：固定在页面左侧，用于选择 All、Sunny、Fog、Cloudy、Stormy、Sandstorms、Windy 等天气条件。
 - Right Data Overview：固定在页面右侧，根据当前 active section、天气筛选、时间筛选和选中对象展示当前指标与解释。
 - Scrolling Sections：中间主区域包含 6 个 section，每个 section 聚焦一个分析问题。
 - Operation Overview：以 `public/assets/delivery_city_map.png` 为背景图，叠加 SVG 透明热区、交通压力线段、订单密度点、高风险脉冲圈和微型指标标签。
-- Weather Impact：天气风险横向排行，条长表示延迟率，辅助显示平均配送时长。
-- Traffic Pressure：简化道路 overlay，颜色表示 `traffic_density`，线宽表示 `order_count`，透明度表示 `delay_rate`。
-- Time Rhythm：Morning -> Noon -> Afternoon -> Evening -> Night 的时间带，宽度表示订单量，颜色表示延迟率。
-- Risk Scenario Explain：Top 高风险场景排行，表达天气、交通、时段、车辆类型等条件组合风险。
-- Outlier Orders：距离-配送时长散点图，定位短距离长时长或高延迟订单。
+- Weather Impact：Weather Risk Ranking 天气风险横向排行，条长表示风险评分，辅助显示订单量、平均配送时长和延迟率。
+- Traffic Pressure：Traffic Pressure Bands / 交通压力分层带图，条带长度表示 `order_count`，颜色表示 `delay_rate`，厚度表示平均配送时长，并用小点提示订单密度。
+- Time Rhythm：Morning -> Noon -> Afternoon -> Evening -> Night 的时间带，宽度表示订单量，颜色表示延迟率，高度/亮度表示平均配送时长。
+- Risk Scenario Explain：风险场景气泡图 + 右侧解释面板 + 底部 Top 5，展示天气、交通、时段和车辆类型如何叠加成延迟风险。
+- Outlier Orders：距离-配送时长散点图，定位短距离长时长或高延迟订单，并显示平均线与 32 分钟阈值线。
 
 当前分析流程为：
 
@@ -65,11 +65,12 @@ Scenario Analysis Drawer 包含五个区块：
 - `weather`、`traffic_density`、`time_period`、`vehicle_type`：描述模块对应的配送条件。
 - `order_count`、`avg_delivery_duration_min`、`delay_rate`、`avg_distance_km`、`risk_score`：展示在 tooltip 和 ETA Risk Ticket 中。
 
-后续接入真实数据时，可用 `public/data/risk_scenario_summary.json`、`weather_traffic_summary.json`、`time_period_summary.json` 和 `scenario_orders_sample.json` 生成或覆盖 `mapModules.ts` 中的模块指标。
+后续接入真实数据时，可用 `public/data/overview_summary.json`、`weather_impact_summary.json`、`time_period_summary.json`、`traffic_segment_summary.json`、`risk_scenario_summary.json`、`distance_time_sample.json` 和 `scenario_orders_sample.json` 生成或覆盖前端视图指标。
 
 新增数据 overlay 集中在 `src/data/mapOverlayData.ts`：
 
-- `trafficSegments`：沿底图道路放置 5-8 条短线段。颜色映射 `traffic_density`，线宽映射 `order_count`，透明度映射 `delay_rate`。
+- `trafficSegments`：沿底图道路中心线放置短路段，使用 polyline 表达。颜色映射 `traffic_density`，线宽映射 `order_count`，透明度/发光映射 `delay_rate`。
+- `roadPressureNodes`：放置在真实路口、汇入口、餐厅出入口与客户区入口的道路节点，和短路段共享同一 ETA Risk Ticket 交互。
 - `orderDots`：在餐厅、道路和客户区附近放置订单密度点。点大小映射 `order_count` 或 `delivery_duration_min`，颜色映射是否高延迟。
 - `scenarioAnchors`：为高风险区域放置轻量脉冲圈。半径映射 `risk_score`，颜色映射 `delay_rate`。
 - `miniMetricTags`：默认展示 Top 风险区域的小标签，只保留 `Delay` 和 `Avg` 等两个核心指标。
@@ -83,7 +84,7 @@ Scenario Analysis Drawer 包含五个区块：
 - `selectedWeather`：当前天气筛选，默认为 `All`。
 - `selectedTimePeriod`：当前时段筛选，默认为 `All`。
 - `activeSection`：当前滚动 section，可取 `overview`、`weather`、`traffic`、`time`、`risk`、`outlier`。
-- `selectedItem`：当前点击选中的地图模块、交通线段、订单点、风险脉冲或微型指标标签。
+- `selectedItem`：当前点击选中的地图模块、交通线段、订单点、风险脉冲、微型指标标签，或交通压力分层带。
 - `selectedScenarioId` / `selectedOrderId`：当前选中场景或订单。
 
 Scrollytelling 结构由四个核心组件组织：
@@ -101,16 +102,16 @@ Scrollytelling 结构由四个核心组件组织：
 
 - 当没有选中地图元素时，根据 `activeSection` 展示当前分析主题的问题、摘要指标和解释。
 - 当选择天气或时间后，指标切换为筛选后的订单量、平均配送时长、延迟率、典型交通或高风险组合。
-- 当点击地图模块、交通线段、订单点、风险脉冲或微型标签后，面板切换为 ETA Risk Ticket 语境，展示该对象的订单数、平均配送时长、延迟率、平均距离、风险评分和完整分析入口。
+- 当点击地图模块、交通路段、道路节点、订单点、风险脉冲、微型标签或交通压力分层带后，面板切换为 ETA Risk Ticket 语境，展示该对象的订单数、平均配送时长、延迟率、平均距离、风险评分和完整分析入口。
 
 6 个 section 的分析任务与视图形式如下：
 
 - Operation Overview：回答“当前配送运行状态在哪里出现风险”。视图为 Delivery Operation Map，叠加热区、交通线段、订单点、风险脉冲和微型指标标签。
-- Weather Impact：回答“不同天气下配送是否变慢”。视图为天气风险横向排行，条长表示 `delay_rate`，辅助显示 `avg_delivery_duration_min`。
-- Traffic Pressure：回答“拥堵是否造成配送延迟”。视图为道路压力 overlay，颜色表示 `traffic_density`，线宽表示 `order_count`，透明度表示 `delay_rate`。
-- Time Rhythm：回答“早、中、晚、夜间的配送压力如何变化”。视图为时间带，宽度表示订单量，颜色表示延迟率，并标注 Lunch Rush、Dinner Rush 和 Night Risk。
-- Risk Scenario Explain：回答“哪些条件组合最容易延迟”。视图为高风险场景排行，展示天气、交通、时段和车辆类型组合，并用横向条表达 `risk_score`。
-- Outlier Orders：回答“哪些订单是异常配送”。视图为距离-配送时长散点图，横轴为 `distance_km`，纵轴为 `delivery_duration_min`，颜色区分是否延迟。
+- Weather Impact：回答“不同天气下配送是否变慢”。视图为天气风险横向排行，条长表示 `risk_score`，辅助显示 `order_count`、`avg_delivery_duration_min` 和 `delay_rate`。
+- Traffic Pressure：回答“拥堵是否造成配送延迟”。视图为 Traffic Pressure Bands，条带长度表示 `order_count`，颜色表示 `delay_rate`，厚度表示平均配送时长，小点提示订单密度。
+- Time Rhythm：回答“早、中、晚、夜间的配送压力如何变化”。视图为时间带，宽度表示订单量，颜色表示延迟率，高度/亮度表示平均配送时长，并标注 Lunch Rush、Dinner Rush、Night Risk、Peak Orders 和 Peak Delay。
+- Risk Scenario Explain：回答“哪些条件组合最容易延迟”。视图为风险场景气泡图，横轴为 `avg_delivery_duration_min`，纵轴为 `delay_rate`，气泡大小表示 `order_count`，颜色表示 `risk_score`，边框样式区分车辆类型，底部仅保留 Top 5 简表。
+- Outlier Orders：回答“哪些订单是异常配送”。视图为距离-配送时长散点图，横轴为 `distance_km`，纵轴为 `delivery_duration_min`，颜色区分是否延迟，点大小映射配送时长。
 
 ## 多视图联动
 
@@ -118,7 +119,7 @@ Scrollytelling 结构由四个核心组件组织：
 
 - hover 模块：显示半透明遮罩、类型颜色描边和跟随鼠标的 tooltip。
 - click 模块：保持 selected 高亮，并打开 ETA Risk Ticket。
-- hover/click 数据 overlay：交通线段、订单密度点、风险脉冲圈和微型指标标签均显示 tooltip；点击后更新 ETA Risk Ticket，展示对应的交通压力、订单量、配送时长、延迟率、风险评分或订单详情。
+- hover/click 数据 overlay：交通短路段、道路节点、订单密度点、风险脉冲圈和微型指标标签均显示 tooltip；点击后更新 ETA Risk Ticket，展示对应的道路状态、订单量、配送时长、延迟率、风险评分或订单详情。
 - click 天气筛选：Weather Panel 高亮当前天气；地图中的相关天气区域、风险脉冲、订单点和微型标签保持突出，不相关元素降低透明度；Weather Impact 排行同步高亮；Data Overview 切换到天气统计语境。
 - click 时间筛选：Time Selector 高亮当前时段；地图整体色调、交通线段亮度/线宽和订单点缩放发生变化；Time Rhythm 时间带同步高亮；Data Overview 切换到时间统计语境。
 - scroll section：`activeSection` 更新，右侧 Data Overview 的标题、解释和指标上下文随 section 改变。

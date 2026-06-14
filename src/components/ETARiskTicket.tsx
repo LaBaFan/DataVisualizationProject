@@ -1,4 +1,4 @@
-import { MapSelection, OrderDot } from '../types/data';
+import { MapSelection, OrderDot, TrafficSegment } from '../types/data';
 
 interface ETARiskTicketProps {
   selection: MapSelection | null;
@@ -15,10 +15,12 @@ function formatPercent(value: number | undefined) {
 }
 
 function titleFor(selection: MapSelection) {
-  if (selection.type === 'traffic_segment') return '交通压力 / Traffic Load';
+  if (selection.type === 'traffic_segment') return selection.item.node_kind ? '道路节点 / Road Node' : '道路状态 / Road Status';
   if (selection.type === 'order_dot') return '订单密度点 / Order Dot';
   if (selection.type === 'risk_pulse') return '高风险脉冲 / Risk Pulse';
   if (selection.type === 'metric_tag') return '微型指标 / Metric Tag';
+  if (selection.type === 'risk_heat_halo') return '风险热晕 / Risk Halo';
+  if (selection.type === 'delivery_flow_segment') return '配送流动 / Delivery Flow';
 
   const module = selection.item;
   if (module.type === 'risk_zone') return '风险场景 / Risk Zone';
@@ -33,7 +35,9 @@ function titleFor(selection: MapSelection) {
 
 function explanationFor(selection: MapSelection) {
   if (selection.type === 'traffic_segment') {
-    return '该道路段交通压力越高，通常意味着骑手在途时间增加，并会推高局部配送延迟风险。';
+    return selection.item.node_kind
+      ? '该道路节点位于真实路口或出入口，常常是排队、汇流和转向引起的 ETA 风险放大点。'
+      : '该道路段交通压力越高，通常意味着骑手在途时间增加，并会推高局部配送延迟风险。';
   }
   if (selection.type === 'order_dot') {
     return '该点表示订单或订单聚合位置，点大小映射订单压力或配送时长，橙红色表示高延迟风险。';
@@ -43,6 +47,12 @@ function explanationFor(selection: MapSelection) {
   }
   if (selection.type === 'metric_tag') {
     return '微型指标标签用于在地图上快速标注局部延迟率和平均配送时长。';
+  }
+  if (selection.type === 'risk_heat_halo') {
+    return '风险热晕用半径表达订单压力，用红橙透明度表达局部延迟风险，适合快速定位需要调度干预的区域。';
+  }
+  if (selection.type === 'delivery_flow_segment') {
+    return '流动粒子表示当前筛选下的短距离配送方向和速度变化，只强调运行趋势，不绘制完整路线。';
   }
 
   const module = selection.item;
@@ -72,9 +82,15 @@ function title(selection: MapSelection) {
 
 function description(selection: MapSelection) {
   if (selection.type === 'module') return selection.item.description;
-  if (selection.type === 'traffic_segment') return `${selection.item.traffic_density} traffic · ${formatPercent(selection.item.delay_rate)} delay`;
+  if (selection.type === 'traffic_segment') {
+    return selection.item.node_kind
+      ? `${selection.item.traffic_density} node · ${formatPercent(selection.item.delay_rate)} delay`
+      : `${selection.item.traffic_density} road · ${formatPercent(selection.item.delay_rate)} delay`;
+  }
   if (selection.type === 'order_dot') return selection.item.is_delayed ? '高延迟订单/聚合点' : '普通订单/聚合点';
   if (selection.type === 'risk_pulse') return '高风险场景锚点';
+  if (selection.type === 'risk_heat_halo') return '订单压力与延迟风险叠加区域';
+  if (selection.type === 'delivery_flow_segment') return `${formatPercent(selection.item.delay_rate)} delay · speed ${formatNumber(selection.item.speed, 1)}`;
   return '区域关键指标标签';
 }
 
@@ -92,7 +108,11 @@ function rows(selection: MapSelection): Array<[string, string | undefined]> {
   const item = selection.item;
   const values: Array<[string, string | undefined]> = [];
 
-  if ('traffic_density' in item && item.traffic_density && selection.type === 'traffic_segment') values.push(['交通压力', item.traffic_density]);
+  if ('traffic_density' in item && item.traffic_density && selection.type === 'traffic_segment') {
+    const trafficItem = item as TrafficSegment;
+    values.push(['交通压力', item.traffic_density]);
+    values.push(['对象类型', trafficItem.node_kind ? '道路节点' : '道路段']);
+  }
   if ('order_count' in item && item.order_count) values.push(['订单数', formatNumber(item.order_count)]);
   if ('avg_delivery_duration_min' in item && item.avg_delivery_duration_min) {
     values.push(['平均配送时长', `${formatNumber(item.avg_delivery_duration_min, 1)} min`]);
@@ -104,6 +124,7 @@ function rows(selection: MapSelection): Array<[string, string | undefined]> {
   if ('avg_distance_km' in item && item.avg_distance_km) values.push(['平均距离', `${formatNumber(item.avg_distance_km, 1)} km`]);
   if ('distance_km' in item && item.distance_km) values.push(['距离', `${formatNumber(item.distance_km, 1)} km`]);
   if ('risk_score' in item && typeof item.risk_score === 'number') values.push(['风险评分', formatNumber(item.risk_score, 2)]);
+  if ('speed' in item && typeof item.speed === 'number') values.push(['流速指数', formatNumber(item.speed, 1)]);
   if (selection.type === 'order_dot') values.push(['是否延迟', (item as OrderDot).is_delayed ? 'yes' : 'no']);
 
   return values;

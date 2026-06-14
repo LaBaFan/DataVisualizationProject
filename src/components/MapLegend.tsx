@@ -11,21 +11,25 @@ export default function MapLegend() {
       {!collapsed ? (
         <div className="legend-content">
           <div>
-            <span className="legend-line legend-line-low" />
-            <span>线条颜色 = 交通压力</span>
-          </div>
-          <div>
             <span className="legend-dot legend-dot-small" />
             <span className="legend-dot legend-dot-large" />
-            <span>点大小 = 订单量 / 时长</span>
+            <span>点大小 = 订单量</span>
           </div>
           <div>
-            <span className="legend-risk-color" />
-            <span>红橙 = 高延迟风险</span>
+            <span className="legend-risk-color legend-risk-color-delay" />
+            <span>红橙点 = 延迟订单</span>
           </div>
           <div>
-            <span className="legend-pulse" />
-            <span>脉冲圈 = 高风险场景</span>
+            <span className="legend-risk-color legend-risk-color-normal" />
+            <span>蓝绿点 = 正常订单</span>
+          </div>
+          <div>
+            <span className="legend-halo" />
+            <span>光晕 = 高风险区域</span>
+          </div>
+          <div>
+            <span className="legend-particle" />
+            <span>粒子 = 配送流动</span>
           </div>
         </div>
       ) : null}

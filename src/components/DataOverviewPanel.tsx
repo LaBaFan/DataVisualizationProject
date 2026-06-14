@@ -1,23 +1,63 @@
-import { mapModules } from '../data/mapModules';
-import { miniMetricTags, orderDots, scenarioAnchors, trafficSegments } from '../data/mapOverlayData';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  loadOverviewSummary,
+  loadRiskScenarioSummary,
+  loadTimePeriodSummary,
+  loadTrafficSegmentSummary,
+  loadWeatherImpactSummary
+} from '../api/staticDataClient';
 import { useInteraction } from '../store/interactionContext';
-import { ActiveSection, MapSelection } from '../types/data';
+import {
+  ActiveSection,
+  MapSelection,
+  OverviewSummary,
+  RiskScenario,
+  TimePeriodSummary,
+  TrafficSegmentSummary,
+  WeatherImpactSummary
+} from '../types/data';
 
-const sectionText: Record<ActiveSection, { title: string; question: string }> = {
-  overview: { title: '配送运行总览', question: '从城市运行图识别天气、交通和高风险配送场景。' },
-  weather: { title: '天气影响分析', question: '不同天气下，配送是否变慢，哪些天气更容易延迟？' },
-  traffic: { title: '交通压力分析', question: '拥堵路段是否正在推高 ETA 和延迟率？' },
-  time: { title: '配送时间节奏', question: '早、中、晚、夜间的订单压力和延迟风险如何变化？' },
-  risk: { title: '高风险场景解释', question: '哪些条件组合最容易导致外卖配送延迟？' },
-  outlier: { title: '异常订单详情', question: '哪些订单出现短距离长时长或高风险异常？' }
+const sectionText: Record<ActiveSection, { title: string; question: string; explain: string }> = {
+  overview: {
+    title: '配送运行总览',
+    question: '当前城市配送运行状态在哪里开始出现风险？',
+    explain: '入口地图把道路、订单点、风险脉冲与微型标签叠在同一张外卖城市运行图上。'
+  },
+  weather: {
+    title: '天气影响',
+    question: '哪些天气让 ETA 明显变慢？',
+    explain: '天气排行使用 weather_impact_summary.json，比较订单量、平均配送时长、延迟率和风险评分。'
+  },
+  traffic: {
+    title: '交通压力',
+    question: '哪些道路负载最可能推高延迟？',
+    explain: '交通压力分层带图将 Low、Medium、High 和 Jam 四类状态并列展示，对比不同交通条件下的订单量、平均配送时长和延迟率；相比地图路线，它更直接地展示交通拥堵对 ETA 的整体影响。'
+  },
+  time: {
+    title: '时间节奏',
+    question: '一天中订单压力和延迟风险怎样变化？',
+    explain: 'Time Rhythm Strip 用宽度、颜色和亮度同时表达订单量、延迟率和平均时长。'
+  },
+  risk: {
+    title: '高风险场景',
+    question: '哪些天气、交通、时段和车辆组合最危险？',
+    explain: 'LineUp 风格表格按风险、延迟率或平均时长排序，筛选命中的行会保留强调。'
+  },
+  outlier: {
+    title: '异常订单',
+    question: '哪些订单偏离距离-时长的正常关系？',
+    explain: '散点图以 distance_km 和 delivery_duration_min 定位短距离长时长或显著延迟订单。'
+  }
 };
 
 function fmt(value: number | undefined, digits = 0) {
-  return typeof value === 'number' ? value.toFixed(digits) : '-';
+  return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '-';
 }
 
 function pct(value: number | undefined) {
-  return typeof value === 'number' ? `${Math.round(value * 100)}%` : '-';
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+  const normalized = value > 1 ? value / 100 : value;
+  return `${Math.round(normalized * 100)}%`;
 }
 
 function selectionTitle(selection: MapSelection | null) {
@@ -26,51 +66,110 @@ function selectionTitle(selection: MapSelection | null) {
   return selection.item.order_id ?? selection.item.id;
 }
 
-function metricsForSelection(selection: MapSelection | null) {
+function metricsForSelection(selection: MapSelection | null): Array<[string, string]> | null {
   if (!selection) return null;
   const item = selection.item;
-  return [
-    ['订单数', 'order_count' in item ? fmt(item.order_count) : undefined],
-    ['平均时长', 'avg_delivery_duration_min' in item ? `${fmt(item.avg_delivery_duration_min, 1)} min` : undefined],
-    ['配送时长', 'delivery_duration_min' in item ? `${fmt(item.delivery_duration_min, 1)} min` : undefined],
-    ['延迟率', 'delay_rate' in item ? pct(item.delay_rate) : undefined],
-    ['风险评分', 'risk_score' in item ? fmt(item.risk_score, 2) : undefined]
-  ].filter(([, value]) => value && value !== '-');
+  const values: Array<[string, string]> = [
+    ['订单数', 'order_count' in item ? fmt(item.order_count) : '-'],
+    ['平均时长', 'avg_delivery_duration_min' in item ? `${fmt(item.avg_delivery_duration_min, 1)} min` : '-'],
+    ['配送时长', 'delivery_duration_min' in item ? `${fmt(item.delivery_duration_min, 1)} min` : '-'],
+    ['延迟率', 'delay_rate' in item ? pct(item.delay_rate) : '-'],
+    ['风险评分', 'risk_score' in item ? fmt(item.risk_score, 2) : '-'],
+    ['平均距离', 'avg_distance_km' in item ? `${fmt(item.avg_distance_km, 1)} km` : '-'],
+    ['距离', 'distance_km' in item ? `${fmt(item.distance_km, 1)} km` : '-']
+  ];
+  return values.filter(([, value]) => value !== '-');
 }
 
-function aggregateForWeather(weather: string) {
-  const source = weather === 'All' ? [...mapModules, ...scenarioAnchors, ...miniMetricTags] : [...mapModules, ...scenarioAnchors, ...miniMetricTags].filter((item) => item.weather === weather);
-  const orderCount = source.reduce((sum, item) => sum + (item.order_count ?? 0), 0);
-  const avgDuration = source.length ? source.reduce((sum, item) => sum + (item.avg_delivery_duration_min ?? 0), 0) / source.length : 36.7;
-  const delayRate = source.length ? source.reduce((sum, item) => sum + (item.delay_rate ?? 0), 0) / source.length : 0.24;
-  const top = source.slice().sort((a, b) => (b.risk_score ?? 0) - (a.risk_score ?? 0))[0];
-  return { orderCount, avgDuration, delayRate, top };
+function aggregateWeather(weather: string, rows: WeatherImpactSummary[]) {
+  const row = rows.find((item) => item.weather === weather);
+  if (!row) return null;
+  return {
+    orderCount: row.order_count,
+    avgDuration: row.avg_delivery_duration_min,
+    delayRate: row.delay_rate,
+    riskScore: row.risk_score
+  };
 }
 
-function aggregateForTime(timePeriod: string) {
-  const source =
-    timePeriod === 'All' ? orderDots : orderDots.filter((item) => item.time_period === timePeriod || (!item.time_period && timePeriod === 'night'));
-  const orderCount = source.reduce((sum, item) => sum + (item.order_count ?? 1), 0);
-  const avgDuration = source.length ? source.reduce((sum, item) => sum + item.delivery_duration_min, 0) / source.length : 34.8;
-  const delayRate = source.length ? source.reduce((sum, item) => sum + (item.delay_rate ?? 0), 0) / source.length : 0.32;
-  return { orderCount, avgDuration, delayRate };
+function aggregateTime(timePeriod: string, rows: TimePeriodSummary[]) {
+  const row = rows.find((item) => item.time_period === timePeriod);
+  if (!row) return null;
+  return {
+    orderCount: row.order_count,
+    avgDuration: row.avg_delivery_duration_min,
+    delayRate: row.delay_rate,
+    avgDistance: row.avg_distance_km
+  };
 }
 
 export default function DataOverviewPanel() {
   const { activeSection, selectedWeather, selectedTimePeriod, selectedItem } = useInteraction();
+  const [overview, setOverview] = useState<OverviewSummary | null>(null);
+  const [weatherRows, setWeatherRows] = useState<WeatherImpactSummary[]>([]);
+  const [timeRows, setTimeRows] = useState<TimePeriodSummary[]>([]);
+  const [trafficRows, setTrafficRows] = useState<TrafficSegmentSummary[]>([]);
+  const [riskRows, setRiskRows] = useState<RiskScenario[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      loadOverviewSummary(),
+      loadWeatherImpactSummary(),
+      loadTimePeriodSummary(),
+      loadTrafficSegmentSummary(),
+      loadRiskScenarioSummary()
+    ]).then(([overviewData, weatherData, timeData, trafficData, riskData]) => {
+      setOverview(overviewData);
+      setWeatherRows(weatherData);
+      setTimeRows(timeData);
+      setTrafficRows(trafficData);
+      setRiskRows(riskData);
+    });
+  }, []);
+
   const copy = sectionText[activeSection];
   const selectedMetrics = metricsForSelection(selectedItem);
-  const weather = aggregateForWeather(selectedWeather);
-  const time = aggregateForTime(selectedTimePeriod);
-  const topTraffic = trafficSegments.slice().sort((a, b) => b.risk_score - a.risk_score)[0];
 
-  const metrics = selectedMetrics ?? [
-    ['订单数', fmt(selectedWeather !== 'All' ? weather.orderCount : time.orderCount)],
-    ['平均时长', `${fmt(selectedWeather !== 'All' ? weather.avgDuration : time.avgDuration, 1)} min`],
-    ['延迟率', pct(selectedWeather !== 'All' ? weather.delayRate : time.delayRate)],
-    ['平均距离', '7.2 km'],
-    ['风险评分', fmt((weather.top?.risk_score ?? topTraffic?.risk_score ?? 0.72), 2)]
-  ];
+  const metrics = useMemo(() => {
+    if (selectedMetrics) return selectedMetrics;
+
+    const weatherMetric = selectedWeather !== 'All' ? aggregateWeather(selectedWeather, weatherRows) : null;
+    const timeMetric = selectedTimePeriod !== 'All' ? aggregateTime(selectedTimePeriod, timeRows) : null;
+    const topTraffic = trafficRows.slice().sort((a, b) => (b.delay_rate ?? 0) - (a.delay_rate ?? 0))[0];
+    const topRisk = riskRows.slice().sort((a, b) => b.risk_score - a.risk_score)[0];
+
+    if (weatherMetric) {
+      return [
+        ['天气订单数', fmt(weatherMetric.orderCount)],
+        ['平均时长', `${fmt(weatherMetric.avgDuration, 1)} min`],
+        ['延迟率', pct(weatherMetric.delayRate)],
+        ['风险评分', fmt(weatherMetric.riskScore, 2)],
+        ['当前天气', selectedWeather]
+      ];
+    }
+
+    if (timeMetric) {
+      return [
+        ['时段订单数', fmt(timeMetric.orderCount)],
+        ['平均时长', `${fmt(timeMetric.avgDuration, 1)} min`],
+        ['延迟率', pct(timeMetric.delayRate)],
+        ['平均距离', `${fmt(timeMetric.avgDistance, 1)} km`],
+        ['当前时段', selectedTimePeriod]
+      ];
+    }
+
+    return [
+      ['有效订单', fmt(overview?.order_count ?? overview?.valid_orders ?? overview?.total_orders)],
+      ['平均时长', `${fmt(overview?.avg_delivery_duration_min, 1)} min`],
+      ['全局延迟率', pct(overview?.delay_rate)],
+      ['高压道路', topTraffic?.label ?? '-'],
+      ['最高风险场景', topRisk?.label ?? '-']
+    ];
+  }, [overview, riskRows, selectedItem, selectedMetrics, selectedTimePeriod, selectedWeather, timeRows, trafficRows, weatherRows]);
+
+  const explanation = selectedItem
+    ? '当前为选中对象的 ETA Risk Ticket 摘要。点击对象可以来自分层带、地图、风险表或异常订单散点。'
+    : copy.explain;
 
   return (
     <aside className="data-overview-panel" aria-label="Data overview">
@@ -84,7 +183,7 @@ export default function DataOverviewPanel() {
 
         <div className="overview-filter-summary">
           <span>Weather: {selectedWeather}</span>
-          <span>Time: {selectedTimePeriod === 'All' ? 'All' : selectedTimePeriod}</span>
+          <span>Time: {selectedTimePeriod}</span>
         </div>
 
         <div className="overview-metric-list">
@@ -96,15 +195,7 @@ export default function DataOverviewPanel() {
           ))}
         </div>
 
-        <div className="overview-explain">
-          {selectedItem
-            ? '当前详情来自地图或滚动 section 中的点击对象，可继续在地图中查看完整分析抽屉。'
-            : selectedWeather !== 'All'
-              ? `当前天气筛选会高亮 ${selectedWeather} 相关区域，并降低其他天气场景的不透明度。`
-              : selectedTimePeriod !== 'All'
-                ? `当前时段会改变交通线段亮度和订单点缩放，用于观察 ${selectedTimePeriod} 下的配送压力。`
-                : '滚动中间区域会切换分析主题；左侧天气和顶部时间会联动地图、排行、道路和散点。'}
-        </div>
+        <div className="overview-explain">{explanation}</div>
       </div>
     </aside>
   );

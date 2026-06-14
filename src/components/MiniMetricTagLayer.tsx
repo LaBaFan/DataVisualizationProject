@@ -32,14 +32,15 @@ export default function MiniMetricTagLayer({
 }: MiniMetricTagLayerProps) {
   return (
     <svg className="map-data-layer mini-metric-tag-layer" viewBox="0 0 1600 1000" preserveAspectRatio="none" aria-hidden="false">
-      {tags.map((tag) => {
+      {tags.slice(0, 5).map((tag, index) => {
         const active = hoveredId === tag.id || selectedId === tag.id;
         const weatherMuted = selectedWeather !== 'All' && Boolean(tag.weather) && tag.weather !== selectedWeather;
         const timeMuted = selectedTimePeriod !== 'All' && Boolean(tag.time_period) && tag.time_period !== selectedTimePeriod;
+        const focused = !weatherMuted && !timeMuted && (selectedWeather !== 'All' || selectedTimePeriod !== 'All');
         return (
           <g
             key={tag.id}
-            className={`mini-metric-tag${active ? ' is-active' : ''}${weatherMuted || timeMuted ? ' is-filter-muted' : ''}`}
+            className={`mini-metric-tag${active ? ' is-active' : ''}${weatherMuted || timeMuted ? ' is-filter-muted' : ''}${focused ? ' is-filter-focused' : ''}`}
             transform={`translate(${tag.x} ${tag.y})`}
             role="button"
             tabIndex={0}
@@ -52,8 +53,10 @@ export default function MiniMetricTagLayer({
             }}
           >
             <rect x={0} y={0} width={106} height={42} rx={10} />
-            <text x={12} y={17}>Delay {percent(tag.delay_rate)}</text>
-            <text x={12} y={32}>Avg {minutes(tag.avg_delivery_duration_min)}</text>
+            <circle className="mini-metric-index" cx={13} cy={14} r={9} />
+            <text className="mini-metric-index-text" x={13} y={18}>{index + 1}</text>
+            <text x={27} y={17}>Delay {percent(tag.delay_rate)}</text>
+            <text x={27} y={32}>Avg {minutes(tag.avg_delivery_duration_min)}</text>
           </g>
         );
       })}

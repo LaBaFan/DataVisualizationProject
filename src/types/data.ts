@@ -85,6 +85,13 @@ export interface TrafficSegmentSummary extends MetricSummary {
   risk_score?: number;
 }
 
+export interface TrafficDensitySummary extends MetricSummary {
+  traffic_density: 'Low' | 'Medium' | 'High' | 'Jam';
+  risk_score: number;
+  avg_distance_km?: number;
+  label?: string;
+}
+
 export interface CourierVehicleSummary {
   by_vehicle_type: Array<MetricSummary & { vehicle_type: Nullable<string> }>;
   by_rating_bin: Array<MetricSummary & { rating_bin: Nullable<string> }>;
@@ -204,9 +211,14 @@ export interface TrafficSegment {
   id: string;
   label: string;
   path: string;
+  points: Array<[number, number]>;
+  x?: number;
+  y?: number;
+  node_kind?: 'intersection' | 'merge' | 'customer_gate' | 'restaurant_gate' | 'weather_edge';
   traffic_density: 'Low' | 'Medium' | 'High' | 'Jam' | 'Unknown';
   order_count: number;
   avg_delivery_duration_min: number;
+  avg_distance_km?: number;
   delay_rate: number;
   risk_score: number;
 }
@@ -220,11 +232,54 @@ export interface OrderDot {
   distance_km?: number;
   delivery_duration_min: number;
   delay_rate?: number;
+  risk_score?: number;
   is_delayed?: boolean;
   weather?: string;
   traffic_density?: string;
   time_period?: string;
   vehicle_type?: string;
+}
+
+export interface RiskHeatHalo {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  radius: number;
+  order_count: number;
+  avg_delivery_duration_min?: number;
+  delay_rate: number;
+  risk_score: number;
+  weather?: string;
+  traffic_density?: string;
+  time_period?: string;
+  vehicle_type?: string;
+  scenario_id?: string;
+}
+
+export interface DeliveryFlowSegment {
+  id: string;
+  label: string;
+  start: [number, number];
+  end: [number, number];
+  order_count?: number;
+  avg_delivery_duration_min?: number;
+  delay_rate: number;
+  risk_score?: number;
+  speed: number;
+  weather?: string;
+  traffic_density?: string;
+  time_period?: string;
+  vehicle_type?: string;
+}
+
+export interface ViewContextMetrics {
+  weather: string;
+  time_period: string;
+  order_count: number;
+  avg_delivery_duration_min: number;
+  delay_threshold_min: number;
+  delay_rate: number;
 }
 
 export interface ScenarioAnchor {
@@ -265,6 +320,8 @@ export type MapSelection =
   | { type: 'traffic_segment'; item: TrafficSegment }
   | { type: 'order_dot'; item: OrderDot }
   | { type: 'risk_pulse'; item: ScenarioAnchor }
-  | { type: 'metric_tag'; item: MiniMetricTag };
+  | { type: 'metric_tag'; item: MiniMetricTag }
+  | { type: 'risk_heat_halo'; item: RiskHeatHalo }
+  | { type: 'delivery_flow_segment'; item: DeliveryFlowSegment };
 
 export type ActiveSection = 'overview' | 'weather' | 'traffic' | 'time' | 'risk' | 'outlier';

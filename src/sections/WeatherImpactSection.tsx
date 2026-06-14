@@ -1,46 +1,63 @@
+import { useEffect, useMemo, useState } from 'react';
+import { loadWeatherImpactSummary } from '../api/staticDataClient';
 import SectionTitle from '../components/SectionTitle';
-import { mapModules } from '../data/mapModules';
-import { miniMetricTags, scenarioAnchors } from '../data/mapOverlayData';
 import { useInteraction } from '../store/interactionContext';
+import { WeatherImpactSummary } from '../types/data';
 
-const fallbackWeather = ['Sunny', 'Fog', 'Cloudy', 'Rainy', 'Stormy', 'Sandstorms', 'Windy', 'Unknown'];
+const allowedWeather = new Set(['Sunny', 'Fog', 'Cloudy', 'Stormy', 'Sandstorms', 'Windy']);
 
-function weatherRows() {
-  return fallbackWeather.map((weather) => {
-    const source = [...mapModules, ...scenarioAnchors, ...miniMetricTags].filter((item) => item.weather === weather);
-    const count = source.reduce((sum, item) => sum + (item.order_count ?? 0), 0) || 220 + weather.length * 80;
-    const duration = source.length ? source.reduce((sum, item) => sum + (item.avg_delivery_duration_min ?? 0), 0) / source.length : 28 + weather.length * 1.4;
-    const delay = source.length ? source.reduce((sum, item) => sum + (item.delay_rate ?? 0), 0) / source.length : 0.18 + weather.length * 0.035;
-    const risk = source.length ? Math.max(...source.map((item) => item.risk_score ?? 0)) : Math.min(0.86, delay + 0.18);
-    return { weather, count, duration, delay, risk };
-  }).sort((a, b) => b.delay - a.delay);
+function pct(value: number | undefined) {
+  return typeof value === 'number' ? `${Math.round(value * 100)}%` : '-';
 }
 
 export default function WeatherImpactSection() {
   const { selectedWeather, setSelectedWeather } = useInteraction();
-  const rows = weatherRows();
+  const [rows, setRows] = useState<WeatherImpactSummary[]>([]);
+
+  useEffect(() => {
+    loadWeatherImpactSummary().then((data) => {
+      setRows(data.filter((row) => row.weather && allowedWeather.has(row.weather)));
+    });
+  }, []);
+
+  const rankedRows = useMemo(
+    () =>
+      rows
+        .slice()
+        .sort((a, b) => (b.risk_score ?? b.delay_rate ?? 0) - (a.risk_score ?? a.delay_rate ?? 0)),
+    [rows]
+  );
+
+  const maxOrders = Math.max(...rankedRows.map((row) => row.order_count), 1);
 
   return (
     <section id="section-weather" data-section-id="weather" className="story-section weather-impact-section">
-      <SectionTitle eyebrow="Section 02" title="Weather Impact / 天气影响分析">
-        横向排行直接回答不同天气下配送是否变慢，条长表示延迟率，数字显示平均配送时长。
+      <SectionTitle eyebrow="Section 02" title="Weather Risk Ranking / 天气影响">
+        哪些天气会让 ETA 变慢？按综合风险评分排序，条长表达风险，辅助查看订单量、平均配送时长和延迟率。
       </SectionTitle>
-      <div className="story-panel weather-ranking">
-        {rows.map((row) => {
-          const active = selectedWeather === row.weather;
+      <div className="story-panel weather-ranking" aria-label="Weather Risk Ranking">
+        {rankedRows.map((row, index) => {
+          const weather = row.weather ?? 'Unknown';
+          const active = selectedWeather === weather;
+          const risk = row.risk_score ?? row.delay_rate ?? 0;
           return (
             <button
-              key={row.weather}
+              key={weather}
               type="button"
-              className={`ranking-row${active ? ' is-active' : ''}${selectedWeather !== 'All' && !active ? ' is-muted' : ''}`}
-              onClick={() => setSelectedWeather(row.weather)}
+              className={`ranking-row weather-risk-row${active ? ' is-active' : ''}${selectedWeather !== 'All' && !active ? ' is-muted' : ''}`}
+              onClick={() => setSelectedWeather(weather)}
+              title={`选择 ${weather} 天气筛选所有视图`}
             >
-              <span className="ranking-name">{row.weather}</span>
+              <span className="ranking-index">{String(index + 1).padStart(2, '0')}</span>
+              <span className="ranking-name">{weather}</span>
               <span className="ranking-track">
-                <span style={{ width: `${Math.max(8, row.delay * 100)}%` }} />
+                <span style={{ width: `${Math.max(8, risk * 100)}%` }} />
               </span>
-              <strong>{Math.round(row.delay * 100)}%</strong>
-              <em>{row.duration.toFixed(1)} min</em>
+              <span className="ranking-order-bar" style={{ width: `${Math.max(18, (row.order_count / maxOrders) * 100)}%` }} />
+              <strong>{risk.toFixed(2)}</strong>
+              <em>
+                {row.order_count.toLocaleString()} orders · {row.avg_delivery_duration_min.toFixed(1)} min · {pct(row.delay_rate)} delay
+              </em>
             </button>
           );
         })}

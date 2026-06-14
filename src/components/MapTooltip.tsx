@@ -15,10 +15,14 @@ function formatPercent(value: number | undefined) {
 }
 
 function typeLabel(selection: MapSelection) {
-  if (selection.type === 'traffic_segment') return '交通压力流量条';
+  if (selection.type === 'traffic_segment') {
+    return selection.item.node_kind ? '道路节点' : '道路路段';
+  }
   if (selection.type === 'order_dot') return '订单密度点';
   if (selection.type === 'risk_pulse') return '延迟风险脉冲圈';
   if (selection.type === 'metric_tag') return '区域微型指标';
+  if (selection.type === 'risk_heat_halo') return '风险热晕区域';
+  if (selection.type === 'delivery_flow_segment') return '配送流动粒子';
 
   const labels: Record<typeof selection.item.type, string> = {
     restaurant: '餐厅',
@@ -44,6 +48,7 @@ function tooltipMetrics(selection: MapSelection): Array<[string, string]> {
   if ('delivery_duration_min' in item && item.delivery_duration_min) {
     metrics.push(['配送时长', `${formatNumber(item.delivery_duration_min, 1)} min`]);
   }
+  if ('speed' in item && item.speed) metrics.push(['流速', formatNumber(item.speed, 1)]);
   if ('delay_rate' in item && typeof item.delay_rate === 'number') metrics.push(['延迟率', formatPercent(item.delay_rate)]);
   if ('risk_score' in item && item.risk_score) metrics.push(['风险评分', formatNumber(item.risk_score, 2)]);
   if ('distance_km' in item && item.distance_km) metrics.push(['距离', `${formatNumber(item.distance_km, 1)} km`]);

@@ -2,9 +2,14 @@ import { MiniMetricTag, OrderDot, ScenarioAnchor, TrafficSegment } from '../type
 
 export const trafficSegments: TrafficSegment[] = [
   {
-    id: 'traffic-central-jam-a',
-    label: '中央拥堵主路 A',
-    path: 'M548 426 C650 390 746 406 858 462',
+    id: 'road-central-main-west',
+    label: '中央主干路西段',
+    path: 'M552 432 L662 410 L770 424',
+    points: [
+      [552, 432],
+      [662, 410],
+      [770, 424]
+    ],
     traffic_density: 'Jam',
     order_count: 960,
     avg_delivery_duration_min: 39.1,
@@ -12,9 +17,14 @@ export const trafficSegments: TrafficSegment[] = [
     risk_score: 0.82
   },
   {
-    id: 'traffic-central-jam-b',
-    label: '中央拥堵主路 B',
-    path: 'M894 484 C1000 538 1118 526 1236 482',
+    id: 'road-central-main-east',
+    label: '中央主干路东段',
+    path: 'M870 468 L994 504 L1124 496',
+    points: [
+      [870, 468],
+      [994, 504],
+      [1124, 496]
+    ],
     traffic_density: 'Jam',
     order_count: 820,
     avg_delivery_duration_min: 41.8,
@@ -22,9 +32,14 @@ export const trafficSegments: TrafficSegment[] = [
     risk_score: 0.86
   },
   {
-    id: 'traffic-upper-high',
-    label: '上方高压道路',
-    path: 'M430 330 C552 276 662 258 806 296',
+    id: 'road-upper-fog-edge',
+    label: '左上雾区边缘路',
+    path: 'M408 338 L520 312 L638 292',
+    points: [
+      [408, 338],
+      [520, 312],
+      [638, 292]
+    ],
     traffic_density: 'High',
     order_count: 540,
     avg_delivery_duration_min: 34.5,
@@ -32,9 +47,14 @@ export const trafficSegments: TrafficSegment[] = [
     risk_score: 0.63
   },
   {
-    id: 'traffic-right-rain-jam',
-    label: '右侧雨区拥堵道路',
-    path: 'M1130 368 C1232 346 1366 380 1460 448',
+    id: 'road-upper-right-rain',
+    label: '右上雨区连接路',
+    path: 'M1188 336 L1302 356 L1416 402',
+    points: [
+      [1188, 336],
+      [1302, 356],
+      [1416, 402]
+    ],
     traffic_density: 'Jam',
     order_count: 610,
     avg_delivery_duration_min: 43.6,
@@ -42,9 +62,14 @@ export const trafficSegments: TrafficSegment[] = [
     risk_score: 0.84
   },
   {
-    id: 'traffic-lower-medium-a',
-    label: '下方中压道路 A',
-    path: 'M332 760 C494 708 650 710 802 748',
+    id: 'road-lower-restaurant-west',
+    label: '底部餐厅西侧路',
+    path: 'M348 756 L482 724 L618 728',
+    points: [
+      [348, 756],
+      [482, 724],
+      [618, 728]
+    ],
     traffic_density: 'Medium',
     order_count: 720,
     avg_delivery_duration_min: 32.2,
@@ -52,9 +77,14 @@ export const trafficSegments: TrafficSegment[] = [
     risk_score: 0.52
   },
   {
-    id: 'traffic-lower-medium-b',
-    label: '下方中压道路 B',
-    path: 'M868 772 C996 826 1134 802 1288 728',
+    id: 'road-lower-restaurant-east',
+    label: '底部餐厅东侧路',
+    path: 'M844 758 L984 802 L1138 780',
+    points: [
+      [844, 758],
+      [984, 802],
+      [1138, 780]
+    ],
     traffic_density: 'Medium',
     order_count: 650,
     avg_delivery_duration_min: 33.6,
@@ -62,14 +92,151 @@ export const trafficSegments: TrafficSegment[] = [
     risk_score: 0.58
   },
   {
-    id: 'traffic-left-low',
-    label: '左侧低压支路',
-    path: 'M210 506 C304 464 406 440 506 420',
+    id: 'road-left-night-local',
+    label: '左下夜间支路',
+    path: 'M214 508 L318 476 L430 452',
+    points: [
+      [214, 508],
+      [318, 476],
+      [430, 452]
+    ],
     traffic_density: 'Low',
     order_count: 360,
     avg_delivery_duration_min: 27.4,
     delay_rate: 0.22,
     risk_score: 0.34
+  },
+  {
+    id: 'road-right-customer-gate',
+    label: '右下客户区入口路',
+    path: 'M1268 552 L1374 590 L1466 652',
+    points: [
+      [1268, 552],
+      [1374, 590],
+      [1466, 652]
+    ],
+    traffic_density: 'Jam',
+    order_count: 590,
+    avg_delivery_duration_min: 44.8,
+    delay_rate: 0.76,
+    risk_score: 0.88
+  },
+  {
+    id: 'road-central-left-turn',
+    label: '中央路口左转段',
+    path: 'M742 426 L796 500 L834 578',
+    points: [
+      [742, 426],
+      [796, 500],
+      [834, 578]
+    ],
+    traffic_density: 'High',
+    order_count: 470,
+    avg_delivery_duration_min: 36.9,
+    delay_rate: 0.51,
+    risk_score: 0.67
+  },
+  {
+    id: 'road-central-right-turn',
+    label: '中央路口右转段',
+    path: 'M1038 504 L1116 574 L1196 654',
+    points: [
+      [1038, 504],
+      [1116, 574],
+      [1196, 654]
+    ],
+    traffic_density: 'Medium',
+    order_count: 430,
+    avg_delivery_duration_min: 35.4,
+    delay_rate: 0.44,
+    risk_score: 0.59
+  }
+];
+
+export const roadPressureNodes: TrafficSegment[] = [
+  {
+    id: 'node-central-junction',
+    label: '中央主干路路口',
+    path: 'M780 424 L780 424',
+    points: [[780, 424]],
+    x: 780,
+    y: 424,
+    node_kind: 'intersection',
+    traffic_density: 'Jam',
+    order_count: 760,
+    avg_delivery_duration_min: 40.6,
+    delay_rate: 0.69,
+    risk_score: 0.84
+  },
+  {
+    id: 'node-east-merge',
+    label: '东侧汇入口',
+    path: 'M1124 496 L1124 496',
+    points: [[1124, 496]],
+    x: 1124,
+    y: 496,
+    node_kind: 'merge',
+    traffic_density: 'Jam',
+    order_count: 640,
+    avg_delivery_duration_min: 42.2,
+    delay_rate: 0.72,
+    risk_score: 0.86
+  },
+  {
+    id: 'node-upper-rain-junction',
+    label: '右上雨区路口',
+    path: 'M1302 356 L1302 356',
+    points: [[1302, 356]],
+    x: 1302,
+    y: 356,
+    node_kind: 'intersection',
+    traffic_density: 'High',
+    order_count: 520,
+    avg_delivery_duration_min: 39.7,
+    delay_rate: 0.62,
+    risk_score: 0.78
+  },
+  {
+    id: 'node-customer-gate',
+    label: '右下客户区入口',
+    path: 'M1374 590 L1374 590',
+    points: [[1374, 590]],
+    x: 1374,
+    y: 590,
+    node_kind: 'customer_gate',
+    traffic_density: 'Jam',
+    order_count: 590,
+    avg_delivery_duration_min: 44.8,
+    delay_rate: 0.76,
+    risk_score: 0.88
+  },
+  {
+    id: 'node-restaurant-south',
+    label: '底部餐厅路口',
+    path: 'M984 802 L984 802',
+    points: [[984, 802]],
+    x: 984,
+    y: 802,
+    node_kind: 'restaurant_gate',
+    traffic_density: 'Medium',
+    order_count: 650,
+    avg_delivery_duration_min: 33.6,
+    delay_rate: 0.42,
+    risk_score: 0.58
+  },
+  {
+    id: 'node-fog-edge',
+    label: '左上雾区边缘路口',
+    path: 'M520 312 L520 312',
+    points: [[520, 312]],
+    x: 520,
+    y: 312,
+    node_kind: 'weather_edge',
+    traffic_density: 'High',
+    order_count: 540,
+    avg_delivery_duration_min: 34.5,
+    delay_rate: 0.43,
+    risk_score: 0.63
   }
 ];
 

@@ -3,6 +3,7 @@ import { TrafficSegment } from '../types/data';
 
 interface TrafficOverlayLayerProps {
   segments: TrafficSegment[];
+  nodes?: TrafficSegment[];
   hoveredId?: string | null;
   selectedId?: string | null;
   selectedWeather?: string;
@@ -28,8 +29,13 @@ function opacity(delayRate: number) {
   return Math.max(0.42, Math.min(0.82, 0.32 + delayRate * 0.58));
 }
 
+function pointsValue(segment: TrafficSegment) {
+  return segment.points.map(([x, y]) => `${x},${y}`).join(' ');
+}
+
 export default function TrafficOverlayLayer({
   segments,
+  nodes = [],
   hoveredId,
   selectedId,
   selectedWeather = 'All',
@@ -46,10 +52,10 @@ export default function TrafficOverlayLayer({
           selectedTimePeriod === 'lunch_peak' || selectedTimePeriod === 'dinner_peak' || selectedTimePeriod === 'night';
         const weatherFocus = selectedWeather !== 'All' && (segment.traffic_density === 'Jam' || segment.traffic_density === 'High');
         return (
-          <path
+          <polyline
             key={segment.id}
             className={`traffic-segment${active ? ' is-active' : ''}${trafficBoost ? ' is-time-boosted' : ''}${weatherFocus ? ' is-weather-focused' : ''}`}
-            d={segment.path}
+            points={pointsValue(segment)}
             style={
               {
                 '--traffic-color': trafficColors[segment.traffic_density],
@@ -65,6 +71,34 @@ export default function TrafficOverlayLayer({
             onClick={(event) => {
               event.stopPropagation();
               onSelect(segment);
+            }}
+          />
+        );
+      })}
+      {nodes.map((node) => {
+        const active = hoveredId === node.id || selectedId === node.id;
+        const weatherFocus = selectedWeather !== 'All' && (node.traffic_density === 'Jam' || node.traffic_density === 'High');
+        return (
+          <circle
+            key={node.id}
+            className={`road-pressure-node${active ? ' is-active' : ''}${weatherFocus ? ' is-weather-focused' : ''}`}
+            cx={node.x}
+            cy={node.y}
+            r={Math.max(6, Math.min(13, 5 + node.order_count / 130))}
+            style={
+              {
+                '--traffic-color': trafficColors[node.traffic_density],
+                '--traffic-opacity': opacity(node.delay_rate)
+              } as CSSProperties
+            }
+            role="button"
+            tabIndex={0}
+            aria-label={node.label}
+            onMouseMove={(event) => onHover(node, event)}
+            onMouseLeave={onLeave}
+            onClick={(event) => {
+              event.stopPropagation();
+              onSelect(node);
             }}
           />
         );
