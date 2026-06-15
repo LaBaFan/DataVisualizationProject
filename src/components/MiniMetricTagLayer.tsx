@@ -1,5 +1,5 @@
 import { MouseEvent } from 'react';
-import { MiniMetricTag } from '../types/data';
+import { ActiveSection, MiniMetricTag } from '../types/data';
 
 interface MiniMetricTagLayerProps {
   tags: MiniMetricTag[];
@@ -7,6 +7,7 @@ interface MiniMetricTagLayerProps {
   selectedId?: string | null;
   selectedWeather?: string;
   selectedTimePeriod?: string;
+  activeScene?: ActiveSection;
   onHover: (tag: MiniMetricTag, event: MouseEvent<SVGElement>) => void;
   onLeave: () => void;
   onSelect: (tag: MiniMetricTag) => void;
@@ -26,6 +27,7 @@ export default function MiniMetricTagLayer({
   selectedId,
   selectedWeather = 'All',
   selectedTimePeriod = 'All',
+  activeScene = 'overview',
   onHover,
   onLeave,
   onSelect
@@ -37,10 +39,13 @@ export default function MiniMetricTagLayer({
         const weatherMuted = selectedWeather !== 'All' && Boolean(tag.weather) && tag.weather !== selectedWeather;
         const timeMuted = selectedTimePeriod !== 'All' && Boolean(tag.time_period) && tag.time_period !== selectedTimePeriod;
         const focused = !weatherMuted && !timeMuted && (selectedWeather !== 'All' || selectedTimePeriod !== 'All');
+        const trafficFocused = activeScene === 'traffic' && (tag.traffic_density === 'High' || tag.traffic_density === 'Jam');
+        const riskFocused = activeScene === 'risk' && (tag.risk_score ?? tag.delay_rate ?? 0) >= 0.68;
+        const weatherSceneFocused = activeScene === 'weather' && !weatherMuted;
         return (
           <g
             key={tag.id}
-            className={`mini-metric-tag${active ? ' is-active' : ''}${weatherMuted || timeMuted ? ' is-filter-muted' : ''}${focused ? ' is-filter-focused' : ''}`}
+            className={`mini-metric-tag scene-${activeScene}${active ? ' is-active' : ''}${weatherMuted || timeMuted ? ' is-filter-muted' : ''}${focused ? ' is-filter-focused' : ''}${weatherSceneFocused ? ' is-scene-focused' : ''}${trafficFocused ? ' is-traffic-focused' : ''}${riskFocused ? ' is-risk-focused' : ''}`}
             transform={`translate(${tag.x} ${tag.y})`}
             role="button"
             tabIndex={0}

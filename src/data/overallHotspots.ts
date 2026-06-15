@@ -1,0 +1,135 @@
+import { SceneHotspot } from '../types/data';
+
+export type { SceneHotspot };
+
+export const overallHotspots: SceneHotspot[] = [
+  {
+    id: 'dispatch_center_hotspot',
+    targetSceneId: 'dispatch_center',
+    label: '配送中心',
+    type: 'rect',
+    coords: [660, 410, 260, 170],
+    description: '进入配送中心调度区，观察派单压力与骑手出发效率。',
+    order_count: 438,
+    avg_delivery_duration_min: 34.8,
+    delay_rate: 0.31,
+    risk_score: 0.58
+  },
+  {
+    id: 'restaurant_street_hotspot',
+    targetSceneId: 'restaurant_street',
+    label: '餐饮街区',
+    type: 'polygon',
+    coords: [180, 520, 410, 470, 520, 590, 450, 755, 210, 745, 125, 650],
+    description: '进入餐饮街区取餐区，查看餐厅密集导致的等待风险。',
+    order_count: 610,
+    avg_delivery_duration_min: 39.4,
+    delay_rate: 0.43,
+    risk_score: 0.7,
+    traffic_density: 'High'
+  },
+  {
+    id: 'fog_business_hotspot',
+    targetSceneId: 'fog_business',
+    label: '雾天商务区',
+    type: 'circle',
+    coords: [1120, 300, 135],
+    description: '进入雾天商务区，观察低能见度下的 ETA 变化。',
+    order_count: 286,
+    avg_delivery_duration_min: 42.1,
+    delay_rate: 0.48,
+    risk_score: 0.74,
+    weather: 'Fog'
+  },
+  {
+    id: 'storm_area_hotspot',
+    targetSceneId: 'storm_area',
+    label: '暴雨雷暴区',
+    type: 'polygon',
+    coords: [1150, 565, 1425, 530, 1505, 700, 1345, 870, 1115, 820, 1055, 675],
+    description: '进入暴雨雷暴区，查看极端天气导致的高延迟聚集。',
+    order_count: 344,
+    avg_delivery_duration_min: 49.8,
+    delay_rate: 0.64,
+    risk_score: 0.88,
+    weather: 'Stormy',
+    traffic_density: 'Jam'
+  },
+  {
+    id: 'high_risk_residential_hotspot',
+    targetSceneId: 'high_risk_residential',
+    label: '高风险住宅区',
+    type: 'rect',
+    coords: [860, 680, 250, 205],
+    description: '进入高风险住宅区，解释末端配送和高风险订单组合。',
+    order_count: 520,
+    avg_delivery_duration_min: 46.6,
+    delay_rate: 0.57,
+    risk_score: 0.83,
+    time_period: 'dinner_peak'
+  },
+  {
+    id: 'night_low_peak_hotspot',
+    targetSceneId: 'night_low_peak',
+    label: '夜间低峰区',
+    type: 'circle',
+    coords: [320, 260, 125],
+    description: '进入夜间低峰区，比较低峰订单量与长距离样本。',
+    order_count: 148,
+    avg_delivery_duration_min: 31.7,
+    delay_rate: 0.22,
+    risk_score: 0.42,
+    time_period: 'night'
+  },
+  {
+    id: 'traffic_hub_hotspot',
+    targetSceneId: 'traffic_hub',
+    label: '交通主干道',
+    type: 'polygon',
+    coords: [590, 585, 760, 550, 1030, 610, 1230, 610, 1240, 700, 990, 715, 735, 665, 575, 705],
+    description: '进入交通主干道压力区，查看拥堵节点和道路瓶颈。',
+    order_count: 702,
+    avg_delivery_duration_min: 44.2,
+    delay_rate: 0.52,
+    risk_score: 0.79,
+    traffic_density: 'High'
+  },
+  {
+    id: 'mixed_food_community_hotspot',
+    targetSceneId: 'mixed_food_community',
+    label: '餐饮社区混合区',
+    type: 'rect',
+    coords: [565, 175, 285, 170],
+    description: '进入餐饮社区混合区，查看供给端和需求端双重压力。',
+    order_count: 474,
+    avg_delivery_duration_min: 37.5,
+    delay_rate: 0.38,
+    risk_score: 0.66
+  },
+  {
+    id: 'sunny_hotspot',
+    targetSceneId: 'sunny',
+    label: '晴天基准',
+    type: 'circle',
+    coords: [1450, 210, 74],
+    description: '进入晴天基准模块，作为天气影响对照组。',
+    order_count: 392,
+    avg_delivery_duration_min: 30.2,
+    delay_rate: 0.18,
+    risk_score: 0.34,
+    weather: 'Sunny'
+  },
+  {
+    id: 'windy_hotspot',
+    targetSceneId: 'windy',
+    label: '大风模块',
+    type: 'circle',
+    coords: [145, 165, 64],
+    description: '进入大风天气模块，查看速度波动和末端风险。',
+    order_count: 220,
+    avg_delivery_duration_min: 36.8,
+    delay_rate: 0.33,
+    risk_score: 0.55,
+    weather: 'Windy'
+  }
+];

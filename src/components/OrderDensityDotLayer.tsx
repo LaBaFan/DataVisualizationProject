@@ -1,5 +1,5 @@
 import { CSSProperties, MouseEvent } from 'react';
-import { OrderDot } from '../types/data';
+import { ActiveSection, OrderDot } from '../types/data';
 
 interface OrderDensityDotLayerProps {
   dots: OrderDot[];
@@ -7,6 +7,7 @@ interface OrderDensityDotLayerProps {
   selectedId?: string | null;
   selectedWeather?: string;
   selectedTimePeriod?: string;
+  activeScene?: ActiveSection;
   onHover: (dot: OrderDot, event: MouseEvent<SVGElement>) => void;
   onLeave: () => void;
   onSelect: (dot: OrderDot) => void;
@@ -33,6 +34,7 @@ export default function OrderDensityDotLayer({
   selectedId,
   selectedWeather = 'All',
   selectedTimePeriod = 'All',
+  activeScene = 'overview',
   onHover,
   onLeave,
   onSelect
@@ -46,10 +48,13 @@ export default function OrderDensityDotLayer({
         const weatherMuted = selectedWeather !== 'All' && Boolean(dot.weather) && dot.weather !== selectedWeather;
         const timeMuted = selectedTimePeriod !== 'All' && Boolean(dot.time_period) && dot.time_period !== selectedTimePeriod;
         const focused = !weatherMuted && !timeMuted && (selectedWeather !== 'All' || selectedTimePeriod !== 'All');
+        const trafficFocused = activeScene === 'traffic' && (dot.traffic_density === 'High' || dot.traffic_density === 'Jam');
+        const orderFocused = activeScene === 'outlier' && (dot.is_delayed || (dot.delay_rate ?? 0) >= 0.55);
+        const weatherSceneFocused = activeScene === 'weather' && !weatherMuted;
         return (
           <circle
             key={dot.id}
-            className={`order-density-dot${active ? ' is-active' : ''}${weatherMuted || timeMuted ? ' is-filter-muted' : ''}${focused ? ' is-filter-focused' : ''}${rushBoost ? ' is-rush-boosted' : ''}`}
+            className={`order-density-dot scene-${activeScene}${active ? ' is-active' : ''}${weatherMuted || timeMuted ? ' is-filter-muted' : ''}${focused ? ' is-filter-focused' : ''}${rushBoost ? ' is-rush-boosted' : ''}${weatherSceneFocused ? ' is-scene-focused' : ''}${trafficFocused ? ' is-traffic-focused' : ''}${orderFocused ? ' is-order-focused' : ''}`}
             cx={dot.x}
             cy={dot.y}
             r={dotRadius(dot)}

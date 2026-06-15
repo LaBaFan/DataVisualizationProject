@@ -1,56 +1,61 @@
-import { useEffect } from 'react';
-import OperationOverviewSection from '../sections/OperationOverviewSection';
-import OutlierOrdersSection from '../sections/OutlierOrdersSection';
-import RiskScenarioSection from '../sections/RiskScenarioSection';
-import TimeRhythmSection from '../sections/TimeRhythmSection';
-import TrafficPressureSection from '../sections/TrafficPressureSection';
-import WeatherImpactSection from '../sections/WeatherImpactSection';
+import StoryChapter from './StoryChapter';
+import { useActiveStorySection } from '../hooks/useActiveStorySection';
 import { useInteraction } from '../store/interactionContext';
-import { ActiveSection } from '../types/data';
+import DeliveryOperationMap from '../views/DeliveryOperationMap';
 
-const sectionIds: ActiveSection[] = ['overview', 'weather', 'traffic', 'time', 'risk', 'outlier'];
+const chapters = [
+  {
+    id: 'overview',
+    step: '01',
+    title: 'Overview'
+  },
+  {
+    id: 'weather',
+    step: '02',
+    title: 'Weather'
+  },
+  {
+    id: 'traffic',
+    step: '03',
+    title: 'Traffic'
+  },
+  {
+    id: 'time',
+    step: '04',
+    title: 'Time'
+  },
+  {
+    id: 'risk',
+    step: '05',
+    title: 'Risk'
+  },
+  {
+    id: 'outlier',
+    step: '06',
+    title: 'Orders'
+  }
+] as const;
 
 export default function ScrollStoryContainer() {
-  const { activeSection, setActiveSectionFromScroll } = useInteraction();
-
-  useEffect(() => {
-    const elements = sectionIds
-      .map((id) => document.getElementById(`section-${id}`))
-      .filter((element): element is HTMLElement => Boolean(element));
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => {
-            const aTop = Math.abs(a.boundingClientRect.top);
-            const bTop = Math.abs(b.boundingClientRect.top);
-            return b.intersectionRatio - a.intersectionRatio || aTop - bTop;
-          })[0];
-        const id = visible?.target.getAttribute('data-section-id') as ActiveSection | null;
-        if (id) setActiveSectionFromScroll(id);
-      },
-      { threshold: [0.48, 0.58, 0.68], rootMargin: '-30% 0px -42% 0px' }
-    );
-
-    elements.forEach((element) => observer.observe(element));
-    return () => observer.disconnect();
-  }, [setActiveSectionFromScroll]);
-
-  useEffect(() => {
-    sectionIds.forEach((id) => {
-      document.getElementById(`section-${id}`)?.classList.toggle('is-active', id === activeSection);
-    });
-  }, [activeSection]);
+  const { activeSection } = useInteraction();
+  useActiveStorySection();
 
   return (
-    <main className="scroll-story-container">
-      <OperationOverviewSection />
-      <WeatherImpactSection />
-      <TrafficPressureSection />
-      <TimeRhythmSection />
-      <RiskScenarioSection />
-      <OutlierOrdersSection />
-    </main>
+    <section className="scroll-story-container">
+      <div className="pinned-operation-map">
+        <DeliveryOperationMap />
+      </div>
+      <div className="story-chapter-track" aria-label="FoodETA scrollytelling chapters">
+        {chapters.map((chapter) => (
+          <StoryChapter
+            key={chapter.id}
+            id={chapter.id}
+            step={chapter.step}
+            title={chapter.title}
+            active={activeSection === chapter.id}
+          />
+        ))}
+      </div>
+    </section>
   );
 }

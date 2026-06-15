@@ -15,6 +15,7 @@ function formatPercent(value: number | undefined) {
 }
 
 function typeLabel(selection: MapSelection) {
+  if (selection.type === 'scene_hotspot') return '总览入口热区';
   if (selection.type === 'traffic_segment') {
     return selection.item.node_kind ? '道路节点' : '道路路段';
   }
@@ -52,6 +53,7 @@ function tooltipMetrics(selection: MapSelection): Array<[string, string]> {
   if ('delay_rate' in item && typeof item.delay_rate === 'number') metrics.push(['延迟率', formatPercent(item.delay_rate)]);
   if ('risk_score' in item && item.risk_score) metrics.push(['风险评分', formatNumber(item.risk_score, 2)]);
   if ('distance_km' in item && item.distance_km) metrics.push(['距离', `${formatNumber(item.distance_km, 1)} km`]);
+  if (selection.type === 'scene_hotspot') metrics.push(['目标模块', selection.item.targetSceneId]);
 
   return metrics;
 }

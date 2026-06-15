@@ -1,5 +1,5 @@
 import { CSSProperties, MouseEvent } from 'react';
-import { DeliveryFlowSegment } from '../types/data';
+import { ActiveSection, DeliveryFlowSegment } from '../types/data';
 
 interface DeliveryFlowParticleLayerProps {
   segments: DeliveryFlowSegment[];
@@ -7,6 +7,7 @@ interface DeliveryFlowParticleLayerProps {
   selectedId?: string | null;
   selectedWeather?: string;
   selectedTimePeriod?: string;
+  activeScene?: ActiveSection;
   onHover: (segment: DeliveryFlowSegment, event: MouseEvent<SVGElement>) => void;
   onLeave: () => void;
   onSelect: (segment: DeliveryFlowSegment) => void;
@@ -28,6 +29,7 @@ export default function DeliveryFlowParticleLayer({
   selectedId,
   selectedWeather = 'All',
   selectedTimePeriod = 'All',
+  activeScene = 'overview',
   onHover,
   onLeave,
   onSelect
@@ -46,12 +48,14 @@ export default function DeliveryFlowParticleLayer({
         const weatherMuted = selectedWeather !== 'All' && Boolean(segment.weather) && segment.weather !== selectedWeather;
         const timeMuted = selectedTimePeriod !== 'All' && Boolean(segment.time_period) && segment.time_period !== selectedTimePeriod;
         const focused = !weatherMuted && !timeMuted && (selectedWeather !== 'All' || selectedTimePeriod !== 'All');
+        const weatherSceneFocused = activeScene === 'weather' && !weatherMuted;
+        const timeSceneFocused = activeScene === 'time' && rushBoost && !timeMuted;
         const duration = Math.max(3.8, Math.min(8.5, 8.8 - segment.speed * 0.8));
 
         return (
           <g
             key={segment.id}
-            className={`delivery-flow-segment${active ? ' is-active' : ''}${weatherMuted || timeMuted ? ' is-filter-muted' : ''}${focused ? ' is-filter-focused' : ''}${rushBoost ? ' is-rush-boosted' : ''}`}
+            className={`delivery-flow-segment scene-${activeScene}${active ? ' is-active' : ''}${weatherMuted || timeMuted ? ' is-filter-muted' : ''}${focused ? ' is-filter-focused' : ''}${rushBoost ? ' is-rush-boosted' : ''}${weatherSceneFocused ? ' is-scene-focused' : ''}${timeSceneFocused ? ' is-time-scene-focused' : ''}`}
             style={
               {
                 '--flow-color': flowColor(segment),

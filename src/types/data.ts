@@ -280,6 +280,8 @@ export interface ViewContextMetrics {
   avg_delivery_duration_min: number;
   delay_threshold_min: number;
   delay_rate: number;
+  risk_score?: number;
+  avg_distance_km?: number;
 }
 
 export interface ScenarioAnchor {
@@ -315,6 +317,61 @@ export interface MiniMetricTag {
   vehicle_type?: string;
 }
 
+export type MapSceneType = 'overall' | 'weather' | 'traffic' | 'time' | 'risk' | 'area';
+
+export interface MapSceneMetric {
+  label: string;
+  value: string;
+}
+
+export interface MapSceneSummary {
+  order_count: number;
+  avg_delivery_duration_min: number;
+  delay_rate: number;
+  risk_score?: number;
+  avg_distance_km?: number;
+  delay_threshold_min?: number;
+  source_filter?: string;
+  description?: string;
+}
+
+export interface SceneFilterSummary extends MapSceneSummary {
+  scene_id: string;
+  weather: Nullable<string>;
+  time_period: Nullable<string>;
+}
+
+export interface MapScene {
+  id: string;
+  type: MapSceneType;
+  title: string;
+  question: string;
+  description: string;
+  image: string;
+  metrics: MapSceneMetric[];
+  relatedWeather?: string;
+  relatedTimePeriod?: string;
+  summary?: MapSceneSummary;
+}
+
+export type SceneHotspotShape = 'polygon' | 'rect' | 'circle';
+
+export interface SceneHotspot {
+  id: string;
+  targetSceneId: string;
+  label: string;
+  type: SceneHotspotShape;
+  coords: number[];
+  description?: string;
+  order_count?: number;
+  avg_delivery_duration_min?: number;
+  delay_rate?: number;
+  risk_score?: number;
+  weather?: string;
+  traffic_density?: string;
+  time_period?: string;
+}
+
 export type MapSelection =
   | { type: 'module'; item: MapModule }
   | { type: 'traffic_segment'; item: TrafficSegment }
@@ -322,6 +379,7 @@ export type MapSelection =
   | { type: 'risk_pulse'; item: ScenarioAnchor }
   | { type: 'metric_tag'; item: MiniMetricTag }
   | { type: 'risk_heat_halo'; item: RiskHeatHalo }
-  | { type: 'delivery_flow_segment'; item: DeliveryFlowSegment };
+  | { type: 'delivery_flow_segment'; item: DeliveryFlowSegment }
+  | { type: 'scene_hotspot'; item: SceneHotspot };
 
 export type ActiveSection = 'overview' | 'weather' | 'traffic' | 'time' | 'risk' | 'outlier';

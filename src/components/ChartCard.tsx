@@ -29,15 +29,26 @@ export default function ChartCard({
 
   useEffect(() => {
     if (!chartRef.current || !option || isEmpty) return undefined;
-    const chart = echarts.init(chartRef.current);
+    const chartElement = chartRef.current;
+    const chart = echarts.init(chartElement);
     chart.setOption(option, true);
     if (onChartClick) {
       chart.on('click', onChartClick);
     }
-    const onResize = () => chart.resize();
-    window.addEventListener('resize', onResize);
+    const resizeChart = () => chart.resize();
+    let resizeObserver: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(resizeChart);
+      resizeObserver.observe(chartElement);
+    } else {
+      window.addEventListener('resize', resizeChart);
+    }
     return () => {
-      window.removeEventListener('resize', onResize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      } else {
+        window.removeEventListener('resize', resizeChart);
+      }
       if (onChartClick) {
         chart.off('click', onChartClick);
       }

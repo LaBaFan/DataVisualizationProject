@@ -1,0 +1,42 @@
+[
+  {
+    "traffic_density": "Low",
+    "order_count": 15372,
+    "avg_delivery_duration_min": 21.268,
+    "median_delivery_duration_min": 20.0,
+    "p75_delivery_duration_min": 26.0,
+    "avg_distance_km": 8.176,
+    "delay_rate": 0.064,
+    "risk_score": 0.218
+  },
+  {
+    "traffic_density": "Medium",
+    "order_count": 10886,
+    "avg_delivery_duration_min": 26.709,
+    "median_delivery_duration_min": 27.0,
+    "p75_delivery_duration_min": 33.0,
+    "avg_distance_km": 11.081,
+    "delay_rate": 0.258,
+    "risk_score": 0.53
+  },
+  {
+    "traffic_density": "High",
+    "order_count": 4400,
+    "avg_delivery_duration_min": 27.226,
+    "median_delivery_duration_min": 27.0,
+    "p75_delivery_duration_min": 32.0,
+    "avg_distance_km": 4.407,
+    "delay_rate": 0.244,
+    "risk_score": 0.314
+  },
+  {
+    "traffic_density": "Jam",
+    "order_count": 14050,
+    "avg_delivery_duration_min": 31.182,
+    "median_delivery_duration_min": 31.0,
+    "p75_delivery_duration_min": 39.0,
+    "avg_distance_km": 12.067,
+    "delay_rate": 0.441,
+    "risk_score": 0.82
+  }
+]

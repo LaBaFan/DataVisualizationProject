@@ -3,12 +3,12 @@ import { useInteraction } from '../store/interactionContext';
 import { ActiveSection } from '../types/data';
 
 const sections: Array<{ id: ActiveSection; label: string; question: string }> = [
-  { id: 'overview', label: 'Map', question: '配送运行风险在哪里出现？' },
-  { id: 'weather', label: 'Weather', question: '哪些天气让 ETA 变慢？' },
-  { id: 'traffic', label: 'Traffic', question: '哪些道路负载推高延迟？' },
-  { id: 'time', label: 'Time', question: '一天中的订单压力如何变化？' },
-  { id: 'risk', label: 'Risk', question: '哪些条件组合最高风险？' },
-  { id: 'outlier', label: 'Orders', question: '哪些订单异常偏离？' }
+  { id: 'overview', label: 'Overview', question: '当前城市配送系统中，哪些区域、道路或场景呈现较高延迟风险？' },
+  { id: 'weather', label: 'Weather', question: '哪些天气会让 ETA 明显变慢？' },
+  { id: 'traffic', label: 'Traffic', question: '交通拥堵程度从 Low 到 Jam 变化时，配送时长和延迟风险如何变化？' },
+  { id: 'time', label: 'Time', question: '一天中订单压力和延迟风险如何变化？' },
+  { id: 'risk', label: 'Risk', question: '哪些天气、交通、时段和车辆类型组合最容易导致延迟？' },
+  { id: 'outlier', label: 'Orders', question: '哪些订单偏离正常距离-配送时长关系？' }
 ];
 
 export default function ScrollProgress() {
@@ -19,7 +19,7 @@ export default function ScrollProgress() {
     navigateToSection(section);
     document.getElementById(`section-${section}`)?.scrollIntoView({
       behavior: 'smooth',
-      block: 'start'
+      block: 'center'
     });
   };
 

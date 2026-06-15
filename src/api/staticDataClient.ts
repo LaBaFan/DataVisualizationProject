@@ -5,6 +5,7 @@ import {
   OrderDot,
   RiskHeatHalo,
   RiskScenario,
+  SceneFilterSummary,
   ScenarioOrderSample,
   TimePeriodSummary,
   TrafficDensitySummary,
@@ -380,22 +381,22 @@ export const mockDeliveryFlowSegments: DeliveryFlowSegment[] = [
 ];
 
 const mockOverview: OverviewSummary = {
-  total_orders: 15420,
-  valid_orders: 15108,
-  avg_delivery_duration_min: 36.7,
-  median_delivery_duration_min: 34.9,
-  delay_threshold_min: 45,
-  delay_rate: 0.24,
-  avg_distance_km: 7.6,
+  total_orders: 45593,
+  valid_orders: 45162,
+  avg_delivery_duration_min: 26.3,
+  median_delivery_duration_min: 26,
+  delay_threshold_min: 32,
+  delay_rate: 0.247,
+  avg_distance_km: 9.7,
   city_count: 3,
   weather_categories: 6,
   traffic_density_categories: 4,
-  order_count: 15108,
-  p75_delivery_duration_min: 44.8,
-  min_delivery_duration_min: 10.2,
-  max_delivery_duration_min: 82.6,
-  median_distance_km: 7.1,
-  avg_speed_kmph: 12.4
+  order_count: 45162,
+  p75_delivery_duration_min: 32,
+  min_delivery_duration_min: 10,
+  max_delivery_duration_min: 54,
+  median_distance_km: 9.2,
+  avg_speed_kmph: 23.8
 };
 
 async function fetchJson<T>(fileName: string, fallback: T): Promise<T> {
@@ -532,6 +533,10 @@ export function loadOverviewSummary(): Promise<OverviewSummary> {
 
 export function loadWeatherImpactSummary(): Promise<WeatherImpactSummary[]> {
   return fetchJson<WeatherImpactSummary[]>('weather_impact_summary.json', mockWeatherImpact);
+}
+
+export function loadSceneFilterSummary(): Promise<SceneFilterSummary[]> {
+  return fetchJson<SceneFilterSummary[]>('scene_filter_summary.json', []);
 }
 
 export function loadTrafficSegmentSummary(): Promise<TrafficSegmentSummary[]> {

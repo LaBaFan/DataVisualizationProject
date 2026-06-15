@@ -1,5 +1,5 @@
 import { CSSProperties, MouseEvent } from 'react';
-import { RiskHeatHalo } from '../types/data';
+import { ActiveSection, RiskHeatHalo } from '../types/data';
 
 interface RiskHeatHaloLayerProps {
   halos: RiskHeatHalo[];
@@ -7,6 +7,7 @@ interface RiskHeatHaloLayerProps {
   selectedId?: string | null;
   selectedWeather?: string;
   selectedTimePeriod?: string;
+  activeScene?: ActiveSection;
   onHover: (halo: RiskHeatHalo, event: MouseEvent<SVGElement>) => void;
   onLeave: () => void;
   onSelect: (halo: RiskHeatHalo) => void;
@@ -28,6 +29,7 @@ export default function RiskHeatHaloLayer({
   selectedId,
   selectedWeather = 'All',
   selectedTimePeriod = 'All',
+  activeScene = 'overview',
   onHover,
   onLeave,
   onSelect
@@ -48,10 +50,13 @@ export default function RiskHeatHaloLayer({
         const weatherMuted = selectedWeather !== 'All' && Boolean(halo.weather) && halo.weather !== selectedWeather;
         const timeMuted = selectedTimePeriod !== 'All' && Boolean(halo.time_period) && halo.time_period !== selectedTimePeriod;
         const focused = !weatherMuted && !timeMuted && (selectedWeather !== 'All' || selectedTimePeriod !== 'All');
+        const trafficFocused = activeScene === 'traffic' && (halo.traffic_density === 'High' || halo.traffic_density === 'Jam');
+        const riskFocused = activeScene === 'risk' && halo.risk_score >= 0.78;
+        const weatherSceneFocused = activeScene === 'weather' && !weatherMuted;
         return (
           <g
             key={halo.id}
-            className={`risk-heat-halo${active ? ' is-active' : ''}${weatherMuted || timeMuted ? ' is-filter-muted' : ''}${focused ? ' is-filter-focused' : ''}`}
+            className={`risk-heat-halo scene-${activeScene}${active ? ' is-active' : ''}${weatherMuted || timeMuted ? ' is-filter-muted' : ''}${focused ? ' is-filter-focused' : ''}${weatherSceneFocused ? ' is-scene-focused' : ''}${trafficFocused ? ' is-traffic-focused' : ''}${riskFocused ? ' is-risk-focused' : ''}`}
             style={
               {
                 '--halo-color': haloColor(halo),

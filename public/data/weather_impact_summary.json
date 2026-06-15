@@ -1,0 +1,62 @@
+[
+  {
+    "weather": "Cloudy",
+    "order_count": 7485,
+    "avg_delivery_duration_min": 28.922,
+    "median_delivery_duration_min": 28.0,
+    "p75_delivery_duration_min": 37.0,
+    "avg_distance_km": 9.802,
+    "delay_rate": 0.375,
+    "risk_score": 0.779
+  },
+  {
+    "weather": "Fog",
+    "order_count": 7604,
+    "avg_delivery_duration_min": 28.933,
+    "median_delivery_duration_min": 29.0,
+    "p75_delivery_duration_min": 37.0,
+    "avg_distance_km": 9.77,
+    "delay_rate": 0.382,
+    "risk_score": 0.778
+  },
+  {
+    "weather": "Sandstorms",
+    "order_count": 7442,
+    "avg_delivery_duration_min": 25.872,
+    "median_delivery_duration_min": 26.0,
+    "p75_delivery_duration_min": 31.0,
+    "avg_distance_km": 9.686,
+    "delay_rate": 0.202,
+    "risk_score": 0.412
+  },
+  {
+    "weather": "Stormy",
+    "order_count": 7544,
+    "avg_delivery_duration_min": 25.866,
+    "median_delivery_duration_min": 26.0,
+    "p75_delivery_duration_min": 31.0,
+    "avg_distance_km": 9.749,
+    "delay_rate": 0.203,
+    "risk_score": 0.511
+  },
+  {
+    "weather": "Sunny",
+    "order_count": 7238,
+    "avg_delivery_duration_min": 21.855,
+    "median_delivery_duration_min": 20.0,
+    "p75_delivery_duration_min": 26.0,
+    "avg_distance_km": 9.626,
+    "delay_rate": 0.102,
+    "risk_score": 0.031
+  },
+  {
+    "weather": "Windy",
+    "order_count": 7382,
+    "avg_delivery_duration_min": 26.128,
+    "median_delivery_duration_min": 26.0,
+    "p75_delivery_duration_min": 31.0,
+    "avg_distance_km": 9.776,
+    "delay_rate": 0.212,
+    "risk_score": 0.515
+  }
+]
