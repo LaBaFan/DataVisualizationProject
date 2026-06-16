@@ -6,6 +6,7 @@ export const overallHotspots: SceneHotspot[] = [
   {
     id: 'central_hub_hotspot',
     targetSceneId: 'dispatch_center',
+    targetModule: null,
     label: '中心配送运营中心',
     type: 'polygon',
     coords: [615, 363, 858, 343, 989, 433, 938, 565, 716, 595, 555, 504],
@@ -18,6 +19,7 @@ export const overallHotspots: SceneHotspot[] = [
   {
     id: 'sunny_zone_hotspot',
     targetSceneId: 'sunny',
+    targetModule: 'sunny',
     label: '晴天区域',
     type: 'polygon',
     coords: [504, 0, 989, 0, 1059, 252, 908, 363, 646, 353, 464, 242],
@@ -31,6 +33,7 @@ export const overallHotspots: SceneHotspot[] = [
   {
     id: 'fog_zone_hotspot',
     targetSceneId: 'fog_business',
+    targetModule: 'fog',
     label: '雾天商务区',
     type: 'polygon',
     coords: [0, 0, 504, 0, 474, 302, 363, 433, 0, 393],
@@ -44,6 +47,7 @@ export const overallHotspots: SceneHotspot[] = [
   {
     id: 'storm_zone_hotspot',
     targetSceneId: 'storm_area',
+    targetModule: 'stormy',
     label: '雷暴区域',
     type: 'polygon',
     coords: [1009, 0, 1600, 0, 1600, 423, 1271, 433, 1049, 313],
@@ -57,6 +61,7 @@ export const overallHotspots: SceneHotspot[] = [
   {
     id: 'sandstorm_zone_hotspot',
     targetSceneId: 'sandstorm',
+    targetModule: 'sandstorms',
     label: '沙尘区域',
     type: 'polygon',
     coords: [0, 393, 363, 423, 545, 585, 464, 857, 0, 948],
@@ -70,6 +75,7 @@ export const overallHotspots: SceneHotspot[] = [
   {
     id: 'cloudy_zone_hotspot',
     targetSceneId: 'cloudy',
+    targetModule: 'cloudy',
     label: '多云区域',
     type: 'polygon',
     coords: [464, 585, 989, 565, 1059, 1000, 363, 1000, 383, 827],
@@ -83,6 +89,7 @@ export const overallHotspots: SceneHotspot[] = [
   {
     id: 'windy_zone_hotspot',
     targetSceneId: 'windy',
+    targetModule: 'windy',
     label: '大风区域',
     type: 'polygon',
     coords: [989, 565, 1271, 433, 1600, 423, 1600, 1000, 1059, 1000],

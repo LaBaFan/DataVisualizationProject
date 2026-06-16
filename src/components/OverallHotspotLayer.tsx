@@ -28,11 +28,11 @@ function renderShape(hotspot: SceneHotspot) {
 
 export default function OverallHotspotLayer({ hotspots, hoveredId, onHover, onLeave, onSelect }: OverallHotspotLayerProps) {
   return (
-    <svg className="map-data-layer overall-hotspot-layer" viewBox="0 0 1600 1000" preserveAspectRatio="none" aria-hidden="false">
+    <svg className="map-data-layer map-hotspot-layer overall-hotspot-layer" viewBox="0 0 1600 1000" preserveAspectRatio="none" aria-hidden="false">
       {hotspots.map((hotspot) => (
         <g
           key={hotspot.id}
-          className={`overall-hotspot${hoveredId === hotspot.id ? ' is-hovered' : ''}`}
+          className={`map-hotspot overall-hotspot${hoveredId === hotspot.id ? ' is-hovered' : ''}`}
           role="button"
           tabIndex={0}
           aria-label={hotspot.label}

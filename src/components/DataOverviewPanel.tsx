@@ -7,8 +7,10 @@ import {
   loadWeatherImpactSummary
 } from '../api/staticDataClient';
 import { getMapSceneById } from '../data/mapScenes';
+import { getWeatherModuleById } from '../data/weatherModules';
 import { buildSceneHudMetrics } from '../data/sceneMetrics';
 import { useInteraction } from '../store/interactionContext';
+import { getWeatherSummary } from '../utils/moduleData';
 import {
   ActiveSection,
   MapSelection,
@@ -174,12 +176,13 @@ function sectionForSelection(selection: MapSelection | null, fallback: ActiveSec
 }
 
 export default function DataOverviewPanel() {
-  const { activeSection, selectedWeather, selectedTimePeriod, selectedSceneId, selectedItem, setSelectedItem, navigateToSection } = useInteraction();
+  const { activeModule, activeSection, selectedWeather, selectedTimePeriod, selectedSceneId, selectedItem, setSelectedItem, navigateToSection } = useInteraction();
   const [overview, setOverview] = useState<OverviewSummary | null>(null);
   const [weatherRows, setWeatherRows] = useState<WeatherImpactSummary[]>([]);
   const [timeRows, setTimeRows] = useState<TimePeriodSummary[]>([]);
   const [trafficDensityRows, setTrafficDensityRows] = useState<TrafficDensitySummary[]>([]);
   const [sceneFilterRows, setSceneFilterRows] = useState<SceneFilterSummary[]>([]);
+  const [moduleSummary, setModuleSummary] = useState<WeatherImpactSummary | SceneFilterSummary | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -197,8 +200,24 @@ export default function DataOverviewPanel() {
     });
   }, []);
 
-  const copy = sectionText[activeSection];
+  useEffect(() => {
+    let mounted = true;
+    getWeatherSummary(activeModule)
+      .then((summary) => {
+        if (mounted) setModuleSummary(summary);
+      })
+      .catch((error) => {
+        console.warn('[DataOverviewPanel] Failed to load module summary.', error);
+        if (mounted) setModuleSummary(null);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [activeModule]);
+
   const selectedScene = getMapSceneById(selectedSceneId);
+  const currentModule = getWeatherModuleById(activeModule);
   const selectedMetrics = metricsForSelection(selectedItem);
   const contextMetrics: ViewContextMetrics = useMemo(
     () =>
@@ -218,6 +237,16 @@ export default function DataOverviewPanel() {
   const metrics = useMemo(() => {
     if (selectedMetrics) return selectedMetrics;
 
+    if (moduleSummary) {
+      return [
+        ['样本订单', fmt(moduleSummary.order_count)],
+        ['平均时长', `${fmt(moduleSummary.avg_delivery_duration_min, 1)} min`],
+        ['延迟率', pct(moduleSummary.delay_rate)],
+        ['平均距离', `${fmt(moduleSummary.avg_distance_km, 1)} km`],
+        ['风险评分', fmt(moduleSummary.risk_score, 2)]
+      ];
+    }
+
     return [
       ['样本订单', fmt(contextMetrics.order_count)],
       ['平均时长', `${fmt(contextMetrics.avg_delivery_duration_min, 1)} min`],
@@ -225,18 +254,17 @@ export default function DataOverviewPanel() {
       ['平均距离', `${fmt(contextMetrics.avg_distance_km, 1)} km`],
       ['风险评分', fmt(contextMetrics.risk_score, 2)]
     ];
-  }, [contextMetrics, selectedMetrics]);
+  }, [contextMetrics, moduleSummary, selectedMetrics]);
 
   const filterPills = selectedItem
     ? selectionPills(selectedItem)
     : [
-        ['场景', selectedScene.title],
-        ['类型', selectedScene.type],
-        ['天气', selectedWeather],
+        ['模块', currentModule.label],
+        ['天气', currentModule.weather],
         ['时段', selectedTimePeriod]
       ];
-  const explanation = selectedItem ? selectionExplanation(selectedItem) : selectedScene.description;
-  const panelStatus = selectedItem ? '选中对象：ETA Risk Ticket' : `当前视图：${copy.title}`;
+  const explanation = selectedItem ? selectionExplanation(selectedItem) : `${currentModule.summary} ${currentModule.riskHint}`;
+  const panelStatus = selectedItem ? '选中对象：ETA Risk Ticket' : `当前模块：${currentModule.label}`;
   const handleFullAnalysisClick = () => {
     const targetSection = sectionForSelection(selectedItem, activeSection ?? 'overview');
     setSelectedItem(null);
@@ -257,13 +285,13 @@ export default function DataOverviewPanel() {
   return (
     <aside className="data-overview-panel" aria-label="Analysis Panel">
       <div
-        key={`${activeSection}-${selectedWeather}-${selectedTimePeriod}-${selectionTitle(selectedItem) ?? 'none'}`}
+        key={`${activeModule}-${activeSection}-${selectedWeather}-${selectedTimePeriod}-${selectionTitle(selectedItem) ?? 'none'}`}
         className="overview-content"
       >
         <section className="overview-block overview-current-view" aria-labelledby="overview-current-heading">
           <span className="overview-status-line">{panelStatus}</span>
-          <h2 id="overview-current-heading">{selectedItem ? selectionTitle(selectedItem) : selectedScene.title}</h2>
-          <p className="overview-question">{selectedItem ? selectionTypeLabel(selectedItem) : selectedScene.question}</p>
+          <h2 id="overview-current-heading">{selectedItem ? selectionTitle(selectedItem) : `${currentModule.label} 模块概览`}</h2>
+          <p className="overview-question">{selectedItem ? selectionTypeLabel(selectedItem) : currentModule.keyQuestion}</p>
 
           <div className="overview-filter-summary" aria-label="当前筛选">
             {filterPills.map(([label, value]) => (

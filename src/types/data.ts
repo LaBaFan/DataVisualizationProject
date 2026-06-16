@@ -361,6 +361,7 @@ export type SceneHotspotShape = 'polygon' | 'rect' | 'circle';
 export interface SceneHotspot {
   id: string;
   targetSceneId: string;
+  targetModule?: import('../data/weatherModules').WeatherModuleId | null;
   label: string;
   type: SceneHotspotShape;
   coords: number[];

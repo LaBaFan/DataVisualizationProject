@@ -10,6 +10,7 @@ import { mapScenes, getMapSceneById } from '../data/mapScenes';
 import { overallHotspots } from '../data/overallHotspots';
 import { sceneMiniMetricTags, sceneOrderDots, sceneRiskHeatHalos } from '../data/sceneOverlayData';
 import { buildSceneHudMetrics } from '../data/sceneMetrics';
+import { getModuleIdBySceneId, getWeatherModuleById } from '../data/weatherModules';
 import { useInteraction } from '../store/interactionContext';
 import {
   ActiveSection,
@@ -92,7 +93,8 @@ export default function InteractiveSceneMap() {
     selectedItem,
     setSelectedItem,
     setSelectedSceneId,
-    setActiveSection
+    setActiveSection,
+    switchModule
   } = useInteraction();
   const [hoveredSelection, setHoveredSelection] = useState<MapSelection | null>(null);
   const [tooltipPoint, setTooltipPoint] = useState({ x: 0, y: 0 });
@@ -105,6 +107,10 @@ export default function InteractiveSceneMap() {
   });
   const selectedScene = getMapSceneById(selectedSceneId);
   const activeScene = activeSectionForScene(selectedScene.type);
+  const selectedModule = getWeatherModuleById(getModuleIdBySceneId(selectedScene.id));
+  const sceneImage = selectedScene.type === 'weather' || selectedScene.id === 'overall'
+    ? selectedModule.imageUrl
+    : selectedScene.image;
 
   useEffect(() => {
     let isMounted = true;
@@ -231,7 +237,7 @@ export default function InteractiveSceneMap() {
         className={`interactive-scene-map scene-${selectedScene.type} time-tone-${selectedTimePeriod}`}
         onClick={() => setSelectedItem(null)}
       >
-        <img key={selectedScene.image} className="scene-map-image" src={selectedScene.image} alt={selectedScene.title} draggable={false} />
+        <img key={sceneImage} className="scene-map-image" src={sceneImage} alt={selectedScene.title} draggable={false} />
         <ViewContextHUD metrics={hudMetrics} />
 
         {selectedScene.id === 'overall' ? (
@@ -244,7 +250,15 @@ export default function InteractiveSceneMap() {
             }}
             onLeave={() => setHoveredSelection(null)}
             onSelect={(hotspot) => {
+              if (hotspot.targetModule) {
+                switchModule(hotspot.targetModule);
+                setSelectedItem({ type: 'scene_hotspot', item: hotspot });
+                setHoveredSelection(null);
+                return;
+              }
+
               const targetScene = mapScenes.find((scene) => scene.id === hotspot.targetSceneId);
+              setSelectedItem({ type: 'scene_hotspot', item: hotspot });
               setSelectedSceneId(hotspot.targetSceneId);
               if (targetScene) setActiveSection(activeSectionForScene(targetScene.type));
               setHoveredSelection(null);

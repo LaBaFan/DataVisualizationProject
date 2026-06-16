@@ -296,7 +296,14 @@ function ScatterPlot({ points }: { points: DistanceTimePoint[] }) {
 
 /* ───────── Main Panel ───────── */
 
-export default function SceneDetailPanel() {
+export type SceneDetailPanelTab = 'traffic' | 'time' | 'risk' | 'outliers' | 'all';
+
+interface SceneDetailPanelProps {
+  activeTab?: SceneDetailPanelTab;
+  embedded?: boolean;
+}
+
+export default function SceneDetailPanel({ activeTab = 'all', embedded = false }: SceneDetailPanelProps) {
   const { selectedSceneId, selectedWeather, selectedTimePeriod } = useInteraction();
   const selectedScene = getMapSceneById(selectedSceneId);
 
@@ -377,11 +384,17 @@ export default function SceneDetailPanel() {
   if (!isAll(selectedTimePeriod)) filterParts.push(TIME_LABELS[selectedTimePeriod] ?? selectedTimePeriod);
   const filterLabel = filterParts.length ? filterParts.join(' · ') : '全部条件';
 
+  const showTraffic = activeTab === 'all' || activeTab === 'traffic';
+  const showTime = activeTab === 'all' || activeTab === 'time';
+  const showRisk = activeTab === 'all' || activeTab === 'risk';
+  const showOutliers = activeTab === 'all' || activeTab === 'outliers';
+  const currentSummary = sceneFilteredRow ?? selectedScene.summary;
+
   return (
-    <div className="scene-detail-panel" id="scene-detail-panel">
+    <div className={`scene-detail-panel${embedded ? ' is-embedded' : ''}`} id="scene-detail-panel">
       <div className="detail-header">
-        <span className="detail-eyebrow">场景分析</span>
-        <h2>{selectedScene.title} · 详细数据</h2>
+        <span className="detail-eyebrow">{embedded ? '模块内分析' : '场景分析'}</span>
+        <h2>{selectedScene.title} · {activeTab === 'all' ? '详细数据' : '专题数据'}</h2>
         <p>{selectedScene.description}</p>
         {filterParts.length > 0 && (
           <div className="detail-active-filters">
@@ -398,41 +411,78 @@ export default function SceneDetailPanel() {
       </div>
 
       <div className="detail-grid">
-        <section className="detail-card" id="detail-time-rhythm">
-          <h3>时段配送节奏</h3>
-          <p className="detail-card-desc">
-            不同时间段的订单量、平均配送时长和延迟率分布
-            {!isAll(selectedTimePeriod) ? ` · 当前高亮 ${TIME_LABELS[selectedTimePeriod]}` : ''}
-          </p>
-          <p className="detail-insight">
-            先看订单量最高的时段，再对照延迟率深浅，判断压力是否集中在同一履约窗口。
-          </p>
-          <TimeRhythmChart rows={sceneTimeRows} activeTimePeriod={selectedTimePeriod} />
-        </section>
+        {showTraffic ? (
+          <section className="detail-card" id="detail-traffic-pressure">
+            <h3>交通与当前筛选摘要</h3>
+            <p className="detail-card-desc">
+              当前天气模块下的样本规模、配送时长、延迟率和风险评分
+              {filterParts.length > 0 ? ` · 已筛选 ${filterLabel}` : ''}
+            </p>
+            <p className="detail-insight">
+              先用该摘要判断当前筛选是否明显高于模块基准，再回到地图查看风险热晕和订单点位置。
+            </p>
+            <div className="detail-summary-grid">
+              <div>
+                <span>样本订单</span>
+                <strong>{fmt(currentSummary?.order_count)}</strong>
+              </div>
+              <div>
+                <span>平均时长</span>
+                <strong>{fmt(currentSummary?.avg_delivery_duration_min, 1)} min</strong>
+              </div>
+              <div>
+                <span>延迟率</span>
+                <strong>{pct(currentSummary?.delay_rate)}</strong>
+              </div>
+              <div>
+                <span>风险评分</span>
+                <strong>{fmt(currentSummary?.risk_score, 2)}</strong>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
-        <section className="detail-card" id="detail-risk-scenarios">
-          <h3>高风险场景 Top {sceneScenarios.length}</h3>
-          <p className="detail-card-desc">
-            当前场景条件下风险评分最高的天气 × 交通 × 时段组合
-            {filterParts.length > 0 ? ` · 已筛选 ${filterLabel}` : ''}
-          </p>
-          <p className="detail-insight">
-            优先复核评分高且订单量大的组合，它们对整体延迟暴露影响更直接。
-          </p>
-          <RiskTable scenarios={sceneScenarios} />
-        </section>
+        {showTime ? (
+          <section className="detail-card" id="detail-time-rhythm">
+            <h3>时段配送节奏</h3>
+            <p className="detail-card-desc">
+              不同时间段的订单量、平均配送时长和延迟率分布
+              {!isAll(selectedTimePeriod) ? ` · 当前高亮 ${TIME_LABELS[selectedTimePeriod]}` : ''}
+            </p>
+            <p className="detail-insight">
+              先看订单量最高的时段，再对照延迟率深浅，判断压力是否集中在同一履约窗口。
+            </p>
+            <TimeRhythmChart rows={sceneTimeRows} activeTimePeriod={selectedTimePeriod} />
+          </section>
+        ) : null}
 
-        <section className="detail-card detail-card-wide" id="detail-scatter">
-          <h3>距离-时长分布 ({sceneScatter.length.toLocaleString()} 订单)</h3>
-          <p className="detail-card-desc">
-            橙色点为延迟订单，绿色点为正常订单；虚线为均值参考线
-            {filterParts.length > 0 ? ` · 已筛选 ${filterLabel}` : ''}
-          </p>
-          <p className="detail-insight">
-            均值线右上方的订单同时偏远且偏慢，是解释当前场景履约波动的重点样本。
-          </p>
-          <ScatterPlot points={sceneScatter} />
-        </section>
+        {showRisk ? (
+          <section className="detail-card" id="detail-risk-scenarios">
+            <h3>高风险场景 Top {sceneScenarios.length}</h3>
+            <p className="detail-card-desc">
+              当前场景条件下风险评分最高的天气 × 交通 × 时段组合
+              {filterParts.length > 0 ? ` · 已筛选 ${filterLabel}` : ''}
+            </p>
+            <p className="detail-insight">
+              优先复核评分高且订单量大的组合，它们对整体延迟暴露影响更直接。
+            </p>
+            <RiskTable scenarios={sceneScenarios} />
+          </section>
+        ) : null}
+
+        {showOutliers ? (
+          <section className="detail-card detail-card-wide" id="detail-scatter">
+            <h3>距离-时长分布 ({sceneScatter.length.toLocaleString()} 抽样点)</h3>
+            <p className="detail-card-desc">
+              橙色点为延迟抽样点，绿色点为正常抽样点；虚线为均值参考线
+              {filterParts.length > 0 ? ` · 已筛选 ${filterLabel}` : ''}
+            </p>
+            <p className="detail-insight">
+              均值线右上方的订单同时偏远且偏慢，是解释当前场景履约波动的重点样本。
+            </p>
+            <ScatterPlot points={sceneScatter} />
+          </section>
+        ) : null}
       </div>
     </div>
   );
