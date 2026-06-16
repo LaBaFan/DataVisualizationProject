@@ -137,7 +137,8 @@ export default function InteractiveSceneMap() {
       const targetScene = mapScenes.find((s) => s.id === hotspot.targetSceneId);
       if (!targetScene) return false;
       if (overallFilter === 'weather') return targetScene.type === 'weather';
-      if (overallFilter === 'area') return targetScene.type === 'area';
+      // Area group includes: area, traffic, risk, time (everything except weather and overall)
+      if (overallFilter === 'area') return targetScene.type !== 'weather' && targetScene.type !== 'overall';
       return true;
     });
   }, [overallFilter]);

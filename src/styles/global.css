@@ -372,9 +372,9 @@ button {
 }
 
 .overall-hotspot {
-  fill: rgb(249 115 22 / 0.04);
-  stroke: rgb(249 115 22 / 0.18);
-  stroke-width: 2;
+  fill: rgb(16 185 129 / 0.18);
+  stroke: rgb(16 185 129 / 0.6);
+  stroke-width: 2.5;
   cursor: pointer;
   pointer-events: auto;
   vector-effect: non-scaling-stroke;
@@ -387,10 +387,10 @@ button {
 
 .overall-hotspot.is-hovered,
 .overall-hotspot:hover {
-  fill: rgb(249 115 22 / 0.18);
-  stroke: rgb(154 52 18 / 0.78);
-  stroke-width: 3;
-  filter: drop-shadow(0 0 8px rgb(249 115 22 / 0.28));
+  fill: rgb(16 185 129 / 0.32);
+  stroke: rgb(5 150 105 / 0.9);
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 12px rgb(16 185 129 / 0.4));
 }
 
 .weather-panel,

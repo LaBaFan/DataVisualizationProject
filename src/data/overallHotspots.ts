@@ -131,5 +131,31 @@ export const overallHotspots: SceneHotspot[] = [
     delay_rate: 0.33,
     risk_score: 0.55,
     weather: 'Windy'
+  },
+  {
+    id: 'cloudy_hotspot',
+    targetSceneId: 'cloudy',
+    label: '多云模块',
+    type: 'circle',
+    coords: [1520, 340, 60],
+    description: '进入多云天气模块，观察非极端天气下的 ETA 稳定性。',
+    order_count: 318,
+    avg_delivery_duration_min: 35.6,
+    delay_rate: 0.29,
+    risk_score: 0.52,
+    weather: 'Cloudy'
+  },
+  {
+    id: 'sandstorm_hotspot',
+    targetSceneId: 'sandstorm',
+    label: '沙尘模块',
+    type: 'circle',
+    coords: [200, 420, 60],
+    description: '进入沙尘天气模块，查看能见度和道路状态对配送的影响。',
+    order_count: 260,
+    avg_delivery_duration_min: 41.3,
+    delay_rate: 0.46,
+    risk_score: 0.72,
+    weather: 'Sandstorms'
   }
 ];
