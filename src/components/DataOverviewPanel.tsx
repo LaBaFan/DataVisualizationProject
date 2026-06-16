@@ -108,9 +108,26 @@ function selectionTypeLabel(selection: MapSelection | null) {
   return labels[selection.item.type];
 }
 
-function metricsForSelection(selection: MapSelection | null): Array<[string, string]> | null {
+function metricsForSelection(
+  selection: MapSelection | null,
+  filteredRow?: SceneFilterSummary | null
+): Array<[string, string]> | null {
   if (!selection) return null;
   const item = selection.item;
+
+  // For scene_hotspot, prefer filtered data from scene_filter_summary
+  if (selection.type === 'scene_hotspot' && filteredRow) {
+    const rows: Array<[string, string]> = [
+      ['对象类型', selectionTypeLabel(selection)],
+      ['订单数', fmt(filteredRow.order_count)],
+      ['平均时长', `${fmt(filteredRow.avg_delivery_duration_min, 1)} min`],
+      ['延迟率', pct(filteredRow.delay_rate)],
+      ['风险评分', fmt(filteredRow.risk_score, 2)],
+      ['平均距离', filteredRow.avg_distance_km ? `${fmt(filteredRow.avg_distance_km, 1)} km` : '-']
+    ];
+    return rows.filter(([, value]) => value !== '-');
+  }
+
   const values: Array<[string, string]> = [
     ['对象类型', selectionTypeLabel(selection)],
     ['订单数', 'order_count' in item ? fmt(item.order_count) : '-'],
@@ -220,7 +237,36 @@ export default function DataOverviewPanel() {
 
   const selectedScene = getMapSceneById(selectedSceneId);
   const currentModule = getWeatherModuleById(activeModule);
-  const selectedMetrics = metricsForSelection(selectedItem);
+
+  // For scene_hotspot: find matching scene_filter_summary row
+  const hotspotFilteredRow = useMemo(() => {
+    if (!selectedItem || selectedItem.type !== 'scene_hotspot') return null;
+    const hotspot = selectedItem.item;
+    const targetSceneId = hotspot.targetSceneId;
+    if (!targetSceneId || !sceneFilterRows.length) return null;
+
+    const timePeriod = !selectedTimePeriod || selectedTimePeriod === 'All' ? 'All' : selectedTimePeriod;
+    const weather = !selectedWeather || selectedWeather === 'All' ? 'All' : selectedWeather;
+
+    // Try exact match (scene + weather + time)
+    const exact = sceneFilterRows.find(
+      (r) => r.scene_id === targetSceneId && r.weather === weather && r.time_period === timePeriod
+    );
+    if (exact) return exact;
+
+    // Fallback: scene + time only
+    const timeOnly = sceneFilterRows.find(
+      (r) => r.scene_id === targetSceneId && r.weather === 'All' && r.time_period === timePeriod
+    );
+    if (timeOnly) return timeOnly;
+
+    // Fallback: scene base (All/All)
+    return sceneFilterRows.find(
+      (r) => r.scene_id === targetSceneId && r.weather === 'All' && r.time_period === 'All'
+    ) ?? null;
+  }, [selectedItem, sceneFilterRows, selectedTimePeriod, selectedWeather]);
+
+  const selectedMetrics = metricsForSelection(selectedItem, hotspotFilteredRow);
   const contextMetrics: ViewContextMetrics = useMemo(
     () =>
       buildSceneHudMetrics({
