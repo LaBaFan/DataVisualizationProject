@@ -166,6 +166,21 @@ button:active {
   padding: 14px 16px 30px;
 }
 
+.foodeta-explorer.is-overall-active {
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  padding: 10px 12px 24px;
+}
+
+.foodeta-explorer.is-overall-active .explorer-main {
+  grid-column: 1 / -1;
+}
+
+.foodeta-explorer.is-overall-active .scene-sidebar,
+.foodeta-explorer.is-overall-active .data-overview-panel {
+  display: none;
+}
+
 .scene-sidebar,
 .foodeta-explorer .data-overview-panel {
   position: sticky;
@@ -376,6 +391,55 @@ button:active {
   box-shadow: var(--shadow-stage);
 }
 
+.overall-module {
+  --overall-accent: #f97316;
+}
+
+.overall-module-map {
+  min-height: min(780px, calc(100vh - 118px));
+  border-color: rgb(15 23 42 / 0.18);
+  background: #0f172a;
+  isolation: isolate;
+  transition:
+    border-color 260ms ease,
+    box-shadow 260ms ease,
+    transform 520ms cubic-bezier(0.2, 0.72, 0.2, 1);
+}
+
+.overall-module-map .scene-map-image {
+  filter: saturate(1.02) contrast(1.02);
+  transform: scale(1);
+  transition:
+    filter 320ms ease,
+    transform 620ms cubic-bezier(0.2, 0.72, 0.2, 1);
+}
+
+.overall-module.has-active-hotspot .overall-module-map .scene-map-image {
+  filter: saturate(0.72) contrast(0.98) brightness(0.82);
+  transform: scale(1.035);
+}
+
+.overall-module.is-entering-module .overall-module-map .scene-map-image {
+  filter: saturate(1.08) contrast(1.08) brightness(0.9);
+  transform: scale(1.12);
+}
+
+.overall-map-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgb(15 23 42 / 0.34) 0%, transparent 28%, rgb(15 23 42 / 0.48) 100%),
+    radial-gradient(circle at 50% 42%, transparent 0 40%, rgb(15 23 42 / 0.28) 78%);
+  opacity: 0.82;
+  transition: opacity 260ms ease;
+}
+
+.overall-module.has-active-hotspot .overall-map-vignette {
+  opacity: 1;
+}
+
 .overall-module-copy,
 .module-context-strip {
   display: flex;
@@ -391,9 +455,14 @@ button:active {
 .overall-module-copy {
   position: absolute;
   left: 14px;
-  right: 14px;
+  right: auto;
   bottom: 14px;
-  z-index: 4;
+  z-index: 5;
+  width: min(460px, calc(100% - 28px));
+  border-color: rgb(255 255 255 / 0.24);
+  background: rgb(15 23 42 / 0.56);
+  color: white;
+  backdrop-filter: blur(18px);
 }
 
 .overall-module-copy strong,
@@ -405,12 +474,20 @@ button:active {
   text-transform: none;
 }
 
+.overall-module-copy strong {
+  color: rgb(255 255 255 / 0.72);
+}
+
 .overall-module-copy span,
 .module-context-strip p {
   margin: 0;
   color: #334155;
   font-size: 0.82rem;
   line-height: 1.45;
+}
+
+.overall-module-copy span {
+  color: rgb(255 255 255 / 0.86);
 }
 
 .module-context-strip {
@@ -585,29 +662,237 @@ button:active {
 }
 
 .overall-hotspot-layer {
-  z-index: 3;
+  z-index: 4;
 }
 
 .overall-hotspot {
-  fill: rgb(16 185 129 / 0.18);
-  stroke: rgb(16 185 129 / 0.6);
-  stroke-width: 2.5;
+  fill: rgb(255 255 255 / 0.03);
+  stroke: color-mix(in srgb, var(--overall-accent, #f97316) 72%, white);
+  stroke-dasharray: 8 8;
+  stroke-width: 2;
   cursor: pointer;
   pointer-events: auto;
   vector-effect: non-scaling-stroke;
   transition:
     fill 160ms ease,
     stroke 160ms ease,
+    opacity 160ms ease,
     stroke-width 160ms ease,
     filter 160ms ease;
 }
 
+.overall-module.has-active-hotspot .overall-hotspot {
+  opacity: 0.28;
+  fill: rgb(15 23 42 / 0.12);
+}
+
 .overall-hotspot.is-hovered,
 .overall-hotspot:hover {
-  fill: rgb(16 185 129 / 0.32);
-  stroke: rgb(5 150 105 / 0.9);
-  stroke-width: 3.5;
-  filter: drop-shadow(0 0 12px rgb(16 185 129 / 0.4));
+  opacity: 1;
+  fill: color-mix(in srgb, var(--overall-accent, #f97316) 18%, transparent);
+  stroke: color-mix(in srgb, var(--overall-accent, #f97316) 82%, white);
+  stroke-dasharray: 0;
+  stroke-width: 3.2;
+  filter: drop-shadow(0 12px 20px rgb(15 23 42 / 0.38));
+}
+
+.overall-hotspot:focus-visible {
+  outline: none;
+  fill: color-mix(in srgb, var(--overall-accent, #f97316) 24%, transparent);
+  stroke: #ffffff;
+  stroke-dasharray: 0;
+  stroke-width: 4;
+  filter: drop-shadow(0 0 0.45rem color-mix(in srgb, var(--overall-accent, #f97316) 70%, white));
+}
+
+.overall-hotspot-info {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 6;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100% - 36px));
+  border: 1px solid rgb(255 255 255 / 0.28);
+  border-left: 3px solid var(--overall-accent, #f97316);
+  border-radius: var(--radius-sm);
+  background: rgb(15 23 42 / 0.72);
+  color: white;
+  padding: 14px;
+  box-shadow: 0 18px 48px rgb(2 6 23 / 0.28);
+  backdrop-filter: blur(20px);
+  opacity: 0;
+  transform: translateY(8px);
+  animation: overall-info-rise 220ms ease forwards;
+}
+
+@keyframes overall-info-rise {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.overall-hotspot-info > span {
+  color: color-mix(in srgb, var(--overall-accent, #f97316) 46%, white);
+  font-size: 0.68rem;
+  font-weight: 840;
+  letter-spacing: 0.04em;
+}
+
+.overall-hotspot-info h2 {
+  margin: 0;
+  font-size: clamp(1rem, 1.5vw, 1.36rem);
+  letter-spacing: 0;
+}
+
+.overall-hotspot-info p {
+  margin: 0;
+  color: rgb(226 232 240 / 0.9);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.overall-info-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.overall-info-metrics div {
+  display: grid;
+  gap: 3px;
+  border-top: 1px solid rgb(255 255 255 / 0.16);
+  padding-top: 8px;
+}
+
+.overall-info-metrics small {
+  color: rgb(203 213 225 / 0.74);
+  font-size: 0.64rem;
+  font-weight: 760;
+}
+
+.overall-info-metrics strong {
+  color: white;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.overall-enter-reveal {
+  position: absolute;
+  inset: -1px;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--overall-accent, #f97316) 28%, transparent) 0 18%, transparent 38%),
+    rgb(15 23 42 / 0.18);
+  color: white;
+  pointer-events: none;
+  clip-path: circle(0% at 50% 50%);
+  animation: overall-mask-reveal 520ms cubic-bezier(0.2, 0.72, 0.2, 1) forwards;
+}
+
+.overall-enter-reveal span {
+  border: 1px solid rgb(255 255 255 / 0.26);
+  border-radius: var(--radius-sm);
+  background: rgb(15 23 42 / 0.56);
+  padding: 10px 14px;
+  font-size: 0.78rem;
+  font-weight: 820;
+  backdrop-filter: blur(14px);
+}
+
+@keyframes overall-mask-reveal {
+  46% {
+    clip-path: circle(26% at 50% 50%);
+  }
+  100% {
+    clip-path: circle(82% at 50% 50%);
+  }
+}
+
+.overall-mobile-entry-list {
+  display: none;
+}
+
+.weather-detail-module {
+  animation: detail-module-arrive 320ms ease both;
+}
+
+@keyframes detail-module-arrive {
+  from {
+    opacity: 0;
+    transform: scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.weather-detail-module.is-returning-overall {
+  opacity: 0;
+  transform: scale(0.985);
+  transition:
+    opacity 260ms ease,
+    transform 260ms ease;
+}
+
+.weather-detail-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 104px;
+  align-items: center;
+  flex-wrap: wrap;
+  border-color: color-mix(in srgb, var(--module-accent, #f97316) 38%, var(--line-soft));
+  background:
+    linear-gradient(90deg, rgb(255 255 255 / 0.94), rgb(255 255 255 / 0.78)),
+    var(--module-anchor-image);
+  background-size: cover;
+  background-position: center;
+}
+
+.weather-detail-anchor {
+  width: 126px;
+  align-self: stretch;
+  min-height: 76px;
+  flex: 0 0 126px;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  border-radius: var(--radius-sm);
+  background-image:
+    linear-gradient(180deg, transparent, rgb(15 23 42 / 0.16)),
+    var(--module-anchor-image);
+  background-size: cover;
+  background-position: center;
+  box-shadow: inset 0 0 0 1px rgb(15 23 42 / 0.08);
+}
+
+.return-overall-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--module-accent, #f97316) 42%, var(--line));
+  border-radius: var(--radius-sm);
+  background: rgb(255 255 255 / 0.82);
+  color: #0f172a;
+  padding: 9px 11px;
+  font-size: 0.78rem;
+  font-weight: 820;
+  box-shadow: 0 10px 22px rgb(15 23 42 / 0.08);
+}
+
+.return-overall-button:hover {
+  border-color: var(--module-accent, #f97316);
+  background: white;
+  transform: translateY(-1px);
+}
+
+.return-overall-button:focus-visible {
+  outline: 2px solid var(--module-accent, #f97316);
+  outline-offset: 3px;
 }
 
 .weather-panel,
@@ -991,6 +1276,82 @@ button:active {
   color: var(--text-strong);
   font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
+}
+
+.analysis-compare-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.analysis-compare-card {
+  display: grid;
+  gap: 7px;
+  border-bottom: 1px solid var(--line-soft);
+  padding-bottom: 10px;
+}
+
+.analysis-compare-card:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.analysis-compare-card > span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 820;
+}
+
+.analysis-compare-card div {
+  display: grid;
+  gap: 3px;
+}
+
+.analysis-compare-card strong {
+  color: var(--text-strong);
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-compare-card em {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-compare-card b {
+  width: fit-content;
+  border-radius: var(--radius-sm);
+  background: rgb(15 118 110 / 0.1);
+  color: #0f766e;
+  padding: 3px 7px;
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-hint-box {
+  display: grid;
+  gap: 8px;
+  border-left: 3px solid #94a3b8;
+  border-radius: var(--radius-sm);
+  background: var(--neutral-soft);
+  padding: 10px;
+}
+
+.analysis-hint-box span {
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 820;
+}
+
+.analysis-hint-box ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 0.76rem;
+  line-height: 1.45;
 }
 
 .overview-explain {
@@ -3131,6 +3492,10 @@ button.order-row.is-selected {
     grid-template-columns: minmax(0, 1fr) 288px;
   }
 
+  .foodeta-explorer.is-overall-active {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .scene-sidebar {
     grid-column: 1 / -1;
     position: static;
@@ -3189,6 +3554,10 @@ button.order-row.is-selected {
     min-width: 96px;
   }
 
+  .overall-module-map {
+    min-height: min(700px, calc(100vh - 122px));
+  }
+
   .scroll-progress {
     top: 62px;
   }
@@ -3222,6 +3591,11 @@ button.order-row.is-selected {
     padding: 10px;
   }
 
+  .foodeta-explorer.is-overall-active {
+    display: flex;
+    padding: 8px;
+  }
+
   .foodeta-explorer .explorer-main {
     order: 1;
   }
@@ -3253,6 +3627,92 @@ button.order-row.is-selected {
 
   .interactive-scene-map {
     min-height: auto;
+  }
+
+  .overall-module-map {
+    aspect-ratio: 4 / 5;
+    min-height: 520px;
+    max-height: none;
+  }
+
+  .overall-hotspot-info {
+    top: 12px;
+    right: 12px;
+    bottom: auto;
+    width: min(320px, calc(100% - 24px));
+    max-height: 42%;
+    overflow: auto;
+    padding: 12px;
+  }
+
+  .overall-info-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overall-module-copy {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: auto;
+    display: grid;
+    align-items: start;
+  }
+
+  .overall-mobile-entry-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 0 8px;
+    scroll-snap-type: x proximity;
+  }
+
+  .overall-mobile-entry-list button {
+    display: grid;
+    gap: 3px;
+    min-width: 148px;
+    scroll-snap-align: start;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    background: rgb(255 255 255 / 0.88);
+    color: #0f172a;
+    padding: 10px 11px;
+    text-align: left;
+    box-shadow: 0 8px 18px rgb(15 23 42 / 0.06);
+  }
+
+  .overall-mobile-entry-list button span {
+    font-size: 0.78rem;
+    font-weight: 840;
+    line-height: 1.25;
+  }
+
+  .overall-mobile-entry-list button small {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 760;
+  }
+
+  .weather-detail-hero {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .weather-detail-hero p {
+    grid-column: 2;
+    max-width: none;
+  }
+
+  .weather-detail-anchor {
+    width: 92px;
+    min-height: 72px;
+    flex-basis: 92px;
+  }
+
+  .return-overall-button {
+    grid-column: 1 / -1;
+    width: fit-content;
+    justify-self: start;
   }
 
   .detail-grid {

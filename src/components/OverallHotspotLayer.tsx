@@ -1,10 +1,11 @@
-import { MouseEvent } from 'react';
+import { KeyboardEvent, MouseEvent } from 'react';
 import { SceneHotspot } from '../types/data';
 
 interface OverallHotspotLayerProps {
   hotspots: SceneHotspot[];
   hoveredId?: string | null;
   onHover: (hotspot: SceneHotspot, event: MouseEvent<SVGElement>) => void;
+  onFocus?: (hotspot: SceneHotspot) => void;
   onLeave: () => void;
   onSelect: (hotspot: SceneHotspot) => void;
 }
@@ -26,18 +27,35 @@ function renderShape(hotspot: SceneHotspot) {
   }, []).join(' ')} />;
 }
 
-export default function OverallHotspotLayer({ hotspots, hoveredId, onHover, onLeave, onSelect }: OverallHotspotLayerProps) {
+export default function OverallHotspotLayer({ hotspots, hoveredId, onHover, onFocus, onLeave, onSelect }: OverallHotspotLayerProps) {
+  const handleKeyDown = (event: KeyboardEvent<SVGGElement>, hotspot: SceneHotspot) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    event.stopPropagation();
+    onSelect(hotspot);
+  };
+
   return (
-    <svg className="map-data-layer map-hotspot-layer overall-hotspot-layer" viewBox="0 0 1600 1000" preserveAspectRatio="none" aria-hidden="false">
+    <svg
+      className="map-data-layer map-hotspot-layer overall-hotspot-layer"
+      viewBox="0 0 1600 1000"
+      preserveAspectRatio="none"
+      role="group"
+      aria-label="天气模块入口热区"
+    >
       {hotspots.map((hotspot) => (
         <g
           key={hotspot.id}
           className={`map-hotspot overall-hotspot${hoveredId === hotspot.id ? ' is-hovered' : ''}`}
           role="button"
           tabIndex={0}
-          aria-label={hotspot.label}
+          aria-label={`${hotspot.label}。${hotspot.targetModule ? '按 Enter 或 Space 进入模块。' : '按 Enter 或 Space 选中该区域。'}`}
+          aria-pressed={hoveredId === hotspot.id}
           onMouseMove={(event) => onHover(hotspot, event)}
           onMouseLeave={onLeave}
+          onFocus={() => onFocus?.(hotspot)}
+          onBlur={onLeave}
+          onKeyDown={(event) => handleKeyDown(event, hotspot)}
           onClick={(event) => {
             event.stopPropagation();
             onSelect(hotspot);
