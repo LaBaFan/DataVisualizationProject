@@ -1,13 +1,19 @@
-import { MiniMetricTag, OrderDot, RiskHeatHalo } from '../types/data';
+import { MiniMetricTag, OrderDot, RiskHeatHalo, OverlayGroup } from '../types/data';
 
-export type SceneRiskHeatHalo = RiskHeatHalo & { sceneId: string };
-export type SceneOrderDot = OrderDot & { sceneId: string };
-export type SceneMiniMetricTag = MiniMetricTag & { sceneId: string };
+export type { OverlayGroup };
+
+export type SceneRiskHeatHalo = RiskHeatHalo & { sceneId: string; group?: OverlayGroup };
+export type SceneOrderDot = OrderDot & { sceneId: string; group?: OverlayGroup };
+export type SceneMiniMetricTag = MiniMetricTag & { sceneId: string; group?: OverlayGroup };
 
 export const sceneRiskHeatHalos: SceneRiskHeatHalo[] = [
-  { sceneId: 'overall', id: 'overall-halo-restaurant', label: '餐饮街区风险团', x: 330, y: 625, radius: 150, order_count: 610, avg_delivery_duration_min: 39.4, delay_rate: 0.43, risk_score: 0.7, traffic_density: 'High' },
-  { sceneId: 'overall', id: 'overall-halo-storm', label: '雷暴延迟团', x: 1295, y: 690, radius: 175, order_count: 344, avg_delivery_duration_min: 49.8, delay_rate: 0.64, risk_score: 0.88, weather: 'Stormy', traffic_density: 'Jam' },
-  { sceneId: 'overall', id: 'overall-halo-traffic', label: '主干道拥堵团', x: 940, y: 650, radius: 140, order_count: 702, avg_delivery_duration_min: 44.2, delay_rate: 0.52, risk_score: 0.79, traffic_density: 'High' },
+  // overall — area
+  { sceneId: 'overall', id: 'overall-halo-restaurant', label: '餐饮街区风险团', x: 330, y: 625, radius: 150, order_count: 610, avg_delivery_duration_min: 39.4, delay_rate: 0.43, risk_score: 0.7, traffic_density: 'High', group: 'area' },
+  // overall — weather
+  { sceneId: 'overall', id: 'overall-halo-storm', label: '雷暴延迟团', x: 1295, y: 690, radius: 175, order_count: 344, avg_delivery_duration_min: 49.8, delay_rate: 0.64, risk_score: 0.88, weather: 'Stormy', traffic_density: 'Jam', group: 'weather' },
+  // overall — area
+  { sceneId: 'overall', id: 'overall-halo-traffic', label: '主干道拥堵团', x: 940, y: 650, radius: 140, order_count: 702, avg_delivery_duration_min: 44.2, delay_rate: 0.52, risk_score: 0.79, traffic_density: 'High', group: 'area' },
+  // sub-scenes (no group — only shown in their own scene)
   { sceneId: 'dispatch_center', id: 'dispatch-halo-capacity', label: '出发口派单热晕', x: 760, y: 515, radius: 135, order_count: 438, avg_delivery_duration_min: 34.8, delay_rate: 0.31, risk_score: 0.58, time_period: 'lunch_peak' },
   { sceneId: 'restaurant_street', id: 'restaurant-halo-pickup', label: '餐厅取餐等待热晕', x: 520, y: 560, radius: 160, order_count: 610, avg_delivery_duration_min: 39.4, delay_rate: 0.43, risk_score: 0.7, traffic_density: 'High' },
   { sceneId: 'fog_business', id: 'fog-halo-tower', label: '商务楼低能见度热晕', x: 900, y: 390, radius: 150, order_count: 286, avg_delivery_duration_min: 42.1, delay_rate: 0.48, risk_score: 0.74, weather: 'Fog', traffic_density: 'Medium' },
@@ -23,9 +29,13 @@ export const sceneRiskHeatHalos: SceneRiskHeatHalo[] = [
 ];
 
 export const sceneOrderDots: SceneOrderDot[] = [
-  { sceneId: 'overall', id: 'overall-dot-dispatch', x: 790, y: 470, order_count: 78, delivery_duration_min: 33, delay_rate: 0.28, risk_score: 0.48, time_period: 'lunch_peak' },
-  { sceneId: 'overall', id: 'overall-dot-fog', x: 1160, y: 330, order_count: 46, delivery_duration_min: 43, delay_rate: 0.5, risk_score: 0.72, weather: 'Fog' },
-  { sceneId: 'overall', id: 'overall-dot-night', x: 330, y: 245, order_count: 26, delivery_duration_min: 32, delay_rate: 0.2, risk_score: 0.38, time_period: 'night' },
+  // overall — area
+  { sceneId: 'overall', id: 'overall-dot-dispatch', x: 790, y: 470, order_count: 78, delivery_duration_min: 33, delay_rate: 0.28, risk_score: 0.48, time_period: 'lunch_peak', group: 'area' },
+  // overall — weather
+  { sceneId: 'overall', id: 'overall-dot-fog', x: 1160, y: 330, order_count: 46, delivery_duration_min: 43, delay_rate: 0.5, risk_score: 0.72, weather: 'Fog', group: 'weather' },
+  // overall — area
+  { sceneId: 'overall', id: 'overall-dot-night', x: 330, y: 245, order_count: 26, delivery_duration_min: 32, delay_rate: 0.2, risk_score: 0.38, time_period: 'night', group: 'area' },
+  // sub-scenes
   { sceneId: 'dispatch_center', id: 'dispatch-dot-gate-a', x: 650, y: 465, order_count: 62, delivery_duration_min: 32, delay_rate: 0.26, risk_score: 0.46, order_id: 'dispatch-gate-a' },
   { sceneId: 'dispatch_center', id: 'dispatch-dot-gate-b', x: 925, y: 555, order_count: 54, delivery_duration_min: 37, delay_rate: 0.35, risk_score: 0.59, order_id: 'dispatch-gate-b' },
   { sceneId: 'restaurant_street', id: 'restaurant-dot-lane', x: 410, y: 640, order_count: 82, delivery_duration_min: 41, delay_rate: 0.45, risk_score: 0.72, traffic_density: 'High' },
@@ -53,8 +63,11 @@ export const sceneOrderDots: SceneOrderDot[] = [
 ];
 
 export const sceneMiniMetricTags: SceneMiniMetricTag[] = [
-  { sceneId: 'overall', id: 'overall-tag-risk', label: '全局高风险', x: 1030, y: 730, delay_rate: 0.52, avg_delivery_duration_min: 44.2, order_count: 702, risk_score: 0.79, traffic_density: 'High' },
-  { sceneId: 'overall', id: 'overall-tag-weather', label: '天气异常', x: 1185, y: 430, delay_rate: 0.48, avg_delivery_duration_min: 42.1, order_count: 286, risk_score: 0.74, weather: 'Fog' },
+  // overall — area
+  { sceneId: 'overall', id: 'overall-tag-risk', label: '全局高风险', x: 1030, y: 730, delay_rate: 0.52, avg_delivery_duration_min: 44.2, order_count: 702, risk_score: 0.79, traffic_density: 'High', group: 'area' },
+  // overall — weather
+  { sceneId: 'overall', id: 'overall-tag-weather', label: '天气异常', x: 1185, y: 430, delay_rate: 0.48, avg_delivery_duration_min: 42.1, order_count: 286, risk_score: 0.74, weather: 'Fog', group: 'weather' },
+  // sub-scenes
   { sceneId: 'dispatch_center', id: 'dispatch-tag-throughput', label: '派单吞吐', x: 980, y: 405, delay_rate: 0.31, avg_delivery_duration_min: 34.8, order_count: 438, risk_score: 0.58 },
   { sceneId: 'restaurant_street', id: 'restaurant-tag-wait', label: '取餐等待', x: 800, y: 650, delay_rate: 0.43, avg_delivery_duration_min: 39.4, order_count: 610, risk_score: 0.7 },
   { sceneId: 'fog_business', id: 'fog-tag-visibility', label: '能见度风险', x: 1060, y: 365, delay_rate: 0.48, avg_delivery_duration_min: 42.1, order_count: 286, risk_score: 0.74, weather: 'Fog' },

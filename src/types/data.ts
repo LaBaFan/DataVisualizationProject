@@ -317,6 +317,8 @@ export interface MiniMetricTag {
   vehicle_type?: string;
 }
 
+export type OverlayGroup = 'weather' | 'area';
+
 export type MapSceneType = 'overall' | 'weather' | 'traffic' | 'time' | 'risk' | 'area';
 
 export interface MapSceneMetric {

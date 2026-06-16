@@ -88,6 +88,7 @@ export default function InteractiveSceneMap() {
     selectedSceneId,
     selectedWeather,
     selectedTimePeriod,
+    overallFilter,
     selectedItem,
     setSelectedItem,
     setSelectedSceneId,
@@ -128,14 +129,47 @@ export default function InteractiveSceneMap() {
     };
   }, []);
 
-  // Base overlays filtered by scene
+  // Filter overall hotspots based on overallFilter
+  const filteredHotspots = useMemo(() => {
+    if (overallFilter === 'all') return overallHotspots;
+
+    return overallHotspots.filter((hotspot) => {
+      const targetScene = mapScenes.find((s) => s.id === hotspot.targetSceneId);
+      if (!targetScene) return false;
+      if (overallFilter === 'weather') return targetScene.type === 'weather';
+      if (overallFilter === 'area') return targetScene.type === 'area';
+      return true;
+    });
+  }, [overallFilter]);
+
+  // Base overlays filtered by scene, then by overallFilter on the overall scene
   const baseOverlays = useMemo(
-    () => ({
-      halos: sceneRiskHeatHalos.filter((item) => item.sceneId === selectedScene.id),
-      dots: sceneOrderDots.filter((item) => item.sceneId === selectedScene.id),
-      tags: sceneMiniMetricTags.filter((item) => item.sceneId === selectedScene.id)
-    }),
-    [selectedScene.id]
+    () => {
+      const halos = sceneRiskHeatHalos.filter((item) => {
+        if (item.sceneId !== selectedScene.id) return false;
+        // On overall scene, filter by group
+        if (selectedScene.id === 'overall' && overallFilter !== 'all' && item.group) {
+          return item.group === overallFilter;
+        }
+        return true;
+      });
+      const dots = sceneOrderDots.filter((item) => {
+        if (item.sceneId !== selectedScene.id) return false;
+        if (selectedScene.id === 'overall' && overallFilter !== 'all' && item.group) {
+          return item.group === overallFilter;
+        }
+        return true;
+      });
+      const tags = sceneMiniMetricTags.filter((item) => {
+        if (item.sceneId !== selectedScene.id) return false;
+        if (selectedScene.id === 'overall' && overallFilter !== 'all' && item.group) {
+          return item.group === overallFilter;
+        }
+        return true;
+      });
+      return { halos, dots, tags };
+    },
+    [selectedScene.id, overallFilter]
   );
 
   // Compute filtered overlays: update metrics from scene_filter_summary
@@ -201,7 +235,7 @@ export default function InteractiveSceneMap() {
 
         {selectedScene.id === 'overall' ? (
           <OverallHotspotLayer
-            hotspots={overallHotspots}
+            hotspots={filteredHotspots}
             hoveredId={hoveredSelection?.type === 'scene_hotspot' ? hoveredSelection.item.id : null}
             onHover={(hotspot, event) => {
               setHoveredSelection({ type: 'scene_hotspot', item: hotspot });

@@ -175,7 +175,7 @@ button {
 
 .scene-nav-group {
   display: grid;
-  gap: 7px;
+  gap: 4px;
 }
 
 .scene-nav-group h3 {
@@ -185,6 +185,74 @@ button {
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.scene-group-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  width: 100%;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgb(248 250 252 / 0.9), rgb(241 245 249 / 0.8));
+  color: #334155;
+  padding: 8px 9px;
+  text-align: left;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.scene-group-header:hover {
+  border-color: var(--line);
+  background: var(--surface-strong);
+}
+
+.scene-group-header.is-active {
+  border-color: #fb923c;
+  background: var(--accent-soft);
+  color: #9a3412;
+}
+
+.scene-group-header span {
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.scene-group-header small {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 740;
+}
+
+.scene-group-header.is-active small {
+  color: #9a3412;
+}
+
+.scene-group-items {
+  display: grid;
+  gap: 4px;
+  padding-left: 8px;
+  border-left: 2px solid var(--line-soft);
+  margin-left: 6px;
+  animation: group-expand 200ms ease both;
+}
+
+@keyframes group-expand {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.scene-nav-group.is-expanded .scene-group-header {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .scene-nav button {

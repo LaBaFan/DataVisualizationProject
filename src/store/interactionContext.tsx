@@ -1,10 +1,13 @@
 import { createContext, ReactNode, useContext, useMemo, useRef, useState } from 'react';
 import { ActiveSection, MapSelection } from '../types/data';
 
+export type OverallFilter = 'all' | 'weather' | 'area';
+
 interface InteractionContextValue {
   selectedWeather: string;
   selectedTimePeriod: string;
   selectedSceneId: string;
+  overallFilter: OverallFilter;
   activeSection: ActiveSection;
   selectedItem: MapSelection | null;
   selectedScenarioId: string | null;
@@ -13,6 +16,7 @@ interface InteractionContextValue {
   setSelectedWeather: (weather: string) => void;
   setSelectedTimePeriod: (timePeriod: string) => void;
   setSelectedSceneId: (sceneId: string) => void;
+  setOverallFilter: (filter: OverallFilter) => void;
   setActiveSection: (section: ActiveSection) => void;
   setActiveSectionFromScroll: (section: ActiveSection) => void;
   navigateToSection: (section: ActiveSection) => void;
@@ -28,6 +32,7 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
   const [selectedWeather, setSelectedWeather] = useState('All');
   const [selectedTimePeriod, setSelectedTimePeriod] = useState('All');
   const [selectedSceneIdState, setSelectedSceneIdState] = useState('overall');
+  const [overallFilterState, setOverallFilterState] = useState<OverallFilter>('all');
   const [activeSection, setActiveSectionState] = useState<ActiveSection>('overview');
   const [selectedItem, setSelectedItemState] = useState<MapSelection | null>(null);
   const [selectedScenarioId, setSelectedScenarioId] = useState<string | null>(null);
@@ -81,11 +86,19 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
     setSelectedOrderId(null);
   };
 
+  const setOverallFilter = (filter: OverallFilter) => {
+    setOverallFilterState(filter);
+    setSelectedItemState(null);
+    setSelectedScenarioId(null);
+    setSelectedOrderId(null);
+  };
+
   const value = useMemo<InteractionContextValue>(
     () => ({
       selectedWeather,
       selectedTimePeriod,
       selectedSceneId: selectedSceneIdState,
+      overallFilter: overallFilterState,
       activeSection,
       selectedItem,
       selectedScenarioId,
@@ -94,6 +107,7 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
       setSelectedWeather,
       setSelectedTimePeriod,
       setSelectedSceneId,
+      setOverallFilter,
       setActiveSection,
       setActiveSectionFromScroll,
       navigateToSection,
@@ -102,7 +116,7 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
       setSelectedOrderId,
       clearSelection: () => setSelectedItem(null)
     }),
-    [selectedWeather, selectedTimePeriod, selectedSceneIdState, activeSection, selectedItem, selectedScenarioId, selectedOrderId, programmaticSection]
+    [selectedWeather, selectedTimePeriod, selectedSceneIdState, overallFilterState, activeSection, selectedItem, selectedScenarioId, selectedOrderId, programmaticSection]
   );
 
   return <InteractionContext.Provider value={value}>{children}</InteractionContext.Provider>;
