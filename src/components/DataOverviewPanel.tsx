@@ -152,11 +152,11 @@ function selectionPills(selection: MapSelection | null) {
   if (!selection) return [];
   const item = selection.item;
   return [
-    ['Type', selectionTypeLabel(selection)],
-    ['Weather', 'weather' in item ? item.weather : undefined],
-    ['Traffic', 'traffic_density' in item ? item.traffic_density : undefined],
-    ['Time', 'time_period' in item ? item.time_period : undefined],
-    ['Vehicle', 'vehicle_type' in item ? item.vehicle_type : undefined]
+    ['类型', selectionTypeLabel(selection)],
+    ['天气', 'weather' in item ? item.weather : undefined],
+    ['交通', 'traffic_density' in item ? item.traffic_density : undefined],
+    ['时段', 'time_period' in item ? item.time_period : undefined],
+    ['车辆', 'vehicle_type' in item ? item.vehicle_type : undefined]
   ].filter(([, value]) => Boolean(value)) as Array<[string, string]>;
 }
 
@@ -230,12 +230,13 @@ export default function DataOverviewPanel() {
   const filterPills = selectedItem
     ? selectionPills(selectedItem)
     : [
-        ['Scene', selectedScene.title],
-        ['Type', selectedScene.type],
-        ['Weather', selectedWeather],
-        ['Time', selectedTimePeriod]
+        ['场景', selectedScene.title],
+        ['类型', selectedScene.type],
+        ['天气', selectedWeather],
+        ['时段', selectedTimePeriod]
       ];
   const explanation = selectedItem ? selectionExplanation(selectedItem) : selectedScene.description;
+  const panelStatus = selectedItem ? '选中对象：ETA Risk Ticket' : `当前视图：${copy.title}`;
   const handleFullAnalysisClick = () => {
     const targetSection = sectionForSelection(selectedItem, activeSection ?? 'overview');
     setSelectedItem(null);
@@ -259,41 +260,48 @@ export default function DataOverviewPanel() {
         key={`${activeSection}-${selectedWeather}-${selectedTimePeriod}-${selectionTitle(selectedItem) ?? 'none'}`}
         className="overview-content"
       >
-        <span className="overview-eyebrow">Analysis Panel</span>
-        {selectedItem ? (
-          <div className="overview-ticket-head">
-            <span>ETA Risk Ticket</span>
-            <div className="overview-ticket-actions">
-              <button type="button" onClick={handleFullAnalysisClick}>
-                查看完整分析
-              </button>
+        <section className="overview-block overview-current-view" aria-labelledby="overview-current-heading">
+          <span className="overview-status-line">{panelStatus}</span>
+          <h2 id="overview-current-heading">{selectedItem ? selectionTitle(selectedItem) : selectedScene.title}</h2>
+          <p className="overview-question">{selectedItem ? selectionTypeLabel(selectedItem) : selectedScene.question}</p>
+
+          <div className="overview-filter-summary" aria-label="当前筛选">
+            {filterPills.map(([label, value]) => (
+              <span key={`${label}-${value}`}>{label}: {value}</span>
+            ))}
+          </div>
+        </section>
+
+        <section className="overview-block" aria-labelledby="overview-metrics-heading">
+          <h3 id="overview-metrics-heading">关键指标</h3>
+          <div className="overview-metric-list">
+            {metrics.slice(0, selectedItem ? 7 : 5).map(([label, value]) => (
+              <div key={label}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="overview-block" aria-labelledby="overview-explain-heading">
+          <h3 id="overview-explain-heading">解释</h3>
+          <p className="overview-explain">{explanation}</p>
+        </section>
+
+        <section className="overview-block overview-actions-block" aria-labelledby="overview-actions-heading">
+          <h3 id="overview-actions-heading">操作按钮</h3>
+          <div className="overview-ticket-actions">
+            <button type="button" onClick={handleFullAnalysisClick}>
+              查看完整分析
+            </button>
+            {selectedItem ? (
               <button type="button" onClick={() => setSelectedItem(null)}>
                 返回模块概览
               </button>
-            </div>
+            ) : null}
           </div>
-        ) : (
-          <span className="overview-section-step">{copy.step} / {copy.label}</span>
-        )}
-        <h2>{selectedItem ? selectionTitle(selectedItem) : selectedScene.title}</h2>
-        <p className="overview-question">{selectedItem ? selectionTypeLabel(selectedItem) : selectedScene.question}</p>
-
-        <div className="overview-filter-summary">
-          {filterPills.map(([label, value]) => (
-            <span key={`${label}-${value}`}>{label}: {value}</span>
-          ))}
-        </div>
-
-        <div className="overview-metric-list">
-          {metrics.slice(0, selectedItem ? 7 : 5).map(([label, value]) => (
-            <div key={label}>
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </div>
-          ))}
-        </div>
-
-        <div className="overview-explain">{explanation}</div>
+        </section>
       </div>
     </aside>
   );
