@@ -2908,6 +2908,29 @@ button.order-row.is-selected {
     min-height: auto;
   }
 
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-card-wide {
+    grid-column: 1;
+  }
+
+  .rhythm-row {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .rhythm-metrics {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .risk-table-head,
+  .risk-table-row {
+    grid-template-columns: 28px 58px 52px 58px 48px 52px 48px 70px;
+    font-size: 0.68rem;
+  }
+
   .weather-panel,
   .data-overview-panel,
   .scroll-progress {
@@ -3046,6 +3069,313 @@ button.order-row.is-selected {
   .order-row span:nth-child(7) {
     display: none;
   }
+}
+
+/* ───────── explorer-main wrapper ───────── */
+
+.explorer-main {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  align-content: start;
+}
+
+/* ───────── scene detail panel ───────── */
+
+.scene-detail-panel {
+  display: grid;
+  gap: 18px;
+  animation: detail-panel-rise 320ms ease both;
+}
+
+@keyframes detail-panel-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.detail-header {
+  padding: 0 2px;
+}
+
+.detail-header .detail-eyebrow {
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detail-header h2 {
+  margin: 4px 0 0;
+  color: var(--text-strong);
+  font-size: clamp(1.12rem, 1.8vw, 1.48rem);
+  letter-spacing: 0;
+}
+
+.detail-header p {
+  margin: 4px 0 0;
+  color: #475569;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.detail-card {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, var(--surface-strong) 0%, var(--surface) 100%);
+  box-shadow: var(--shadow-soft);
+  padding: 18px;
+  transition: box-shadow 220ms ease;
+}
+
+.detail-card:hover {
+  box-shadow: 0 14px 36px rgb(15 23 42 / 0.1);
+}
+
+.detail-card-wide {
+  grid-column: 1 / -1;
+}
+
+.detail-card h3 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.detail-card-desc {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.detail-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* ─── time rhythm bars ─── */
+
+.time-rhythm-bars {
+  display: grid;
+  gap: 8px;
+}
+
+.rhythm-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.rhythm-label {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-align: right;
+}
+
+.rhythm-track {
+  height: 22px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(226 232 240 / 0.6);
+}
+
+.rhythm-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #facc15, #fb923c, #ef4444);
+  transition: width 360ms ease;
+}
+
+.rhythm-metrics {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  min-width: 180px;
+}
+
+.rhythm-metrics strong {
+  color: var(--text-strong);
+  font-size: 0.82rem;
+  font-weight: 900;
+  min-width: 48px;
+  text-align: right;
+}
+
+.rhythm-metrics em {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 750;
+  min-width: 54px;
+  text-align: right;
+}
+
+.rhythm-metrics em.is-high {
+  color: #dc2626;
+  font-weight: 900;
+}
+
+/* ─── risk table ─── */
+
+.risk-table-wrap {
+  display: grid;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.risk-table-head,
+.risk-table-row {
+  display: grid;
+  grid-template-columns: 32px 72px 64px 72px 58px 62px 58px minmax(90px, 1fr);
+  gap: 6px;
+  align-items: center;
+  padding: 8px 10px;
+}
+
+.risk-table-head {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.risk-table-row {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: #334155;
+  font-size: 0.74rem;
+  font-weight: 750;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.risk-table-row:hover {
+  border-color: var(--accent-muted);
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+
+.risk-rank {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--text-strong);
+  color: #fff;
+  font-size: 0.64rem;
+  font-weight: 950;
+}
+
+.risk-table-row .is-high {
+  color: #dc2626;
+  font-weight: 950;
+}
+
+.risk-score-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.risk-score-cell i {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #facc15, #fb923c, #ef4444);
+  min-width: 4px;
+  flex: 1;
+}
+
+.risk-score-cell em {
+  color: var(--text-strong);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+  min-width: 32px;
+  text-align: right;
+}
+
+/* ─── scatter plot ─── */
+
+.scene-scatter-svg {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+}
+
+.scatter-grid-line {
+  stroke: rgb(203 213 225 / 0.45);
+  stroke-width: 1;
+}
+
+.scatter-axis {
+  stroke: #94a3b8;
+  stroke-width: 1.2;
+}
+
+.scatter-axis-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.scatter-tick {
+  fill: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.scatter-mean-line {
+  stroke: #0f766e;
+  stroke-dasharray: 5 4;
+  stroke-width: 1.3;
+  opacity: 0.55;
+}
+
+.scatter-ref-label {
+  fill: #0f766e;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.scatter-dot {
+  fill: #0f766e;
+  stroke: rgb(255 255 255 / 0.9);
+  stroke-width: 1.6;
+  opacity: 0.72;
+  transition: opacity 160ms ease;
+}
+
+.scatter-dot.is-delayed {
+  fill: #f97316;
+  opacity: 0.82;
 }
 
 @media (prefers-reduced-motion: reduce) {

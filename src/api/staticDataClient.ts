@@ -519,6 +519,10 @@ export function loadDistanceTimeSample(): Promise<DistanceTimePoint[]> {
   return fetchJson<DistanceTimePoint[]>('distance_time_sample.json', mockDistanceTimeSample);
 }
 
+export function loadScenarioDistanceTimePoints(): Promise<DistanceTimePoint[]> {
+  return fetchJson<DistanceTimePoint[]>('scenario_distance_time_points.json', mockDistanceTimeSample);
+}
+
 export function loadTimePeriodSummary(): Promise<TimePeriodSummary[]> {
   return fetchJson<TimePeriodSummary[]>('time_period_summary.json', mockTimePeriods);
 }

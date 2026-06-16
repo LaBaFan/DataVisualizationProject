@@ -239,11 +239,18 @@ export default function DataOverviewPanel() {
   const handleFullAnalysisClick = () => {
     const targetSection = sectionForSelection(selectedItem, activeSection ?? 'overview');
     setSelectedItem(null);
-    navigateToSection(targetSection);
-    document.getElementById(`section-${targetSection}`)?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
+
+    // Map section to detail panel anchor
+    const detailAnchorMap: Partial<Record<ActiveSection, string>> = {
+      time: 'detail-time-rhythm',
+      risk: 'detail-risk-scenarios',
+      outlier: 'detail-scatter'
+    };
+    const anchorId = detailAnchorMap[targetSection] ?? 'scene-detail-panel';
+    const el = document.getElementById(anchorId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   return (
