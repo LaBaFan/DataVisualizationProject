@@ -37,5 +37,13 @@ export default function CourierVehicleView() {
       }
     : undefined;
 
-  return <ChartCard title="骑手与车辆" description="当前骨架先比较车辆类型表现。" option={option} isEmpty={!data} />;
+  return (
+    <ChartCard
+      title="骑手与车辆"
+      description="当前骨架先比较车辆类型表现。"
+      insight="对比车辆类型的平均时长和延迟率，可识别速度优势是否真正转化为稳定履约。"
+      option={option}
+      isEmpty={!data}
+    />
+  );
 }

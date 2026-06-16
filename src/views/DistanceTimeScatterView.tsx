@@ -43,6 +43,7 @@ export default function DistanceTimeScatterView() {
     <ChartCard
       title="距离-时长散点"
       description="使用订单抽样数据观察距离与配送时长关系，红色表示延迟订单。"
+      insight="点云斜率反映距离对时长的影响，偏离主带的红点是需要复盘的异常履约。"
       option={option}
       isEmpty={!data.length}
     />

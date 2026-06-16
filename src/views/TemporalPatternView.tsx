@@ -39,5 +39,13 @@ export default function TemporalPatternView() {
     ]
   };
 
-  return <ChartCard title="小时趋势" description="按小时比较平均配送时长和延迟率。" option={option} isEmpty={!data.length} />;
+  return (
+    <ChartCard
+      title="小时趋势"
+      description="按小时比较平均配送时长和延迟率。"
+      insight="平均时长与延迟率同时上行的小时段，是排班和调度优先复核的窗口。"
+      option={option}
+      isEmpty={!data.length}
+    />
+  );
 }

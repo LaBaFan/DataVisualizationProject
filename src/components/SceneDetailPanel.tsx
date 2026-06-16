@@ -141,33 +141,64 @@ function RiskTable({ scenarios }: { scenarios: RiskScenario[] }) {
     return <p className="detail-empty">暂无匹配的风险场景</p>;
   }
 
+  const topScenarios = scenarios.slice(0, 3);
+  const restScenarios = scenarios.slice(3);
+
   return (
-    <div className="risk-table-wrap">
-      <div className="risk-table-head">
-        <span>#</span>
-        <span>天气</span>
-        <span>交通</span>
-        <span>时段</span>
-        <span>订单数</span>
-        <span>时长</span>
-        <span>延迟率</span>
-        <span>风险</span>
+    <div className="risk-report">
+      <div className="risk-top-list" aria-label="高风险场景前三名">
+        {topScenarios.map((s, i) => (
+          <article key={s.scenario_id} className="risk-top-card">
+            <div className="risk-top-rank">
+              <span>TOP</span>
+              <strong>{i + 1}</strong>
+            </div>
+            <div className="risk-top-main">
+              <div className="risk-top-title">
+                <strong>{s.weather ?? '–'} · {s.traffic_density ?? '–'} · {TIME_LABELS[s.time_period ?? ''] ?? s.time_period ?? '–'}</strong>
+                <span>风险评分 {fmt(s.risk_score, 2)}</span>
+              </div>
+              <div className="risk-top-metrics">
+                <span>订单 <strong>{s.order_count.toLocaleString()}</strong></span>
+                <span>均时 <strong>{fmt(s.avg_delivery_duration_min, 1)} min</strong></span>
+                <span className={s.delay_rate > 0.5 ? 'is-high' : ''}>延迟 <strong>{pct(s.delay_rate)}</strong></span>
+              </div>
+              <div className="risk-top-score" aria-hidden="true">
+                <i style={{ width: barWidth(s.risk_score, 1) }} />
+              </div>
+            </div>
+          </article>
+        ))}
       </div>
-      {scenarios.map((s, i) => (
-        <div key={s.scenario_id} className="risk-table-row">
-          <span className="risk-rank">{i + 1}</span>
-          <span>{s.weather ?? '–'}</span>
-          <span>{s.traffic_density ?? '–'}</span>
-          <span>{TIME_LABELS[s.time_period ?? ''] ?? s.time_period ?? '–'}</span>
-          <span>{s.order_count}</span>
-          <span>{fmt(s.avg_delivery_duration_min, 1)}</span>
-          <span className={s.delay_rate > 0.5 ? 'is-high' : ''}>{pct(s.delay_rate)}</span>
-          <span className="risk-score-cell">
-            <i style={{ width: barWidth(s.risk_score, 1) }} />
-            <em>{fmt(s.risk_score, 2)}</em>
-          </span>
+      {restScenarios.length > 0 ? (
+        <div className="risk-table-wrap">
+          <div className="risk-table-head">
+            <span>#</span>
+            <span>天气</span>
+            <span>交通</span>
+            <span>时段</span>
+            <span>订单数</span>
+            <span>时长</span>
+            <span>延迟率</span>
+            <span>风险</span>
+          </div>
+          {restScenarios.map((s, i) => (
+            <div key={s.scenario_id} className="risk-table-row">
+              <span className="risk-rank">{i + 4}</span>
+              <span>{s.weather ?? '–'}</span>
+              <span>{s.traffic_density ?? '–'}</span>
+              <span>{TIME_LABELS[s.time_period ?? ''] ?? s.time_period ?? '–'}</span>
+              <span>{s.order_count}</span>
+              <span>{fmt(s.avg_delivery_duration_min, 1)}</span>
+              <span className={s.delay_rate > 0.5 ? 'is-high' : ''}>{pct(s.delay_rate)}</span>
+              <span className="risk-score-cell">
+                <i style={{ width: barWidth(s.risk_score, 1) }} />
+                <em>{fmt(s.risk_score, 2)}</em>
+              </span>
+            </div>
+          ))}
         </div>
-      ))}
+      ) : null}
     </div>
   );
 }
@@ -349,7 +380,7 @@ export default function SceneDetailPanel() {
   return (
     <div className="scene-detail-panel" id="scene-detail-panel">
       <div className="detail-header">
-        <span className="detail-eyebrow">Detail Analysis</span>
+        <span className="detail-eyebrow">场景分析</span>
         <h2>{selectedScene.title} · 详细数据</h2>
         <p>{selectedScene.description}</p>
         {filterParts.length > 0 && (
@@ -368,28 +399,37 @@ export default function SceneDetailPanel() {
 
       <div className="detail-grid">
         <section className="detail-card" id="detail-time-rhythm">
-          <h3>📊 时段配送节奏</h3>
+          <h3>时段配送节奏</h3>
           <p className="detail-card-desc">
             不同时间段的订单量、平均配送时长和延迟率分布
             {!isAll(selectedTimePeriod) ? ` · 当前高亮 ${TIME_LABELS[selectedTimePeriod]}` : ''}
+          </p>
+          <p className="detail-insight">
+            先看订单量最高的时段，再对照延迟率深浅，判断压力是否集中在同一履约窗口。
           </p>
           <TimeRhythmChart rows={sceneTimeRows} activeTimePeriod={selectedTimePeriod} />
         </section>
 
         <section className="detail-card" id="detail-risk-scenarios">
-          <h3>⚠️ 高风险场景 Top {sceneScenarios.length}</h3>
+          <h3>高风险场景 Top {sceneScenarios.length}</h3>
           <p className="detail-card-desc">
             当前场景条件下风险评分最高的天气 × 交通 × 时段组合
             {filterParts.length > 0 ? ` · 已筛选 ${filterLabel}` : ''}
+          </p>
+          <p className="detail-insight">
+            优先复核评分高且订单量大的组合，它们对整体延迟暴露影响更直接。
           </p>
           <RiskTable scenarios={sceneScenarios} />
         </section>
 
         <section className="detail-card detail-card-wide" id="detail-scatter">
-          <h3>📍 距离-时长分布 ({sceneScatter.length.toLocaleString()} 订单)</h3>
+          <h3>距离-时长分布 ({sceneScatter.length.toLocaleString()} 订单)</h3>
           <p className="detail-card-desc">
             橙色点为延迟订单，绿色点为正常订单；虚线为均值参考线
             {filterParts.length > 0 ? ` · 已筛选 ${filterLabel}` : ''}
+          </p>
+          <p className="detail-insight">
+            均值线右上方的订单同时偏远且偏慢，是解释当前场景履约波动的重点样本。
           </p>
           <ScatterPlot points={sceneScatter} />
         </section>

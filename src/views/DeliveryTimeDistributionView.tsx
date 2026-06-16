@@ -25,6 +25,7 @@ export default function DeliveryTimeDistributionView() {
     <ChartCard
       title="配送时长分布"
       description="展示配送时间直方分布和长尾延迟区间。"
+      insight="主峰代表常规履约窗口，右侧长尾用于定位少量但影响体验的超时订单。"
       option={option}
       isEmpty={!data}
     />

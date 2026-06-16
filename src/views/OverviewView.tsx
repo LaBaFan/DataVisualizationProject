@@ -62,7 +62,12 @@ export default function OverviewView() {
           <strong>{formatNumber(overview.avg_distance_km, 1)} km</strong>
         </div>
       </section>
-      <ChartCard title="小时订单量与延迟率" description="真实 processed hour_summary 数据。" option={hourOption} />
+      <ChartCard
+        title="小时订单量与延迟率"
+        description="真实 processed hour_summary 数据。"
+        insight="先看柱形峰值判断履约压力，再对照红线识别订单高峰是否同步推高延迟率。"
+        option={hourOption}
+      />
       <section className="table-card">
         <h2>城市概览</h2>
         <table>

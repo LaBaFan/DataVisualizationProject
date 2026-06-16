@@ -115,6 +115,7 @@ export default function DeliveryRiskMap({ scenarios, selectedScenarioId, onSelec
     <ChartCard
       title="配送延迟风险地图 / Delivery Risk Map"
       description="面积 = 订单量，颜色 = 延迟风险。点击任一配送场景进入右侧 ETA Risk Ticket。"
+      insight="优先关注面积大且颜色深的区块，它们同时代表高订单暴露和高延迟风险。"
       option={option}
       height={460}
       isEmpty={!scenarios.length}

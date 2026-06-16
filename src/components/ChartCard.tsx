@@ -12,6 +12,7 @@ interface ChartCardProps {
   children?: ReactNode;
   isEmpty?: boolean;
   className?: string;
+  insight?: string;
   onChartClick?: (params: unknown) => void;
 }
 
@@ -23,6 +24,7 @@ export default function ChartCard({
   children,
   isEmpty = false,
   className = '',
+  insight,
   onChartClick
 }: ChartCardProps) {
   const chartRef = useRef<HTMLDivElement | null>(null);
@@ -62,6 +64,7 @@ export default function ChartCard({
         <h2>{title}</h2>
         {description ? <p>{description}</p> : null}
       </div>
+      {insight ? <p className="chart-insight">{insight}</p> : null}
       {children}
       {isEmpty ? <EmptyState /> : option ? <div ref={chartRef} style={{ height }} /> : null}
     </section>

@@ -24,5 +24,13 @@ export default function CityComparisonView() {
     ]
   };
 
-  return <ChartCard title="城市对比" description="比较不同城市类型的平均配送时长和订单量。" option={option} isEmpty={!data.length} />;
+  return (
+    <ChartCard
+      title="城市对比"
+      description="比较不同城市类型的平均配送时长和订单量。"
+      insight="柱形比较城市履约耗时，折线说明样本规模，避免把低订单量城市误读为稳定趋势。"
+      option={option}
+      isEmpty={!data.length}
+    />
+  );
 }

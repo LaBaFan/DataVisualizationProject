@@ -106,6 +106,7 @@ export default function TemporalSummaryStrip({
     <ChartCard
       title="配送时段节奏 / ETA by Time Period"
       description="按时段扫视订单峰值、平均配送时长与延迟率。"
+      insight="柱形看订单压力，实线看时长，虚线看延迟率；三者同高的时段需要优先保障运力。"
       option={option}
       height={250}
       isEmpty={!periods.length}

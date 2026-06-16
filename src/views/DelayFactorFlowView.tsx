@@ -40,6 +40,7 @@ export default function DelayFactorFlowView() {
     <ChartCard
       title="Delay Factor Flow View"
       description="借鉴 Parallel Sets，用 Sankey 占位表达天气、交通与延迟结果路径。"
+      insight="连线越粗代表订单越集中，沿路径观察可定位哪些条件组合更容易流向延迟结果。"
       option={option}
       isEmpty={!data.length}
     />

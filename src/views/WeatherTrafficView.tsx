@@ -23,5 +23,13 @@ export default function WeatherTrafficView() {
     };
   }, [data]);
 
-  return <ChartCard title="天气与交通组合" description="按平均配送时长展示高耗时组合。" option={option} isEmpty={!data.length} />;
+  return (
+    <ChartCard
+      title="天气与交通组合"
+      description="按平均配送时长展示高耗时组合。"
+      insight="横向条越长说明组合耗时越高，顶部组合通常是天气和路况叠加后的主要瓶颈。"
+      option={option}
+      isEmpty={!data.length}
+    />
+  );
 }

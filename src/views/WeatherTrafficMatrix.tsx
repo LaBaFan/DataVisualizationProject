@@ -104,6 +104,7 @@ export default function WeatherTrafficMatrix({
     <ChartCard
       title="天气 × 交通压力矩阵 / Weather × Traffic Pressure"
       description="点击天气与交通组合，快速锁定高延迟组合。"
+      insight="颜色越深代表延迟率越高，按行列对比可分辨是天气主导还是交通压力主导。"
       option={option}
       height={250}
       isEmpty={!matrix.length}

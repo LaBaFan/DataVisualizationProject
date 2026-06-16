@@ -46,6 +46,7 @@ export default function AnnotatedTemporalView() {
       <ChartCard
         title="Annotated Temporal Pattern View"
         description="借鉴 TimeNotes，在小时趋势中标注业务高峰和数据峰值。"
+        insight="标注点把业务事件和时长波峰对齐，帮助判断峰值来自真实高峰还是孤立异常。"
         option={option}
         isEmpty={!hours.length}
       />
