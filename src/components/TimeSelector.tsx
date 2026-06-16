@@ -3,11 +3,11 @@ import { useFilters } from '../store/filterContext';
 
 const timeOptions = [
   { value: 'All', label: '全部', meta: 'All' },
-  { value: 'breakfast', label: '早', meta: 'Morning' },
-  { value: 'lunch_peak', label: '中', meta: 'Noon' },
-  { value: 'afternoon', label: '下午', meta: 'Afternoon' },
-  { value: 'dinner_peak', label: '晚', meta: 'Evening' },
-  { value: 'night', label: '夜间', meta: 'Night' }
+  { value: 'breakfast', label: '早餐', meta: '06-10' },
+  { value: 'lunch_peak', label: '午高峰', meta: '10-14' },
+  { value: 'afternoon', label: '下午', meta: '14-17' },
+  { value: 'dinner_peak', label: '晚高峰', meta: '17-21' },
+  { value: 'night', label: '夜间', meta: '21-06' }
 ];
 
 export default function TimeSelector() {
@@ -18,7 +18,7 @@ export default function TimeSelector() {
     <header className="time-selector-bar">
       <div className="time-brand">
         <strong>FoodETA</strong>
-        <span>Scrolling ETA Risk Story</span>
+        <span>Delivery ETA Risk Explorer</span>
       </div>
       <nav aria-label="Time period selector">
         {timeOptions.map((option) => (

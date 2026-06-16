@@ -46,6 +46,10 @@ function matchesScene(
   }
 }
 
+function isAll(v: string | null | undefined) {
+  return !v || v === 'All';
+}
+
 /* ───────── helpers ───────── */
 
 function fmt(v: number | undefined | null, d = 0): string {
@@ -71,9 +75,26 @@ const TIME_LABELS: Record<string, string> = {
   night: '夜间'
 };
 
+const TIME_ORDER = ['breakfast', 'lunch_peak', 'afternoon', 'dinner_peak', 'night'];
+
+const WEATHER_LABELS: Record<string, string> = {
+  Sunny: '晴天',
+  Cloudy: '多云',
+  Fog: '雾天',
+  Stormy: '暴雨',
+  Sandstorms: '沙尘',
+  Windy: '大风'
+};
+
 /* ───────── Time Rhythm sub-component ───────── */
 
-function TimeRhythmChart({ rows }: { rows: SceneFilterSummary[] }) {
+function TimeRhythmChart({
+  rows,
+  activeTimePeriod
+}: {
+  rows: SceneFilterSummary[];
+  activeTimePeriod: string;
+}) {
   const maxOrders = Math.max(1, ...rows.map((r) => r.order_count));
 
   if (!rows.length) {
@@ -82,25 +103,33 @@ function TimeRhythmChart({ rows }: { rows: SceneFilterSummary[] }) {
 
   return (
     <div className="time-rhythm-bars">
-      {rows.map((row) => (
-        <div key={row.time_period ?? 'unknown'} className="rhythm-row">
-          <span className="rhythm-label">{TIME_LABELS[row.time_period ?? ''] ?? row.time_period ?? '未知'}</span>
-          <div className="rhythm-track">
-            <div
-              className="rhythm-fill"
-              style={{
-                width: barWidth(row.order_count, maxOrders),
-                opacity: 0.35 + (row.delay_rate > 1 ? row.delay_rate / 100 : row.delay_rate) * 0.65
-              }}
-            />
+      {rows.map((row) => {
+        const tp = row.time_period ?? '';
+        const isActive = activeTimePeriod === tp;
+        const isMuted = !isAll(activeTimePeriod) && !isActive;
+        return (
+          <div
+            key={tp}
+            className={`rhythm-row${isActive ? ' is-active' : ''}${isMuted ? ' is-muted' : ''}`}
+          >
+            <span className="rhythm-label">{TIME_LABELS[tp] ?? tp ?? '未知'}</span>
+            <div className="rhythm-track">
+              <div
+                className="rhythm-fill"
+                style={{
+                  width: barWidth(row.order_count, maxOrders),
+                  opacity: 0.35 + (row.delay_rate > 1 ? row.delay_rate / 100 : row.delay_rate) * 0.65
+                }}
+              />
+            </div>
+            <div className="rhythm-metrics">
+              <strong>{row.order_count.toLocaleString()}</strong>
+              <em>{fmt(row.avg_delivery_duration_min, 1)} min</em>
+              <em className={row.delay_rate > 0.35 ? 'is-high' : ''}>{pct(row.delay_rate)}</em>
+            </div>
           </div>
-          <div className="rhythm-metrics">
-            <strong>{row.order_count.toLocaleString()}</strong>
-            <em>{fmt(row.avg_delivery_duration_min, 1)} min</em>
-            <em className={row.delay_rate > 0.35 ? 'is-high' : ''}>{pct(row.delay_rate)}</em>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -159,7 +188,6 @@ function ScatterPlot({ points }: { points: DistanceTimePoint[] }) {
   const scaleX = (v: number) => SCATTER_PAD + (v / xMax) * (SCATTER_W - SCATTER_PAD * 2);
   const scaleY = (v: number) => SCATTER_H - SCATTER_PAD - (v / yMax) * (SCATTER_H - SCATTER_PAD * 2);
 
-  // mean lines
   const meanDist = points.reduce((s, p) => s + p.distance_km, 0) / Math.max(1, points.length);
   const meanDur = points.reduce((s, p) => s + p.delivery_duration_min, 0) / Math.max(1, points.length);
 
@@ -238,7 +266,7 @@ function ScatterPlot({ points }: { points: DistanceTimePoint[] }) {
 /* ───────── Main Panel ───────── */
 
 export default function SceneDetailPanel() {
-  const { selectedSceneId } = useInteraction();
+  const { selectedSceneId, selectedWeather, selectedTimePeriod } = useInteraction();
   const selectedScene = getMapSceneById(selectedSceneId);
 
   const [filterRows, setFilterRows] = useState<SceneFilterSummary[]>([]);
@@ -265,31 +293,58 @@ export default function SceneDetailPanel() {
     };
   }, [selectedSceneId]);
 
+  // Time rhythm: show all time periods for the scene, highlight selected
   const sceneTimeRows = useMemo(
     () =>
       filterRows
         .filter((r) => r.scene_id === selectedSceneId && r.time_period !== 'All' && r.weather === 'All')
-        .sort((a, b) => {
-          const order = ['breakfast', 'lunch_peak', 'afternoon', 'dinner_peak', 'night'];
-          return order.indexOf(a.time_period ?? '') - order.indexOf(b.time_period ?? '');
-        }),
+        .sort((a, b) => TIME_ORDER.indexOf(a.time_period ?? '') - TIME_ORDER.indexOf(b.time_period ?? '')),
     [filterRows, selectedSceneId]
   );
 
-  const sceneScenarios = useMemo(
-    () =>
-      scenarios
-        .filter((s) => matchesScene(selectedSceneId, s))
-        .slice(0, 8),
-    [scenarios, selectedSceneId]
-  );
+  // Filter summary: the current scene's metrics with selected filters
+  const sceneFilteredRow = useMemo(() => {
+    const weather = isAll(selectedWeather) ? 'All' : selectedWeather;
+    const timePeriod = isAll(selectedTimePeriod) ? 'All' : selectedTimePeriod;
+    return filterRows.find(
+      (r) =>
+        r.scene_id === selectedSceneId &&
+        r.weather === weather &&
+        r.time_period === timePeriod
+    );
+  }, [filterRows, selectedSceneId, selectedWeather, selectedTimePeriod]);
 
-  const sceneScatter = useMemo(
-    () => scatterPoints.filter((p) => matchesScene(selectedSceneId, p)),
-    [scatterPoints, selectedSceneId]
-  );
+  // Risk scenarios: filter by scene + time period + weather
+  const sceneScenarios = useMemo(() => {
+    let filtered = scenarios.filter((s) => matchesScene(selectedSceneId, s));
+    if (!isAll(selectedTimePeriod)) {
+      filtered = filtered.filter((s) => s.time_period === selectedTimePeriod);
+    }
+    if (!isAll(selectedWeather)) {
+      filtered = filtered.filter((s) => s.weather === selectedWeather);
+    }
+    return filtered.slice(0, 8);
+  }, [scenarios, selectedSceneId, selectedTimePeriod, selectedWeather]);
+
+  // Scatter: filter by scene + time period + weather
+  const sceneScatter = useMemo(() => {
+    let filtered = scatterPoints.filter((p) => matchesScene(selectedSceneId, p));
+    if (!isAll(selectedTimePeriod)) {
+      filtered = filtered.filter((p) => p.time_period === selectedTimePeriod);
+    }
+    if (!isAll(selectedWeather)) {
+      filtered = filtered.filter((p) => p.weather === selectedWeather);
+    }
+    return filtered;
+  }, [scatterPoints, selectedSceneId, selectedTimePeriod, selectedWeather]);
 
   if (selectedSceneId === 'overall') return null;
+
+  // Build filter description
+  const filterParts: string[] = [];
+  if (!isAll(selectedWeather)) filterParts.push(WEATHER_LABELS[selectedWeather] ?? selectedWeather);
+  if (!isAll(selectedTimePeriod)) filterParts.push(TIME_LABELS[selectedTimePeriod] ?? selectedTimePeriod);
+  const filterLabel = filterParts.length ? filterParts.join(' · ') : '全部条件';
 
   return (
     <div className="scene-detail-panel" id="scene-detail-panel">
@@ -297,18 +352,36 @@ export default function SceneDetailPanel() {
         <span className="detail-eyebrow">Detail Analysis</span>
         <h2>{selectedScene.title} · 详细数据</h2>
         <p>{selectedScene.description}</p>
+        {filterParts.length > 0 && (
+          <div className="detail-active-filters">
+            当前筛选：<strong>{filterLabel}</strong>
+            {sceneFilteredRow && (
+              <>
+                <span>样本 {sceneFilteredRow.order_count.toLocaleString()}</span>
+                <span>均时 {fmt(sceneFilteredRow.avg_delivery_duration_min, 1)} min</span>
+                <span>延迟 {pct(sceneFilteredRow.delay_rate)}</span>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="detail-grid">
         <section className="detail-card" id="detail-time-rhythm">
           <h3>📊 时段配送节奏</h3>
-          <p className="detail-card-desc">不同时间段的订单量、平均配送时长和延迟率分布</p>
-          <TimeRhythmChart rows={sceneTimeRows} />
+          <p className="detail-card-desc">
+            不同时间段的订单量、平均配送时长和延迟率分布
+            {!isAll(selectedTimePeriod) ? ` · 当前高亮 ${TIME_LABELS[selectedTimePeriod]}` : ''}
+          </p>
+          <TimeRhythmChart rows={sceneTimeRows} activeTimePeriod={selectedTimePeriod} />
         </section>
 
         <section className="detail-card" id="detail-risk-scenarios">
           <h3>⚠️ 高风险场景 Top {sceneScenarios.length}</h3>
-          <p className="detail-card-desc">当前场景条件下风险评分最高的天气 × 交通 × 时段组合</p>
+          <p className="detail-card-desc">
+            当前场景条件下风险评分最高的天气 × 交通 × 时段组合
+            {filterParts.length > 0 ? ` · 已筛选 ${filterLabel}` : ''}
+          </p>
           <RiskTable scenarios={sceneScenarios} />
         </section>
 
@@ -316,6 +389,7 @@ export default function SceneDetailPanel() {
           <h3>📍 距离-时长分布 ({sceneScatter.length.toLocaleString()} 订单)</h3>
           <p className="detail-card-desc">
             橙色点为延迟订单，绿色点为正常订单；虚线为均值参考线
+            {filterParts.length > 0 ? ` · 已筛选 ${filterLabel}` : ''}
           </p>
           <ScatterPlot points={sceneScatter} />
         </section>

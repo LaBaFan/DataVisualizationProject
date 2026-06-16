@@ -14,7 +14,10 @@ import { useInteraction } from '../store/interactionContext';
 import {
   ActiveSection,
   MapSelection,
+  MiniMetricTag,
+  OrderDot,
   OverviewSummary,
+  RiskHeatHalo,
   SceneFilterSummary,
   TimePeriodSummary,
   TrafficDensitySummary,
@@ -35,6 +38,10 @@ interface SceneHudData {
   sceneFilterRows: SceneFilterSummary[];
 }
 
+function isAll(v: string | null | undefined) {
+  return !v || v === 'All';
+}
+
 function pointFromEvent(event: MouseEvent<SVGElement>) {
   const stage = (event.currentTarget as SVGElement).closest('.interactive-scene-map');
   const rect = stage?.getBoundingClientRect();
@@ -48,6 +55,32 @@ function pointFromEvent(event: MouseEvent<SVGElement>) {
 function activeSectionForScene(sceneType: string): ActiveSection {
   if (sceneType === 'weather' || sceneType === 'traffic' || sceneType === 'time' || sceneType === 'risk') return sceneType;
   return 'overview';
+}
+
+/**
+ * Override overlay element metrics with filtered scene_filter_summary data.
+ * Positions and labels stay the same; only the displayed numbers change.
+ */
+function applyFilterToOverlay<T extends { order_count?: number; avg_delivery_duration_min?: number; delay_rate?: number; risk_score?: number }>(
+  element: T,
+  filteredRow: SceneFilterSummary | undefined,
+  baseRow: SceneFilterSummary | undefined
+): T {
+  if (!filteredRow) return element;
+  if (!baseRow) return element;
+
+  // Scale order_count proportionally
+  const baseOrders = baseRow.order_count || 1;
+  const filteredOrders = filteredRow.order_count || 0;
+  const scale = filteredOrders / baseOrders;
+
+  return {
+    ...element,
+    order_count: Math.max(1, Math.round((element.order_count ?? 1) * scale)),
+    avg_delivery_duration_min: filteredRow.avg_delivery_duration_min,
+    delay_rate: filteredRow.delay_rate,
+    risk_score: filteredRow.risk_score ?? element.risk_score
+  };
 }
 
 export default function InteractiveSceneMap() {
@@ -95,7 +128,8 @@ export default function InteractiveSceneMap() {
     };
   }, []);
 
-  const overlays = useMemo(
+  // Base overlays filtered by scene
+  const baseOverlays = useMemo(
     () => ({
       halos: sceneRiskHeatHalos.filter((item) => item.sceneId === selectedScene.id),
       dots: sceneOrderDots.filter((item) => item.sceneId === selectedScene.id),
@@ -103,6 +137,34 @@ export default function InteractiveSceneMap() {
     }),
     [selectedScene.id]
   );
+
+  // Compute filtered overlays: update metrics from scene_filter_summary
+  const overlays = useMemo(() => {
+    const filterRows = hudData.sceneFilterRows;
+    if (!filterRows.length) return baseOverlays;
+
+    const weather = isAll(selectedWeather) ? 'All' : selectedWeather;
+    const timePeriod = isAll(selectedTimePeriod) ? 'All' : selectedTimePeriod;
+
+    // If no filter is active, return base overlays
+    if (weather === 'All' && timePeriod === 'All') return baseOverlays;
+
+    // Find the filtered row and the base row ("All"/"All") for the current scene
+    const filteredRow = filterRows.find(
+      (r) => r.scene_id === selectedScene.id && r.weather === weather && r.time_period === timePeriod
+    );
+    const baseRow = filterRows.find(
+      (r) => r.scene_id === selectedScene.id && r.weather === 'All' && r.time_period === 'All'
+    );
+
+    if (!filteredRow || !baseRow) return baseOverlays;
+
+    return {
+      halos: baseOverlays.halos.map((halo) => applyFilterToOverlay(halo, filteredRow, baseRow)),
+      dots: baseOverlays.dots.map((dot) => applyFilterToOverlay(dot, filteredRow, baseRow)),
+      tags: baseOverlays.tags.map((tag) => applyFilterToOverlay(tag, filteredRow, baseRow))
+    };
+  }, [baseOverlays, hudData.sceneFilterRows, selectedScene.id, selectedWeather, selectedTimePeriod]);
 
   const selectedId = selectedItem?.item.id ?? null;
   const hoveredId = hoveredSelection?.item.id ?? null;
