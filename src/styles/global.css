@@ -1278,6 +1278,12 @@ button:active {
   font-variant-numeric: tabular-nums;
 }
 
+.module-entry-metrics {
+  border-bottom: 1px solid var(--line-soft);
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+}
+
 .analysis-compare-stack {
   display: grid;
   gap: 10px;

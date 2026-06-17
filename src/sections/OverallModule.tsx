@@ -35,12 +35,13 @@ export default function OverallModule() {
   }, []);
 
   const selectHotspot = (hotspot: SceneHotspot) => {
-    setSelectedItem({ type: 'scene_hotspot', item: hotspot });
     if (!hotspot.targetModule || enteringHotspot) {
+      setSelectedItem({ type: 'scene_hotspot', item: hotspot });
       setHoveredSelection({ type: 'scene_hotspot', item: hotspot });
       return;
     }
 
+    setSelectedItem(null);
     setHoveredSelection({ type: 'scene_hotspot', item: hotspot });
     setEnteringHotspot(hotspot);
     if (transitionTimer.current) {
@@ -48,7 +49,7 @@ export default function OverallModule() {
     }
     transitionTimer.current = window.setTimeout(() => {
       switchModule(hotspot.targetModule as WeatherModuleId);
-      setSelectedItem({ type: 'scene_hotspot', item: hotspot });
+      setSelectedItem(null);
       setEnteringHotspot(null);
       transitionTimer.current = null;
     }, 520);

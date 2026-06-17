@@ -7,6 +7,7 @@ import {
   loadWeatherImpactSummary
 } from '../api/staticDataClient';
 import { getMapSceneById } from '../data/mapScenes';
+import { overallHotspots } from '../data/overallHotspots';
 import { getWeatherModuleById } from '../data/weatherModules';
 import { buildSceneHudMetrics } from '../data/sceneMetrics';
 import { useInteraction } from '../store/interactionContext';
@@ -77,6 +78,11 @@ function conciseInsight(moduleLabel: string, moduleWeather: string, moduleDelayR
   }
 
   return `${moduleLabel} 的延迟风险${direction}全局基线，说明天气条件正在改变配送稳定性。优先结合地图热区、时段切换和异常抽样点判断风险来源。`;
+}
+
+function hotspotInsight(description: string | undefined, fallback: string) {
+  if (!description) return fallback;
+  return `${fallback} 总览入口热区补充说明：${description}`;
 }
 
 function selectionTitle(selection: MapSelection | null) {
@@ -237,6 +243,10 @@ export default function DataOverviewPanel() {
 
   const selectedScene = getMapSceneById(selectedSceneId);
   const currentModule = getWeatherModuleById(activeModule);
+  const moduleEntryHotspot = useMemo(
+    () => overallHotspots.find((hotspot) => hotspot.targetModule === activeModule) ?? null,
+    [activeModule]
+  );
 
   // For scene_hotspot: find matching scene_filter_summary row
   const hotspotFilteredRow = useMemo(() => {
@@ -300,9 +310,11 @@ export default function DataOverviewPanel() {
     risk_score: baselineRiskScore
   };
   const moduleMetrics = {
-    avg_delivery_duration_min: moduleSummary?.avg_delivery_duration_min ?? contextMetrics.avg_delivery_duration_min,
-    delay_rate: moduleSummary?.delay_rate ?? contextMetrics.delay_rate,
-    risk_score: moduleSummary?.risk_score ?? contextMetrics.risk_score
+    order_count: moduleSummary?.order_count ?? moduleEntryHotspot?.order_count ?? contextMetrics.order_count,
+    avg_delivery_duration_min: moduleSummary?.avg_delivery_duration_min ?? moduleEntryHotspot?.avg_delivery_duration_min ?? contextMetrics.avg_delivery_duration_min,
+    delay_rate: moduleSummary?.delay_rate ?? moduleEntryHotspot?.delay_rate ?? contextMetrics.delay_rate,
+    risk_score: moduleSummary?.risk_score ?? moduleEntryHotspot?.risk_score ?? contextMetrics.risk_score,
+    avg_distance_km: moduleSummary?.avg_distance_km ?? contextMetrics.avg_distance_km
   };
   const comparisonRows = [
     {
@@ -340,7 +352,10 @@ export default function DataOverviewPanel() {
       ];
   const explanation = selectedItem
     ? selectionExplanation(selectedItem)
-    : conciseInsight(currentModule.label, currentModule.weather, moduleMetrics.delay_rate, globalMetrics.delay_rate);
+    : hotspotInsight(
+        moduleEntryHotspot?.description,
+        conciseInsight(currentModule.label, currentModule.weather, moduleMetrics.delay_rate, globalMetrics.delay_rate)
+      );
   const panelStatus = selectedItem ? 'ETA RISK DETAIL MODE' : 'ANALYSIS ENGINE';
   const handleFullAnalysisClick = () => {
     const targetSection = sectionForSelection(selectedItem, activeSection ?? 'overview');
@@ -394,6 +409,30 @@ export default function DataOverviewPanel() {
         ) : (
           <section className="overview-block" aria-labelledby="overview-compare-heading">
             <h3 id="overview-compare-heading">{currentModule.label} vs 全局对比</h3>
+            {moduleEntryHotspot ? (
+              <div className="overview-metric-list module-entry-metrics" aria-label={`${currentModule.label} 总览入口热区合并指标`}>
+                <div>
+                  <span>入口区域</span>
+                  <strong>{moduleEntryHotspot.label}</strong>
+                </div>
+                <div>
+                  <span>入口订单</span>
+                  <strong>{fmt(moduleEntryHotspot.order_count)}</strong>
+                </div>
+                <div>
+                  <span>入口平均时长</span>
+                  <strong>{`${fmt(moduleEntryHotspot.avg_delivery_duration_min, 1)} min`}</strong>
+                </div>
+                <div>
+                  <span>入口延迟率</span>
+                  <strong>{pct(moduleEntryHotspot.delay_rate)}</strong>
+                </div>
+                <div>
+                  <span>入口风险评分</span>
+                  <strong>{fmt(moduleEntryHotspot.risk_score, 2)}</strong>
+                </div>
+              </div>
+            ) : null}
             <div className="analysis-compare-stack">
               {comparisonRows.map((row) => (
                 <article key={row.label} className="analysis-compare-card">
