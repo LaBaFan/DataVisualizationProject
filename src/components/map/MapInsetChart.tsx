@@ -417,6 +417,7 @@ export default function MapInsetChart({
               const y = PAD.top + rowH * index + rowH / 2;
               const r = 7 + clamp(row.order_count / maxOrders) * 15;
               const active = selectedId === selection.item.id;
+
               return (
                 <g
                   key={selection.item.id}
@@ -434,7 +435,7 @@ export default function MapInsetChart({
                 >
                   <line className="map-inset-grid-line" x1={PAD.left} y1={y} x2={PAD.left + plotW} y2={y} />
                   <rect className="map-inset-hit-area" x={PAD.left} y={y - rowH / 2 + 4} width={plotW} height={rowH - 8} rx={8} />
-                  <text className="map-inset-category" x={PAD.left + 6} y={y + 5}>{row.vehicle_type}</text>
+                  <text className="map-inset-category" x={x} y={y - r - 8} textAnchor="middle">{row.vehicle_type}</text>
                   <circle cx={x} cy={y} r={r} fill={colorByRate(row.delay_rate)} opacity={0.76} />
                   <text className="map-inset-value" x={Math.min(PAD.left + plotW - 34, x + r + 10)} y={y + 4}>{fmt(row.avg_delivery_duration_min, 1)}m</text>
                 </g>
@@ -444,56 +445,113 @@ export default function MapInsetChart({
           </g>
         ) : null}
 
-        {selectedSubView === 'risk' ? (
-          <g>
-            <rect className="map-inset-plot-bg" x={RISK_PAD.left} y={RISK_PAD.top} width={riskPlotW} height={riskPlotH} rx={10} />
-            <line className="map-inset-axis" x1={RISK_PAD.left} y1={RISK_PAD.top + riskPlotH} x2={RISK_PAD.left + riskPlotW} y2={RISK_PAD.top + riskPlotH} />
-            <line className="map-inset-axis" x1={RISK_PAD.left} y1={RISK_PAD.top} x2={RISK_PAD.left} y2={RISK_PAD.top + riskPlotH} />
-            {riskRowsForChart.map((row, index) => {
-              const selection = riskSelection(row);
-              const xBase = scaleLinear(row.avg_delivery_duration_min, riskXDomain, [RISK_PAD.left + 12, RISK_PAD.left + riskPlotW - 12]);
-              const yBase = scaleLinear(rate(row.delay_rate), riskYDomain, [RISK_PAD.top + riskPlotH - 12, RISK_PAD.top + 12]);
-              const x = clamp(xBase + deterministicOffset(row.scenario_id, index, 8), RISK_PAD.left + 12, RISK_PAD.left + riskPlotW - 12);
-              const y = clamp(yBase + deterministicOffset(row.label, index, 7), RISK_PAD.top + 12, RISK_PAD.top + riskPlotH - 12);
-              const r = 7 + clamp(row.order_count / maxOrders) * 15;
-              const active = selectedId === selection.item.id;
-              const showLabel = index < 5;
-              const labelRight = x < RISK_PAD.left + riskPlotW * 0.62;
-              const labelY = y + (index % 3 - 1) * 12 + 4;
-              return (
-                <g
-                  key={selection.item.id}
-                  className={`map-inset-risk-node${active ? ' is-active' : ''}`}
-                  role="button"
-                  tabIndex={0}
-                  onMouseMove={(event) => onHover(selection, event)}
-                  onMouseLeave={onLeave}
-                  onBlur={onLeave}
-                  onKeyDown={(event) => keySelect(event, selection, onSelect)}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onSelect(selection);
-                  }}
-                >
-                  <circle className="map-inset-hit-dot" cx={x} cy={y} r={Math.max(18, r + 8)} />
-                  <circle cx={x} cy={y} r={r} fill={colorByRate(row.risk_score)} opacity={0.68} />
-                  {showLabel ? (
-                    <text
-                      className="map-inset-label-text"
-                      x={x + (labelRight ? r + 8 : -r - 8)}
-                      y={clamp(labelY, RISK_PAD.top + 14, RISK_PAD.top + riskPlotH - 6)}
-                      textAnchor={labelRight ? 'start' : 'end'}
-                    >
-                      {shortRiskLabel(row)}
-                    </text>
-                  ) : null}
-                </g>
-              );
-            })}
-            <text className="map-inset-label" x={RISK_PAD.left + riskPlotW - 70} y={RISK_PAD.top + riskPlotH + 38}>avg_delivery_duration_min</text>
-            <text className="map-inset-label" x={28} y={RISK_PAD.top + 18}>delay_rate</text>
-          </g>
-        ) : null}
+        {selectedSubView === 'risk' ? (() => {
+          // Pre-compute bubble positions for label collision avoidance
+          const bubblePositions = riskRowsForChart.map((row, index) => {
+            const xBase = scaleLinear(row.avg_delivery_duration_min, riskXDomain, [RISK_PAD.left + 12, RISK_PAD.left + riskPlotW - 12]);
+            const yBase = scaleLinear(rate(row.delay_rate), riskYDomain, [RISK_PAD.top + riskPlotH - 12, RISK_PAD.top + 12]);
+            const bx = clamp(xBase + deterministicOffset(row.scenario_id, index, 8), RISK_PAD.left + 12, RISK_PAD.left + riskPlotW - 12);
+            const by = clamp(yBase + deterministicOffset(row.label, index, 7), RISK_PAD.top + 12, RISK_PAD.top + riskPlotH - 12);
+            const br = 7 + clamp(row.order_count / maxOrders) * 15;
+            return { x: bx, y: by, r: br };
+          });
+
+          // Compute label positions with collision avoidance
+          const LABEL_H = 14;
+          const placedLabels: Array<{ x: number; y: number; w: number }> = [];
+          const labelPositions = riskRowsForChart.map((row, index) => {
+            if (index >= 5) return null;
+            const { x, y, r } = bubblePositions[index];
+            const label = shortRiskLabel(row);
+            const labelW = Math.min(label.length * 7, 90);
+            const preferRight = x < RISK_PAD.left + riskPlotW * 0.55;
+            const desiredX = preferRight ? x + r + 8 : x - r - labelW - 4;
+            let desiredY = y + 4;
+
+            // Push down to avoid overlapping with previously placed labels
+            for (const prev of placedLabels) {
+              const xClose = desiredX < prev.x + prev.w + 4 && desiredX + labelW > prev.x - 4;
+              const yClose = Math.abs(desiredY - prev.y) < LABEL_H;
+              if (xClose && yClose) {
+                desiredY = prev.y + LABEL_H + 2;
+              }
+            }
+
+            // Clamp within plot area
+            desiredY = clamp(desiredY, RISK_PAD.top + 10, RISK_PAD.top + riskPlotH - 6);
+
+            placedLabels.push({ x: desiredX, y: desiredY, w: labelW });
+            return { x: desiredX, y: desiredY, w: labelW, text: label, anchor: preferRight ? 'start' : 'end', bubbleX: x, bubbleY: y, bubbleR: r };
+          });
+
+          return (
+            <g>
+              <rect className="map-inset-plot-bg" x={RISK_PAD.left} y={RISK_PAD.top} width={riskPlotW} height={riskPlotH} rx={10} />
+              <line className="map-inset-axis" x1={RISK_PAD.left} y1={RISK_PAD.top + riskPlotH} x2={RISK_PAD.left + riskPlotW} y2={RISK_PAD.top + riskPlotH} />
+              <line className="map-inset-axis" x1={RISK_PAD.left} y1={RISK_PAD.top} x2={RISK_PAD.left} y2={RISK_PAD.top + riskPlotH} />
+
+              {/* Leader lines for labeled bubbles */}
+              {labelPositions.map((lp, i) => {
+                if (!lp) return null;
+                const { x: bx, y: by, r: br } = bubblePositions[i];
+                const lx = lp.anchor === 'start' ? lp.x : lp.x + lp.w;
+                const ly = lp.y - 3;
+                // Only draw leader line if label moved significantly from bubble
+                if (Math.abs(ly - by) < br + 6) return null;
+                return (
+                  <line
+                    key={`leader-${i}`}
+                    x1={bx + (lp.anchor === 'start' ? br : -br)}
+                    y1={by}
+                    x2={lx}
+                    y2={ly}
+                    stroke="#94a3b8"
+                    strokeWidth="0.8"
+                    opacity="0.5"
+                  />
+                );
+              })}
+
+              {riskRowsForChart.map((row, index) => {
+                const selection = riskSelection(row);
+                const { x, y, r } = bubblePositions[index];
+                const active = selectedId === selection.item.id;
+                const lp = labelPositions[index];
+                return (
+                  <g
+                    key={selection.item.id}
+                    className={`map-inset-risk-node${active ? ' is-active' : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    onMouseMove={(event) => onHover(selection, event)}
+                    onMouseLeave={onLeave}
+                    onBlur={onLeave}
+                    onKeyDown={(event) => keySelect(event, selection, onSelect)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onSelect(selection);
+                    }}
+                  >
+                    <circle className="map-inset-hit-dot" cx={x} cy={y} r={Math.max(18, r + 8)} />
+                    <circle cx={x} cy={y} r={r} fill={colorByRate(row.risk_score)} opacity={0.68} />
+                    {lp ? (
+                      <text
+                        className="map-inset-label-text"
+                        x={lp.anchor === 'start' ? lp.x : lp.x + lp.w}
+                        y={lp.y}
+                        textAnchor={lp.anchor as 'start' | 'end'}
+                      >
+                        {lp.text}
+                      </text>
+                    ) : null}
+                  </g>
+                );
+              })}
+              <text className="map-inset-label" x={RISK_PAD.left + riskPlotW - 70} y={RISK_PAD.top + riskPlotH + 38}>avg_delivery_duration_min</text>
+              <text className="map-inset-label" x={28} y={RISK_PAD.top + 18}>delay_rate</text>
+            </g>
+          );
+        })() : null}
 
         {selectedSubView === 'orders' ? (
           <g>
