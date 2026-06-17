@@ -1,6 +1,7 @@
 import { MouseEvent, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import MapTooltip from '../components/MapTooltip';
 import OverallHotspotLayer from '../components/OverallHotspotLayer';
+import SceneTitle from '../components/SceneTitle';
 import { overallHotspots } from '../data/overallHotspots';
 import { getWeatherModuleById, WeatherModuleId } from '../data/weatherModules';
 import { useInteraction } from '../store/interactionContext';
@@ -64,16 +65,15 @@ export default function OverallModule() {
   return (
     <section
       className={`overall-module module-tab-panel${activeHotspot ? ' has-active-hotspot' : ''}${enteringHotspot ? ' is-entering-module' : ''}`}
-      aria-label="FoodETA overall module"
+      aria-label="FoodETA 总览模块"
       style={{ '--overall-accent': activeHotspot?.targetModule ? getWeatherModuleById(activeHotspot.targetModule).accentColor : overallModule.accentColor } as CSSProperties}
     >
-      <header className="scene-map-header module-stage-header">
-        <div>
-          <span>FoodETA Map Explorer</span>
-          <h1>FoodETA 天气总览</h1>
-        </div>
-        <p>{overallModule.keyQuestion}</p>
-      </header>
+      <SceneTitle
+        index="01"
+        kicker="FOODETA / 总览"
+        title="城市配送运行总览"
+        question={overallModule.keyQuestion}
+      />
       <div
         className="module-map-card overall-module-map"
         onClick={() => {
@@ -82,10 +82,10 @@ export default function OverallModule() {
         }}
         aria-label="FoodETA 天气总览背景图导航地图"
       >
-        <img className="scene-map-image" src={overallModule.imageUrl} alt="FoodETA overall background" draggable={false} />
+        <img className="scene-map-image" src={overallModule.imageUrl} alt="FoodETA 总览背景图" draggable={false} />
         <div className="overall-map-vignette" aria-hidden="true" />
         <div className="overall-module-copy">
-          <strong>Overall Navigation Map</strong>
+          <strong>总览导航地图</strong>
           <span>{overallModule.summary}</span>
         </div>
         <OverallHotspotLayer
@@ -101,24 +101,24 @@ export default function OverallModule() {
         />
         {activeHotspot ? (
           <aside className="overall-hotspot-info" aria-live="polite">
-            <span>{activeHotspot.targetModule ? 'Enter weather module' : 'Reference zone'}</span>
+            <span>{activeHotspot.targetModule ? '进入天气模块' : '参考入口'}</span>
             <h2>{activeHotspot.label}</h2>
             <p>{activeHotspot.description}</p>
             <div className="overall-info-metrics" aria-label={`${activeHotspot.label}关键指标`}>
               <div>
-                <small>Orders</small>
+                <small>订单数</small>
                 <strong>{activeHotspot.order_count?.toLocaleString() ?? '-'}</strong>
               </div>
               <div>
-                <small>Avg ETA</small>
-                <strong>{activeHotspot.avg_delivery_duration_min?.toFixed(1) ?? '-'} min</strong>
+                <small>平均 ETA</small>
+                <strong>{activeHotspot.avg_delivery_duration_min?.toFixed(1) ?? '-'} 分钟</strong>
               </div>
               <div>
-                <small>Delay</small>
+                <small>延迟率</small>
                 <strong>{typeof activeHotspot.delay_rate === 'number' ? `${Math.round(activeHotspot.delay_rate * 100)}%` : '-'}</strong>
               </div>
               <div>
-                <small>Risk</small>
+                <small>风险</small>
                 <strong>{activeHotspot.risk_score?.toFixed(2) ?? '-'}</strong>
               </div>
             </div>
@@ -141,7 +141,7 @@ export default function OverallModule() {
             onClick={() => selectHotspot(hotspot)}
           >
             <span>{hotspot.label}</span>
-            <small>{hotspot.avg_delivery_duration_min?.toFixed(1) ?? '-'} min ETA</small>
+            <small>{hotspot.avg_delivery_duration_min?.toFixed(1) ?? '-'} 分钟 ETA</small>
           </button>
         ))}
       </nav>

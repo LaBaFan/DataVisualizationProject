@@ -10,14 +10,9 @@ export const sceneRiskHeatHalos: SceneRiskHeatHalo[] = [
   // restaurant_street — 来自原 overall-halo-restaurant
   { sceneId: 'restaurant_street', id: 'restaurant-halo-pickup', label: '餐饮街区取餐等待热晕', x: 520, y: 560, radius: 160, order_count: 610, avg_delivery_duration_min: 39.4, delay_rate: 0.43, risk_score: 0.7, traffic_density: 'High' },
   { sceneId: 'restaurant_street', id: 'restaurant-halo-risk', label: '餐饮街区风险团', x: 330, y: 625, radius: 150, order_count: 610, avg_delivery_duration_min: 39.4, delay_rate: 0.43, risk_score: 0.7, traffic_density: 'High' },
-  // storm_area — 来自原 overall-halo-storm
-  { sceneId: 'storm_area', id: 'storm-halo-flooded', label: '暴雨积压热晕', x: 860, y: 610, radius: 180, order_count: 344, avg_delivery_duration_min: 49.8, delay_rate: 0.64, risk_score: 0.88, weather: 'Stormy', traffic_density: 'Jam' },
-  { sceneId: 'storm_area', id: 'storm-halo-delay', label: '雷暴延迟团', x: 1295, y: 690, radius: 175, order_count: 344, avg_delivery_duration_min: 49.8, delay_rate: 0.64, risk_score: 0.88, weather: 'Stormy', traffic_density: 'Jam' },
   // traffic_hub — 来自原 overall-halo-traffic
   { sceneId: 'traffic_hub', id: 'traffic-halo-mainline', label: '主干道拥堵热晕', x: 815, y: 555, radius: 165, order_count: 702, avg_delivery_duration_min: 44.2, delay_rate: 0.52, risk_score: 0.79, traffic_density: 'High' },
   { sceneId: 'traffic_hub', id: 'traffic-halo-congestion', label: '主干道拥堵团', x: 940, y: 650, radius: 140, order_count: 702, avg_delivery_duration_min: 44.2, delay_rate: 0.52, risk_score: 0.79, traffic_density: 'High' },
-  // fog_business
-  { sceneId: 'fog_business', id: 'fog-halo-tower', label: '商务楼低能见度热晕', x: 900, y: 390, radius: 150, order_count: 286, avg_delivery_duration_min: 42.1, delay_rate: 0.48, risk_score: 0.74, weather: 'Fog', traffic_density: 'Medium' },
   // dispatch_center
   { sceneId: 'dispatch_center', id: 'dispatch-halo-capacity', label: '出发口派单热晕', x: 760, y: 515, radius: 135, order_count: 438, avg_delivery_duration_min: 34.8, delay_rate: 0.31, risk_score: 0.58, time_period: 'lunch_peak' },
   // high_risk_residential
@@ -26,14 +21,7 @@ export const sceneRiskHeatHalos: SceneRiskHeatHalo[] = [
   { sceneId: 'night_low_peak', id: 'night-halo-long-distance', label: '夜间长距离热晕', x: 690, y: 475, radius: 130, order_count: 148, avg_delivery_duration_min: 31.7, delay_rate: 0.22, risk_score: 0.42, time_period: 'night' },
   // mixed_food_community
   { sceneId: 'mixed_food_community', id: 'mixed-halo-dual-pressure', label: '供需双端压力热晕', x: 760, y: 540, radius: 150, order_count: 474, avg_delivery_duration_min: 37.5, delay_rate: 0.38, risk_score: 0.66 },
-  // sunny
-  { sceneId: 'sunny', id: 'sunny-halo-baseline', label: '晴天基准热晕', x: 730, y: 500, radius: 120, order_count: 392, avg_delivery_duration_min: 30.2, delay_rate: 0.18, risk_score: 0.34, weather: 'Sunny' },
-  // sandstorm
-  { sceneId: 'sandstorm', id: 'sandstorm-halo-visibility', label: '沙尘能见度热晕', x: 820, y: 510, radius: 150, order_count: 260, avg_delivery_duration_min: 41.3, delay_rate: 0.46, risk_score: 0.72, weather: 'Sandstorms', traffic_density: 'Medium' },
-  // cloudy
-  { sceneId: 'cloudy', id: 'cloudy-halo-unstable-eta', label: '多云 ETA 波动热晕', x: 805, y: 505, radius: 138, order_count: 318, avg_delivery_duration_min: 35.6, delay_rate: 0.29, risk_score: 0.52, weather: 'Cloudy', traffic_density: 'Medium' },
-  // windy
-  { sceneId: 'windy', id: 'windy-halo-speed', label: '大风速度波动热晕', x: 760, y: 520, radius: 142, order_count: 220, avg_delivery_duration_min: 36.8, delay_rate: 0.33, risk_score: 0.55, weather: 'Windy' }
+  // 天气主链路 scene 不再显示热晕；保留非天气 legacy scene 的热晕。
 ];
 
 export const sceneOrderDots: SceneOrderDot[] = [
@@ -85,12 +73,12 @@ export const sceneMiniMetricTags: SceneMiniMetricTag[] = [
   { sceneId: 'traffic_hub', id: 'traffic-tag-jam', label: '拥堵瓶颈', x: 1040, y: 705, delay_rate: 0.52, avg_delivery_duration_min: 44.2, order_count: 702, risk_score: 0.79, traffic_density: 'High' },
   { sceneId: 'traffic_hub', id: 'traffic-tag-risk', label: '全局高风险', x: 1030, y: 730, delay_rate: 0.52, avg_delivery_duration_min: 44.2, order_count: 702, risk_score: 0.79, traffic_density: 'High' },
   // fog_business — 来自原 overall-tag-weather
-  { sceneId: 'fog_business', id: 'fog-tag-visibility', label: '能见度风险', x: 1060, y: 365, delay_rate: 0.48, avg_delivery_duration_min: 42.1, order_count: 286, risk_score: 0.74, weather: 'Fog' },
-  { sceneId: 'fog_business', id: 'fog-tag-weather-anomaly', label: '天气异常', x: 1185, y: 430, delay_rate: 0.48, avg_delivery_duration_min: 42.1, order_count: 286, risk_score: 0.74, weather: 'Fog' },
+  { sceneId: 'fog_business', id: 'fog-tag-visibility', label: '雾天延迟', x: 1060, y: 365, delay_rate: 0.48, avg_delivery_duration_min: 42.1, order_count: 286, risk_score: 0.74, weather: 'Fog' },
+  { sceneId: 'fog_business', id: 'fog-tag-weather-anomaly', label: '雾天风险', x: 1185, y: 430, delay_rate: 0.48, avg_delivery_duration_min: 42.1, order_count: 286, risk_score: 0.74, weather: 'Fog' },
   // dispatch_center
   { sceneId: 'dispatch_center', id: 'dispatch-tag-throughput', label: '派单吞吐', x: 980, y: 405, delay_rate: 0.31, avg_delivery_duration_min: 34.8, order_count: 438, risk_score: 0.58 },
   // storm_area
-  { sceneId: 'storm_area', id: 'storm-tag-delay', label: '暴雨延迟', x: 980, y: 715, delay_rate: 0.64, avg_delivery_duration_min: 49.8, order_count: 344, risk_score: 0.88, weather: 'Stormy' },
+  { sceneId: 'storm_area', id: 'storm-tag-delay', label: '雷暴延迟', x: 980, y: 715, delay_rate: 0.64, avg_delivery_duration_min: 49.8, order_count: 344, risk_score: 0.88, weather: 'Stormy' },
   // high_risk_residential
   { sceneId: 'high_risk_residential', id: 'risk-tag-last-mile', label: '末端风险', x: 1115, y: 725, delay_rate: 0.57, avg_delivery_duration_min: 46.6, order_count: 520, risk_score: 0.83 },
   // night_low_peak
@@ -98,11 +86,11 @@ export const sceneMiniMetricTags: SceneMiniMetricTag[] = [
   // mixed_food_community
   { sceneId: 'mixed_food_community', id: 'mixed-tag-balance', label: '供需错位', x: 975, y: 500, delay_rate: 0.38, avg_delivery_duration_min: 37.5, order_count: 474, risk_score: 0.66 },
   // sunny
-  { sceneId: 'sunny', id: 'sunny-tag-baseline', label: '晴天基准', x: 955, y: 570, delay_rate: 0.18, avg_delivery_duration_min: 30.2, order_count: 392, risk_score: 0.34, weather: 'Sunny' },
+  { sceneId: 'sunny', id: 'sunny-tag-baseline', label: '晴天基线', x: 955, y: 570, delay_rate: 0.18, avg_delivery_duration_min: 30.2, order_count: 392, risk_score: 0.34, weather: 'Sunny' },
   // sandstorm
-  { sceneId: 'sandstorm', id: 'sandstorm-tag-air', label: '沙尘影响', x: 1035, y: 585, delay_rate: 0.46, avg_delivery_duration_min: 41.3, order_count: 260, risk_score: 0.72, weather: 'Sandstorms' },
+  { sceneId: 'sandstorm', id: 'sandstorm-tag-air', label: '沙尘风险', x: 1035, y: 585, delay_rate: 0.46, avg_delivery_duration_min: 41.3, order_count: 260, risk_score: 0.72, weather: 'Sandstorms' },
   // cloudy
-  { sceneId: 'cloudy', id: 'cloudy-tag-stability', label: '多云稳定性', x: 1005, y: 585, delay_rate: 0.29, avg_delivery_duration_min: 35.6, order_count: 318, risk_score: 0.52, weather: 'Cloudy', traffic_density: 'Medium' },
+  { sceneId: 'cloudy', id: 'cloudy-tag-stability', label: '多云延迟', x: 1005, y: 585, delay_rate: 0.29, avg_delivery_duration_min: 35.6, order_count: 318, risk_score: 0.52, weather: 'Cloudy', traffic_density: 'Medium' },
   // windy
-  { sceneId: 'windy', id: 'windy-tag-speed', label: '速度波动', x: 980, y: 590, delay_rate: 0.33, avg_delivery_duration_min: 36.8, order_count: 220, risk_score: 0.55, weather: 'Windy' }
+  { sceneId: 'windy', id: 'windy-tag-speed', label: '大风延迟', x: 980, y: 590, delay_rate: 0.33, avg_delivery_duration_min: 36.8, order_count: 220, risk_score: 0.55, weather: 'Windy' }
 ];

@@ -60,8 +60,8 @@ export default function MiniMetricTagLayer({
             <rect x={0} y={0} width={106} height={42} rx={10} />
             <circle className="mini-metric-index" cx={13} cy={14} r={9} />
             <text className="mini-metric-index-text" x={13} y={18}>{index + 1}</text>
-            <text x={27} y={17}>Delay {percent(tag.delay_rate)}</text>
-            <text x={27} y={32}>Avg {minutes(tag.avg_delivery_duration_min)}</text>
+            <text x={27} y={17}>延迟 {percent(tag.delay_rate)}</text>
+            <text x={27} y={32}>时长 {minutes(tag.avg_delivery_duration_min)}</text>
           </g>
         );
       })}

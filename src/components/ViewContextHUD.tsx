@@ -1,4 +1,5 @@
 import { ViewContextMetrics } from '../types/data';
+import { useInteraction } from '../store/interactionContext';
 
 interface ViewContextHUDProps {
   metrics: ViewContextMetrics;
@@ -23,12 +24,17 @@ const WEATHER_LABELS: Record<string, string> = {
   Windy: '大风'
 };
 
+const SUB_VIEW_LABELS: Record<string, string> = {
+  overview: '概览',
+  traffic: '交通',
+  time: '时段',
+  vehicle: '载具',
+  risk: '风险',
+  orders: '订单'
+};
+
 function label(map: Record<string, string>, value: string, fallback: string) {
   return map[value] ?? fallback;
-}
-
-function minutes(value: number) {
-  return `${Math.round(value)}m`;
 }
 
 function percent(value: number) {
@@ -36,13 +42,14 @@ function percent(value: number) {
 }
 
 export default function ViewContextHUD({ metrics }: ViewContextHUDProps) {
+  const { selectedSubView } = useInteraction();
+
   return (
     <aside className="view-context-hud" aria-label="当前地图视图状态">
-      <span>{label(WEATHER_LABELS, metrics.weather, metrics.weather)}</span>
-      <span>{label(TIME_LABELS, metrics.time_period, metrics.time_period)}</span>
-      <span>样本 {metrics.order_count.toLocaleString()}</span>
-      <span>Avg {minutes(metrics.avg_delivery_duration_min)}</span>
-      <strong>Delay {percent(metrics.delay_rate)}</strong>
+      <span>天气：{label(WEATHER_LABELS, metrics.weather, metrics.weather)}</span>
+      <span>时段：{label(TIME_LABELS, metrics.time_period, metrics.time_period)}</span>
+      <span>子视图：{SUB_VIEW_LABELS[selectedSubView] ?? selectedSubView}</span>
+      <strong>延迟 {percent(metrics.delay_rate)}</strong>
     </aside>
   );
 }

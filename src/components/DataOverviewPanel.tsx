@@ -7,10 +7,9 @@ import {
   loadWeatherImpactSummary
 } from '../api/staticDataClient';
 import { getMapSceneById } from '../data/mapScenes';
-import { overallHotspots } from '../data/overallHotspots';
 import { getWeatherModuleById } from '../data/weatherModules';
 import { buildSceneHudMetrics } from '../data/sceneMetrics';
-import { useInteraction } from '../store/interactionContext';
+import { useInteraction, type WeatherSubView } from '../store/interactionContext';
 import { getWeatherSummary } from '../utils/moduleData';
 import {
   ActiveSection,
@@ -24,6 +23,55 @@ import {
 } from '../types/data';
 
 const baselineRiskScore = 0.52;
+
+const moduleDisplayName: Record<string, string> = {
+  overall: '总览',
+  sunny: '晴天',
+  fog: '雾天',
+  cloudy: '多云',
+  stormy: '雷暴',
+  sandstorms: '沙尘',
+  windy: '大风'
+};
+
+const subViewCopy: Record<WeatherSubView, { label: string; groupBy: string; question: string; finding: string }> = {
+  overview: {
+    label: '概览',
+    groupBy: '天气基线',
+    question: '当前天气的 ETA 表现相对全局基线有何差异？',
+    finding: '当前视图以 weather 字段过滤订单，并用全局均值作为对照解释 ETA 风险。'
+  },
+  traffic: {
+    label: '交通',
+    groupBy: 'traffic_density',
+    question: '在当前天气下，不同 traffic_density 如何改变 ETA？',
+    finding: '当前视图按 traffic_density 分组，重点比较 Jam、High、Medium、Low 的配送时长和延迟率。'
+  },
+  time: {
+    label: '时段',
+    groupBy: 'time_period',
+    question: '在当前天气下，不同时段的 ETA 节奏如何变化？',
+    finding: '当前视图按 time_period 分组，观察 breakfast、lunch_peak、afternoon、dinner_peak、night 的延迟差异。'
+  },
+  vehicle: {
+    label: '载具',
+    groupBy: 'vehicle_type',
+    question: '在当前天气下，不同 vehicle_type 的配送表现有何差异？',
+    finding: '当前视图按 vehicle_type 对比订单量、平均配送时长和延迟率，辅助判断车辆类型的稳定性。'
+  },
+  risk: {
+    label: '风险',
+    groupBy: 'top risk_scenario',
+    question: '当前天气下哪些风险组合最容易放大 ETA？',
+    finding: '当前视图筛选当前 weather 下的高 risk_score 组合，并比较其配送时长、延迟率和订单量。'
+  },
+  orders: {
+    label: '订单',
+    groupBy: '订单级距离-时长样本',
+    question: '当前天气下哪些订单呈现距离-时长异常？',
+    finding: '当前视图使用订单级 distance_km 与 delivery_duration_min 样本，识别短距离长耗时和高风险订单。'
+  }
+};
 
 function fmt(value: number | undefined, digits = 0) {
   return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '-';
@@ -93,25 +141,75 @@ function selectionTitle(selection: MapSelection | null) {
 
 function selectionTypeLabel(selection: MapSelection | null) {
   if (!selection) return '-';
-  if (selection.type === 'scene_hotspot') return '总览入口热区';
-  if (selection.type === 'traffic_segment') return selection.item.node_kind ? '道路节点' : '道路段';
-  if (selection.type === 'order_dot') return '订单点';
-  if (selection.type === 'risk_pulse') return '风险脉冲';
-  if (selection.type === 'metric_tag') return '微型指标';
-  if (selection.type === 'risk_heat_halo') return '风险热晕';
-  if (selection.type === 'delivery_flow_segment') return '配送流动';
+  if (selection.type === 'scene_hotspot') return '天气模块入口';
+  if (selection.type === 'traffic_segment') return '天气 × 交通';
+  if (selection.type === 'order_dot') return '订单样本';
+  if (selection.type === 'risk_pulse') return '风险组合';
+  if (selection.type === 'metric_tag') return '指标摘要';
+  if (selection.type === 'risk_heat_halo') return '风险评分摘要';
+  if (selection.type === 'delivery_flow_segment') return '时段节奏摘要';
 
   const labels: Record<typeof selection.item.type, string> = {
-    restaurant: '餐厅节点',
-    building: '建筑区域',
-    road: '交通路段',
-    weather: '天气区域',
-    risk_zone: '风险区域',
-    customer_area: '客户区域',
-    order_point: '订单点',
-    rider: '骑手节点'
+    restaurant: '订单来源代理',
+    building: '指标锚点',
+    road: '交通密度摘要',
+    weather: '天气筛选',
+    risk_zone: '风险组合',
+    customer_area: '订单需求代理',
+    order_point: '订单样本',
+    rider: '载具信号'
   };
   return labels[selection.item.type];
+}
+
+function dataFilterForSubView(weather: string, subView: WeatherSubView) {
+  const base = `weather == ${weather}`;
+  if (weather === 'All') return '全部清洗订单';
+  if (subView === 'traffic') return `${base}；按 traffic_density 分组`;
+  if (subView === 'time') return `${base}；按 time_period 分组`;
+  if (subView === 'vehicle') return `${base}；按 vehicle_type 分组`;
+  if (subView === 'risk') return `${base}；按 risk_score 提取高风险组合`;
+  if (subView === 'orders') return `${base}；使用订单级距离-时长样本`;
+  return base;
+}
+
+function dataFilterForSelection(selection: MapSelection | null, weather: string, subView: WeatherSubView) {
+  if (!selection) return dataFilterForSubView(weather, subView);
+  const item = selection.item;
+  const filters = [
+    'weather' in item && item.weather ? `weather == ${item.weather}` : weather !== 'All' ? `weather == ${weather}` : null,
+    'traffic_density' in item && item.traffic_density ? `traffic_density == ${item.traffic_density}` : null,
+    'time_period' in item && item.time_period ? `time_period == ${item.time_period}` : null,
+    'vehicle_type' in item && item.vehicle_type ? `vehicle_type == ${item.vehicle_type}` : null,
+    'order_id' in item && item.order_id ? `order_id == ${item.order_id}` : null,
+    'scenario_id' in item && item.scenario_id ? `scenario_id == ${item.scenario_id}` : null
+  ].filter(Boolean);
+
+  return filters.length ? filters.join(' AND ') : dataFilterForSubView(weather, subView);
+}
+
+function keyDifferenceText(
+  moduleLabel: string,
+  subView: WeatherSubView,
+  moduleMetrics: {
+    avg_delivery_duration_min?: number;
+    delay_rate?: number;
+    risk_score?: number;
+  },
+  globalMetrics: {
+    avg_delivery_duration_min?: number;
+    delay_rate?: number;
+    risk_score?: number;
+  }
+) {
+  const avgDelta = deltaPercent(moduleMetrics.avg_delivery_duration_min, globalMetrics.avg_delivery_duration_min);
+  const delayDelta = deltaRatePoints(moduleMetrics.delay_rate, globalMetrics.delay_rate);
+  if (subView === 'traffic') return `${moduleLabel} 内优先比较 Jam 与 Low。相对基线：平均时长 ${avgDelta}，延迟率 ${delayDelta}。`;
+  if (subView === 'time') return `${moduleLabel} 内优先比较高峰与非高峰。相对基线：平均时长 ${avgDelta}，延迟率 ${delayDelta}。`;
+  if (subView === 'vehicle') return `${moduleLabel} 内按载具类型比较。相对基线：平均时长 ${avgDelta}，延迟率 ${delayDelta}。`;
+  if (subView === 'risk') return `高风险组合按 risk_score 优先排序。当前模块风险评分：${fmt(moduleMetrics.risk_score, 2)}。`;
+  if (subView === 'orders') return `订单点用于比较 distance_km 与 delivery_duration_min。当前模块平均时长相对基线：${avgDelta}。`;
+  return `${moduleLabel} 相对全局：平均时长 ${avgDelta}，延迟率 ${delayDelta}。`;
 }
 
 function metricsForSelection(
@@ -126,10 +224,10 @@ function metricsForSelection(
     const rows: Array<[string, string]> = [
       ['对象类型', selectionTypeLabel(selection)],
       ['订单数', fmt(filteredRow.order_count)],
-      ['平均时长', `${fmt(filteredRow.avg_delivery_duration_min, 1)} min`],
+      ['平均时长', `${fmt(filteredRow.avg_delivery_duration_min, 1)} 分钟`],
       ['延迟率', pct(filteredRow.delay_rate)],
       ['风险评分', fmt(filteredRow.risk_score, 2)],
-      ['平均距离', filteredRow.avg_distance_km ? `${fmt(filteredRow.avg_distance_km, 1)} km` : '-']
+      ['平均距离', filteredRow.avg_distance_km ? `${fmt(filteredRow.avg_distance_km, 1)} 公里` : '-']
     ];
     return rows.filter(([, value]) => value !== '-');
   }
@@ -137,12 +235,12 @@ function metricsForSelection(
   const values: Array<[string, string]> = [
     ['对象类型', selectionTypeLabel(selection)],
     ['订单数', 'order_count' in item ? fmt(item.order_count) : '-'],
-    ['平均时长', 'avg_delivery_duration_min' in item ? `${fmt(item.avg_delivery_duration_min, 1)} min` : '-'],
-    ['配送时长', 'delivery_duration_min' in item ? `${fmt(item.delivery_duration_min, 1)} min` : '-'],
+    ['平均时长', 'avg_delivery_duration_min' in item ? `${fmt(item.avg_delivery_duration_min, 1)} 分钟` : '-'],
+    ['配送时长', 'delivery_duration_min' in item ? `${fmt(item.delivery_duration_min, 1)} 分钟` : '-'],
     ['延迟率', 'delay_rate' in item ? pct(item.delay_rate) : '-'],
     ['风险评分', 'risk_score' in item ? fmt(item.risk_score, 2) : '-'],
-    ['平均距离', 'avg_distance_km' in item ? `${fmt(item.avg_distance_km, 1)} km` : '-'],
-    ['距离', 'distance_km' in item ? `${fmt(item.distance_km, 1)} km` : '-']
+    ['平均距离', 'avg_distance_km' in item ? `${fmt(item.avg_distance_km, 1)} 公里` : '-'],
+    ['距离', 'distance_km' in item ? `${fmt(item.distance_km, 1)} 公里` : '-']
   ];
   return values.filter(([, value]) => value !== '-');
 }
@@ -150,29 +248,27 @@ function metricsForSelection(
 function selectionExplanation(selection: MapSelection | null) {
   if (!selection) return '';
   if (selection.type === 'scene_hotspot') {
-    return selection.item.description ?? '该热区用于从 overall 总入口地图进入对应子模块，点击后切换背景图并显示模块概览。';
+    return selection.item.description ?? '该入口用于从总览进入对应 weather 过滤模块。';
   }
   if (selection.type === 'traffic_segment') {
-    return selection.item.node_kind
-      ? '该道路节点位于路口、汇入口或出入口，常是排队、汇流和转向导致 ETA 风险放大的位置。'
-      : '该道路段的交通压力会推高骑手在途时间，延迟率和风险评分可用于判断是否需要调度干预。';
+    return '该对象按 traffic_density 汇总当前天气下的订单表现，延迟率和风险评分用于判断 ETA 风险是否被交通条件放大。';
   }
   if (selection.type === 'order_dot') {
-    return '该对象表示订单或订单聚合位置，配送时长、距离和风险评分用于识别异常或高延迟样本。';
+    return '该对象表示订单样本或订单聚合点，distance_km、delivery_duration_min 和 risk_score 用于识别异常 ETA。';
   }
   if (selection.type === 'metric_tag') {
-    return '该微型标签汇总局部订单压力和延迟表现，用于在地图上快速锁定需要解释的区域。';
+    return '该标签仅汇总当前筛选下的真实指标，用于快速读取延迟率、平均时长和风险评分。';
   }
   if (selection.type === 'risk_heat_halo') {
-    return '风险热晕用半径表达订单压力，用红橙透明度表达局部延迟风险，适合快速定位热点。';
+    return '该对象用 order_count、delay_rate 和 risk_score 表达当前筛选下的 ETA 风险强度。';
   }
   if (selection.type === 'delivery_flow_segment') {
-    return '配送流动对象表示当前筛选下的短距离配送方向和速度变化，用于判断局部运行节奏。';
+    return '该对象用于表达当前筛选下的配送节奏摘要，重点读取 order_count、avg_delivery_duration_min 和 delay_rate。';
   }
   if (selection.type === 'risk_pulse') {
-    return '风险脉冲表示综合风险评分较高的场景锚点，可结合天气、交通、时段和车辆类型解释延迟。';
+    return '该对象表示 risk_score 较高的组合，可结合 weather、traffic_density、time_period 和 vehicle_type 解释延迟。';
   }
-  return selection.item.description ?? '当前对象用于解释局部配送运行状态和 ETA 延迟风险。';
+  return selection.item.description ?? '当前对象用于解释真实字段组合下的 ETA 延迟风险。';
 }
 
 function selectionPills(selection: MapSelection | null) {
@@ -201,7 +297,7 @@ function sectionForSelection(selection: MapSelection | null, fallback: ActiveSec
 }
 
 export default function DataOverviewPanel() {
-  const { activeModule, activeSection, selectedWeather, selectedTimePeriod, selectedSceneId, selectedItem, setSelectedItem, navigateToSection } = useInteraction();
+  const { activeModule, activeSection, selectedWeather, selectedTimePeriod, selectedSubView, selectedSceneId, selectedItem, setSelectedItem } = useInteraction();
   const [overview, setOverview] = useState<OverviewSummary | null>(null);
   const [weatherRows, setWeatherRows] = useState<WeatherImpactSummary[]>([]);
   const [timeRows, setTimeRows] = useState<TimePeriodSummary[]>([]);
@@ -243,10 +339,6 @@ export default function DataOverviewPanel() {
 
   const selectedScene = getMapSceneById(selectedSceneId);
   const currentModule = getWeatherModuleById(activeModule);
-  const moduleEntryHotspot = useMemo(
-    () => overallHotspots.find((hotspot) => hotspot.targetModule === activeModule) ?? null,
-    [activeModule]
-  );
 
   // For scene_hotspot: find matching scene_filter_summary row
   const hotspotFilteredRow = useMemo(() => {
@@ -297,9 +389,9 @@ export default function DataOverviewPanel() {
 
     return [
       ['样本订单', fmt(contextMetrics.order_count)],
-      ['平均时长', `${fmt(contextMetrics.avg_delivery_duration_min, 1)} min`],
+      ['平均时长', `${fmt(contextMetrics.avg_delivery_duration_min, 1)} 分钟`],
       ['延迟率', pct(contextMetrics.delay_rate)],
-      ['平均距离', `${fmt(contextMetrics.avg_distance_km, 1)} km`],
+      ['平均距离', `${fmt(contextMetrics.avg_distance_km, 1)} 公里`],
       ['风险评分', fmt(contextMetrics.risk_score, 2)]
     ];
   }, [contextMetrics, moduleSummary, selectedMetrics]);
@@ -310,34 +402,36 @@ export default function DataOverviewPanel() {
     risk_score: baselineRiskScore
   };
   const moduleMetrics = {
-    order_count: moduleSummary?.order_count ?? moduleEntryHotspot?.order_count ?? contextMetrics.order_count,
-    avg_delivery_duration_min: moduleSummary?.avg_delivery_duration_min ?? moduleEntryHotspot?.avg_delivery_duration_min ?? contextMetrics.avg_delivery_duration_min,
-    delay_rate: moduleSummary?.delay_rate ?? moduleEntryHotspot?.delay_rate ?? contextMetrics.delay_rate,
-    risk_score: moduleSummary?.risk_score ?? moduleEntryHotspot?.risk_score ?? contextMetrics.risk_score,
+    order_count: moduleSummary?.order_count ?? contextMetrics.order_count,
+    avg_delivery_duration_min: moduleSummary?.avg_delivery_duration_min ?? contextMetrics.avg_delivery_duration_min,
+    delay_rate: moduleSummary?.delay_rate ?? contextMetrics.delay_rate,
+    risk_score: moduleSummary?.risk_score ?? contextMetrics.risk_score,
     avg_distance_km: moduleSummary?.avg_distance_km ?? contextMetrics.avg_distance_km
   };
+  const currentSubView = subViewCopy[selectedSubView];
+  const currentModuleName = moduleDisplayName[currentModule.id] ?? currentModule.label;
   const comparisonRows = [
     {
-      label: 'Avg Delivery Time',
-      currentLabel: currentModule.label,
-      currentValue: `${fmt(moduleMetrics.avg_delivery_duration_min, 1)} min`,
-      baselineLabel: 'Global',
-      baselineValue: `${fmt(globalMetrics.avg_delivery_duration_min, 1)} min`,
+      label: '平均配送时长',
+      currentLabel: currentModuleName,
+      currentValue: `${fmt(moduleMetrics.avg_delivery_duration_min, 1)} 分钟`,
+      baselineLabel: '全局',
+      baselineValue: `${fmt(globalMetrics.avg_delivery_duration_min, 1)} 分钟`,
       delta: deltaPercent(moduleMetrics.avg_delivery_duration_min, globalMetrics.avg_delivery_duration_min)
     },
     {
-      label: 'Delay Rate',
-      currentLabel: currentModule.label,
+      label: '延迟率',
+      currentLabel: currentModuleName,
       currentValue: pct(moduleMetrics.delay_rate),
-      baselineLabel: 'Global',
+      baselineLabel: '全局',
       baselineValue: pct(globalMetrics.delay_rate),
       delta: deltaRatePoints(moduleMetrics.delay_rate, globalMetrics.delay_rate)
     },
     {
-      label: 'Risk Impact Score',
-      currentLabel: currentModule.label,
+      label: '风险影响评分',
+      currentLabel: currentModuleName,
       currentValue: fmt(moduleMetrics.risk_score, 2),
-      baselineLabel: 'Baseline',
+      baselineLabel: '基线',
       baselineValue: fmt(globalMetrics.risk_score, 2),
       delta: deltaPercent(moduleMetrics.risk_score, globalMetrics.risk_score)
     }
@@ -346,17 +440,17 @@ export default function DataOverviewPanel() {
   const filterPills = selectedItem
     ? selectionPills(selectedItem)
     : [
-        ['模块', currentModule.label],
         ['天气', currentModule.weather],
-        ['时段', selectedTimePeriod]
+        ['时段', selectedTimePeriod],
+        ['子视图', currentSubView.label]
       ];
   const explanation = selectedItem
     ? selectionExplanation(selectedItem)
-    : hotspotInsight(
-        moduleEntryHotspot?.description,
-        conciseInsight(currentModule.label, currentModule.weather, moduleMetrics.delay_rate, globalMetrics.delay_rate)
-      );
-  const panelStatus = selectedItem ? 'ETA RISK DETAIL MODE' : 'ANALYSIS ENGINE';
+    : `${currentSubView.finding} ${conciseInsight(currentModuleName, currentModule.weather, moduleMetrics.delay_rate, globalMetrics.delay_rate)}`;
+  const panelStatus = selectedItem ? 'ETA 风险票据' : '分析面板';
+  const panelIndex = activeModule === 'overall' ? '00 总览' : `${String(['sunny', 'fog', 'cloudy', 'stormy', 'sandstorms', 'windy'].indexOf(activeModule) + 1).padStart(2, '0')} ${currentModuleName}`;
+  const dataFilter = dataFilterForSelection(selectedItem, currentModule.weather, selectedSubView);
+  const keyDifference = keyDifferenceText(currentModuleName, selectedSubView, moduleMetrics, globalMetrics);
   const handleFullAnalysisClick = () => {
     const targetSection = sectionForSelection(selectedItem, activeSection ?? 'overview');
     setSelectedItem(null);
@@ -375,16 +469,17 @@ export default function DataOverviewPanel() {
   };
 
   return (
-    <aside className="data-overview-panel" aria-label="Analysis Panel">
+    <aside className="data-overview-panel" aria-label="分析面板">
       <div
-        key={`${activeModule}-${activeSection}-${selectedWeather}-${selectedTimePeriod}-${selectionTitle(selectedItem) ?? 'none'}`}
+        key={`${activeModule}-${activeSection}-${selectedWeather}-${selectedTimePeriod}-${selectedSubView}-${selectionTitle(selectedItem) ?? 'none'}`}
         className="overview-content"
       >
         <section className="overview-block overview-current-view" aria-labelledby="overview-current-heading">
           <span className="overview-status-line">{panelStatus}</span>
-          <h2 id="overview-current-heading">{selectedItem ? selectionTitle(selectedItem) : `${currentModule.label} 模块分析`}</h2>
+          <small className="overview-panel-index">{selectedItem ? selectionTypeLabel(selectedItem) : panelIndex}</small>
+          <h2 id="overview-current-heading">{selectedItem ? selectionTitle(selectedItem) : `${currentModuleName} ${currentSubView.label}`}</h2>
           <p className="overview-question">
-            {selectedItem ? selectionTypeLabel(selectedItem) : currentModule.keyQuestion}
+            {selectedItem ? '当前对象已锁定，右侧内容切换为 ETA 风险票据。' : currentSubView.question}
           </p>
 
           <div className="overview-filter-summary" aria-label="当前筛选">
@@ -392,11 +487,14 @@ export default function DataOverviewPanel() {
               <span key={`${label}-${value}`}>{label}: {value}</span>
             ))}
           </div>
+          <div className="overview-filter-summary" aria-label="数据过滤条件">
+            <span>数据过滤：{dataFilter}</span>
+          </div>
         </section>
 
         {selectedItem ? (
           <section className="overview-block" aria-labelledby="overview-metrics-heading">
-            <h3 id="overview-metrics-heading">对象指标</h3>
+            <h3 id="overview-metrics-heading">票据指标</h3>
             <div className="overview-metric-list">
               {metrics.slice(0, 7).map(([label, value]) => (
                 <div key={label}>
@@ -408,33 +506,10 @@ export default function DataOverviewPanel() {
           </section>
         ) : (
           <section className="overview-block" aria-labelledby="overview-compare-heading">
-            <h3 id="overview-compare-heading">{currentModule.label} vs 全局对比</h3>
-            {moduleEntryHotspot ? (
-              <div className="overview-metric-list module-entry-metrics" aria-label={`${currentModule.label} 总览入口热区合并指标`}>
-                <div>
-                  <span>入口区域</span>
-                  <strong>{moduleEntryHotspot.label}</strong>
-                </div>
-                <div>
-                  <span>入口订单</span>
-                  <strong>{fmt(moduleEntryHotspot.order_count)}</strong>
-                </div>
-                <div>
-                  <span>入口平均时长</span>
-                  <strong>{`${fmt(moduleEntryHotspot.avg_delivery_duration_min, 1)} min`}</strong>
-                </div>
-                <div>
-                  <span>入口延迟率</span>
-                  <strong>{pct(moduleEntryHotspot.delay_rate)}</strong>
-                </div>
-                <div>
-                  <span>入口风险评分</span>
-                  <strong>{fmt(moduleEntryHotspot.risk_score, 2)}</strong>
-                </div>
-              </div>
-            ) : null}
+            <h3 id="overview-compare-heading">关键差异</h3>
+            <p className="overview-explain">{keyDifference}</p>
             <div className="analysis-compare-stack">
-              {comparisonRows.map((row) => (
+              {comparisonRows.slice(0, 2).map((row) => (
                 <article key={row.label} className="analysis-compare-card">
                   <span>{row.label}</span>
                   <div>
@@ -449,19 +524,19 @@ export default function DataOverviewPanel() {
         )}
 
         <section className="overview-block" aria-labelledby="overview-explain-heading">
-          <h3 id="overview-explain-heading">{selectedItem ? '对象解释' : '洞察结论'}</h3>
+          <h3 id="overview-explain-heading">{selectedItem ? '解释' : '当前发现'}</h3>
           <p className="overview-explain">{explanation}</p>
         </section>
 
         <section className="overview-block overview-actions-block" aria-labelledby="overview-actions-heading">
-          <h3 id="overview-actions-heading">{selectedItem ? 'Detail Action' : '交互提示'}</h3>
+          <h3 id="overview-actions-heading">{selectedItem ? '票据操作' : '交互提示'}</h3>
           {selectedItem ? (
             <div className="overview-ticket-actions">
               <button type="button" onClick={handleFullAnalysisClick}>
                 查看完整分析
               </button>
               <button type="button" onClick={() => setSelectedItem(null)}>
-                Back to {currentModule.label} Analysis
+                返回 {currentModuleName} {currentSubView.label} 分析
               </button>
             </div>
           ) : (

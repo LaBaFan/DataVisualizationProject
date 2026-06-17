@@ -20,7 +20,7 @@ export const weatherModules: WeatherModuleConfig[] = [
     summary: '以城市配送总览作为入口，快速定位不同天气条件下的 ETA 风险来源。',
     keyQuestion: '哪些天气模块最需要调度关注？',
     accentColor: '#f97316',
-    riskHint: '总览用于进入六个天气模块，并保留配送中心作为非跳转参考点。'
+    riskHint: '总览用于进入六个天气模块，并保留城市运行基准作为非跳转参考点。'
   },
   {
     id: 'sunny',
@@ -37,10 +37,10 @@ export const weatherModules: WeatherModuleConfig[] = [
     label: 'Fog',
     weather: 'Fog',
     imageUrl: '/assets/backgrounds/fog.png',
-    summary: '雾天模块聚焦低能见度下的路径不确定性、速度下降和商务区订单压力。',
-    keyQuestion: '低能见度天气下，商务区配送 ETA 如何变慢？',
+    summary: '雾天模块聚焦低能见度下的路径不确定性、速度下降和订单压力。',
+    keyQuestion: '低能见度天气下，ETA 如何变慢？',
     accentColor: '#64748b',
-    riskHint: '关注低能见度与高楼商务区订单密度叠加形成的延迟风险。'
+    riskHint: '关注低能见度与订单密度叠加形成的延迟风险。'
   },
   {
     id: 'stormy',
@@ -80,18 +80,30 @@ export const weatherModules: WeatherModuleConfig[] = [
     summary: '大风模块解释骑行速度波动、路线不稳定和末端配送不确定性。',
     keyQuestion: '大风天气是否会提高骑手路径和速度的不稳定性？',
     accentColor: '#0891b2',
-    riskHint: '关注桥梁、临水道路或开阔区域中速度波动带来的 ETA 风险。'
+    riskHint: '关注速度波动带来的 ETA 风险。'
   }
 ];
 
 const moduleToScene: Record<WeatherModuleId, string> = {
   overall: 'overall',
   sunny: 'sunny',
-  fog: 'fog_business',
-  stormy: 'storm_area',
-  sandstorms: 'sandstorm',
+  fog: 'fog',
+  stormy: 'stormy',
+  sandstorms: 'sandstorms',
   cloudy: 'cloudy',
   windy: 'windy'
+};
+
+const legacySceneToModule: Record<string, WeatherModuleId> = {
+  fog_business: 'fog',
+  storm_area: 'stormy',
+  sandstorm: 'sandstorms'
+};
+
+export const legacySceneIdByWeatherModule: Partial<Record<WeatherModuleId, string>> = {
+  fog: 'fog_business',
+  stormy: 'storm_area',
+  sandstorms: 'sandstorm'
 };
 
 const sceneToModule: Record<string, WeatherModuleId> = Object.fromEntries(
@@ -116,5 +128,18 @@ export function getSceneIdByModuleId(moduleId: string | null | undefined) {
 
 export function getModuleIdBySceneId(sceneId: string | null | undefined): WeatherModuleId {
   if (!sceneId) return 'overall';
-  return sceneToModule[sceneId] ?? 'overall';
+  return sceneToModule[sceneId] ?? legacySceneToModule[sceneId] ?? 'overall';
+}
+
+export function getSceneIdByWeatherModuleId(moduleId: WeatherModuleId | string | null | undefined): string {
+  return moduleToScene[getWeatherModuleById(moduleId).id];
+}
+
+export function getWeatherModuleIdBySceneId(sceneId: string | null | undefined) {
+  return getModuleIdBySceneId(sceneId);
+}
+
+export function getRenderableSceneIdByModuleId(moduleId: string | null | undefined) {
+  const cleanSceneId = getSceneIdByModuleId(moduleId);
+  return legacySceneIdByWeatherModule[getWeatherModuleById(moduleId).id] ?? cleanSceneId;
 }

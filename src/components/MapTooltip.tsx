@@ -14,46 +14,27 @@ function formatPercent(value: number | undefined) {
   return typeof value === 'number' ? `${Math.round(value * 100)}%` : '';
 }
 
-function typeLabel(selection: MapSelection) {
-  if (selection.type === 'scene_hotspot') return '总览入口热区';
-  if (selection.type === 'traffic_segment') {
-    return selection.item.node_kind ? '道路节点' : '道路路段';
-  }
-  if (selection.type === 'order_dot') return '订单密度点';
-  if (selection.type === 'risk_pulse') return '延迟风险脉冲圈';
-  if (selection.type === 'metric_tag') return '区域微型指标';
-  if (selection.type === 'risk_heat_halo') return '风险热晕区域';
-  if (selection.type === 'delivery_flow_segment') return '配送流动粒子';
-
-  const labels: Record<typeof selection.item.type, string> = {
-    restaurant: '餐厅',
-    building: '建筑',
-    road: '道路',
-    weather: '天气区域',
-    risk_zone: '风险区域',
-    customer_area: '客户区域',
-    order_point: '订单点',
-    rider: '骑手'
-  };
-  return labels[selection.item.type];
-}
-
 function tooltipMetrics(selection: MapSelection): Array<[string, string]> {
   const item = selection.item;
   const metrics: Array<[string, string]> = [];
 
-  if ('order_count' in item && item.order_count) metrics.push(['订单数', formatNumber(item.order_count)]);
+  if ('weather' in item && item.weather) metrics.push(['weather', item.weather]);
+  if ('traffic_density' in item && item.traffic_density) metrics.push(['traffic_density', item.traffic_density]);
+  if ('time_period' in item && item.time_period) metrics.push(['time_period', item.time_period]);
+  if ('vehicle_type' in item && item.vehicle_type) metrics.push(['vehicle_type', item.vehicle_type]);
+  if ('order_count' in item && item.order_count) metrics.push(['order_count', formatNumber(item.order_count)]);
   if ('avg_delivery_duration_min' in item && item.avg_delivery_duration_min) {
-    metrics.push(['平均时长', `${formatNumber(item.avg_delivery_duration_min, 1)} min`]);
+    metrics.push(['avg_delivery_duration_min', `${formatNumber(item.avg_delivery_duration_min, 1)} min`]);
   }
-  if ('delivery_duration_min' in item && item.delivery_duration_min) {
-    metrics.push(['配送时长', `${formatNumber(item.delivery_duration_min, 1)} min`]);
+  if ('delivery_duration_min' in item && item.delivery_duration_min && !('avg_delivery_duration_min' in item)) {
+    metrics.push(['avg_delivery_duration_min', `${formatNumber(item.delivery_duration_min, 1)} min`]);
   }
-  if ('speed' in item && item.speed) metrics.push(['流速', formatNumber(item.speed, 1)]);
-  if ('delay_rate' in item && typeof item.delay_rate === 'number') metrics.push(['延迟率', formatPercent(item.delay_rate)]);
-  if ('risk_score' in item && item.risk_score) metrics.push(['风险评分', formatNumber(item.risk_score, 2)]);
-  if ('distance_km' in item && item.distance_km) metrics.push(['距离', `${formatNumber(item.distance_km, 1)} km`]);
-  if (selection.type === 'scene_hotspot') metrics.push(['目标模块', selection.item.targetSceneId]);
+  if ('delay_rate' in item && typeof item.delay_rate === 'number') metrics.push(['delay_rate', formatPercent(item.delay_rate)]);
+  if ('risk_score' in item && item.risk_score) metrics.push(['risk_score', formatNumber(item.risk_score, 2)]);
+  if ('avg_distance_km' in item && item.avg_distance_km) metrics.push(['avg_distance_km', `${formatNumber(item.avg_distance_km, 1)} km`]);
+  if ('distance_km' in item && item.distance_km && !('avg_distance_km' in item)) {
+    metrics.push(['avg_distance_km', `${formatNumber(item.distance_km, 1)} km`]);
+  }
 
   return metrics;
 }
@@ -72,7 +53,6 @@ export default function MapTooltip({ selection, x, y }: MapTooltipProps) {
   return (
     <div className="map-tooltip" style={{ left: x + 14, top: y + 14 }}>
       <strong>{title(selection)}</strong>
-      <span>{typeLabel(selection)}</span>
       {metrics.length ? (
         <dl>
           {metrics.map(([label, value]) => (

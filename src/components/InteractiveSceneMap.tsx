@@ -29,6 +29,7 @@ import MiniMetricTagLayer from './MiniMetricTagLayer';
 import OrderDensityDotLayer from './OrderDensityDotLayer';
 import OverallHotspotLayer from './OverallHotspotLayer';
 import RiskHeatHaloLayer from './RiskHeatHaloLayer';
+import SceneTitle from './SceneTitle';
 import ViewContextHUD from './ViewContextHUD';
 
 interface SceneHudData {
@@ -56,6 +57,15 @@ function pointFromEvent(event: MouseEvent<SVGElement>) {
 function activeSectionForScene(sceneType: string): ActiveSection {
   if (sceneType === 'weather' || sceneType === 'traffic' || sceneType === 'time' || sceneType === 'risk') return sceneType;
   return 'overview';
+}
+
+function sceneIndex(sceneType: string) {
+  if (sceneType === 'weather') return '02';
+  if (sceneType === 'traffic') return '03';
+  if (sceneType === 'time') return '04';
+  if (sceneType === 'risk') return '05';
+  if (sceneType === 'overall') return '01';
+  return '06';
 }
 
 /**
@@ -226,13 +236,12 @@ export default function InteractiveSceneMap() {
 
   return (
     <main className="scene-map-stage" aria-label="Interactive FoodETA Map">
-      <header className="scene-map-header">
-        <div>
-          <span>FoodETA Map Explorer</span>
-          <h1>{selectedScene.title}</h1>
-        </div>
-        <p>{selectedScene.question}</p>
-      </header>
+      <SceneTitle
+        index={sceneIndex(selectedScene.type)}
+        kicker={`FOODETA / ${selectedScene.type.toUpperCase()}`}
+        title={selectedScene.title}
+        question={selectedScene.question}
+      />
       <div
         className={`interactive-scene-map scene-${selectedScene.type} time-tone-${selectedTimePeriod}`}
         onClick={() => setSelectedItem(null)}

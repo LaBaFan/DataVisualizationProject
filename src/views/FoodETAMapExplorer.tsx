@@ -1,3 +1,4 @@
+import BrandTexture from '../components/BrandTexture';
 import DataOverviewPanel from '../components/DataOverviewPanel';
 import SceneNavigation from '../components/SceneNavigation';
 import { useInteraction } from '../store/interactionContext';
@@ -8,6 +9,7 @@ export default function FoodETAMapExplorer() {
 
   return (
     <div className={`foodeta-explorer${activeModule === 'overall' ? ' is-overall-active' : ''}`}>
+      <BrandTexture />
       <SceneNavigation />
       <div className="explorer-main">
         <WeatherModuleStage />
