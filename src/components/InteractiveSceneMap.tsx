@@ -10,20 +10,31 @@ import { mapScenes, getMapSceneById } from '../data/mapScenes';
 import { overallHotspots } from '../data/overallHotspots';
 import { sceneMiniMetricTags, sceneOrderDots, sceneRiskHeatHalos } from '../data/sceneOverlayData';
 import { buildSceneHudMetrics } from '../data/sceneMetrics';
+import {
+  getWeatherOrderSamples,
+  getWeatherRiskScenarios,
+  getWeatherTimeRows,
+  getWeatherTrafficRows,
+  getWeatherVehicleRows
+} from '../data/weatherSelectors';
 import { getModuleIdBySceneId, getWeatherModuleById } from '../data/weatherModules';
-import { useInteraction } from '../store/interactionContext';
+import { useInteraction, type WeatherSubView } from '../store/interactionContext';
 import {
   ActiveSection,
   MapSelection,
   MiniMetricTag,
   OrderDot,
   OverviewSummary,
+  RiskScenario,
   RiskHeatHalo,
   SceneFilterSummary,
   TimePeriodSummary,
   TrafficDensitySummary,
+  WeatherOrderSample,
   WeatherImpactSummary
 } from '../types/data';
+import MapInsetChart from './map/MapInsetChart';
+import SubViewEncodingLayer, { type EncodedSelection } from './map/SubViewEncodingLayer';
 import MapTooltip from './MapTooltip';
 import MiniMetricTagLayer from './MiniMetricTagLayer';
 import OrderDensityDotLayer from './OrderDensityDotLayer';
@@ -38,6 +49,14 @@ interface SceneHudData {
   timeRows: TimePeriodSummary[];
   trafficRows: TrafficDensitySummary[];
   sceneFilterRows: SceneFilterSummary[];
+}
+
+interface WeatherOverlayData {
+  orderPoints: WeatherOrderSample[];
+  trafficRows: Awaited<ReturnType<typeof getWeatherTrafficRows>>;
+  timeRows: SceneFilterSummary[];
+  vehicleRows: Awaited<ReturnType<typeof getWeatherVehicleRows>>;
+  riskRows: RiskScenario[];
 }
 
 function isAll(v: string | null | undefined) {
@@ -101,9 +120,11 @@ export default function InteractiveSceneMap() {
     selectedTimePeriod,
     overallFilter,
     selectedItem,
+    selectedSubView,
     setSelectedItem,
     setSelectedSceneId,
     setActiveSection,
+    setSelectedTimePeriod,
     switchModule
   } = useInteraction();
   const [hoveredSelection, setHoveredSelection] = useState<MapSelection | null>(null);
@@ -115,12 +136,20 @@ export default function InteractiveSceneMap() {
     trafficRows: [],
     sceneFilterRows: []
   });
+  const [weatherOverlayData, setWeatherOverlayData] = useState<WeatherOverlayData>({
+    orderPoints: [],
+    trafficRows: [],
+    timeRows: [],
+    vehicleRows: [],
+    riskRows: []
+  });
   const selectedScene = getMapSceneById(selectedSceneId);
   const activeScene = activeSectionForScene(selectedScene.type);
   const selectedModule = getWeatherModuleById(getModuleIdBySceneId(selectedScene.id));
   const sceneImage = selectedScene.type === 'weather' || selectedScene.id === 'overall'
     ? selectedModule.imageUrl
     : selectedScene.image;
+  const isWeatherModule = selectedScene.type === 'weather' && selectedScene.id !== 'overall';
 
   useEffect(() => {
     let isMounted = true;
@@ -144,6 +173,29 @@ export default function InteractiveSceneMap() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isWeatherModule) return;
+    let isMounted = true;
+    Promise.all([
+      getWeatherOrderSamples(selectedWeather, selectedTimePeriod),
+      getWeatherTrafficRows(selectedWeather),
+      getWeatherTimeRows(selectedWeather),
+      getWeatherVehicleRows(selectedWeather),
+      getWeatherRiskScenarios(selectedWeather)
+    ])
+      .then(([orderPoints, trafficRows, timeRows, vehicleRows, riskRows]) => {
+        if (!isMounted) return;
+        setWeatherOverlayData({ orderPoints, trafficRows, timeRows, vehicleRows, riskRows });
+      })
+      .catch((error) => {
+        console.warn('[InteractiveSceneMap] Failed to load weather overlay data.', error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isWeatherModule, selectedWeather, selectedTimePeriod]);
 
   // Filter overall hotspots based on overallFilter
   const filteredHotspots = useMemo(() => {
@@ -219,6 +271,10 @@ export default function InteractiveSceneMap() {
 
   const selectedId = selectedItem?.item.id ?? null;
   const hoveredId = hoveredSelection?.item.id ?? null;
+  const weatherSummary = useMemo(
+    () => hudData.weatherRows.find((row) => row.weather === selectedWeather) ?? null,
+    [hudData.weatherRows, selectedWeather]
+  );
   const hudMetrics = useMemo(
     () =>
       buildSceneHudMetrics({
@@ -233,6 +289,16 @@ export default function InteractiveSceneMap() {
       }),
     [hudData, selectedScene, selectedTimePeriod, selectedWeather]
   );
+
+  const handleEncodedSelect = (selection: EncodedSelection) => {
+    setSelectedItem(selection);
+    setHoveredSelection(null);
+  };
+
+  const handleEncodedHover = (selection: EncodedSelection, event: MouseEvent<SVGElement>) => {
+    setHoveredSelection(selection);
+    setTooltipPoint(pointFromEvent(event));
+  };
 
   return (
     <main className="scene-map-stage" aria-label="Interactive FoodETA Map">
@@ -275,48 +341,93 @@ export default function InteractiveSceneMap() {
           />
         ) : null}
 
-        <RiskHeatHaloLayer
-          halos={overlays.halos}
-          hoveredId={hoveredId}
-          selectedId={selectedId}
-          selectedWeather={selectedWeather}
-          selectedTimePeriod={selectedTimePeriod}
-          activeScene={activeScene}
-          onHover={(halo, event) => {
-            setHoveredSelection({ type: 'risk_heat_halo', item: halo });
-            setTooltipPoint(pointFromEvent(event));
-          }}
-          onLeave={() => setHoveredSelection(null)}
-          onSelect={(halo) => setSelectedItem({ type: 'risk_heat_halo', item: halo })}
-        />
-        <OrderDensityDotLayer
-          dots={overlays.dots}
-          hoveredId={hoveredId}
-          selectedId={selectedId}
-          selectedWeather={selectedWeather}
-          selectedTimePeriod={selectedTimePeriod}
-          activeScene={activeScene}
-          onHover={(dot, event) => {
-            setHoveredSelection({ type: 'order_dot', item: dot });
-            setTooltipPoint(pointFromEvent(event));
-          }}
-          onLeave={() => setHoveredSelection(null)}
-          onSelect={(dot) => setSelectedItem({ type: 'order_dot', item: dot })}
-        />
-        <MiniMetricTagLayer
-          tags={overlays.tags}
-          hoveredId={hoveredId}
-          selectedId={selectedId}
-          selectedWeather={selectedWeather}
-          selectedTimePeriod={selectedTimePeriod}
-          activeScene={activeScene}
-          onHover={(tag, event) => {
-            setHoveredSelection({ type: 'metric_tag', item: tag });
-            setTooltipPoint(pointFromEvent(event));
-          }}
-          onLeave={() => setHoveredSelection(null)}
-          onSelect={(tag) => setSelectedItem({ type: 'metric_tag', item: tag })}
-        />
+        {!isWeatherModule ? (
+          <>
+            <RiskHeatHaloLayer
+              halos={overlays.halos}
+              hoveredId={hoveredId}
+              selectedId={selectedId}
+              selectedWeather={selectedWeather}
+              selectedTimePeriod={selectedTimePeriod}
+              activeScene={activeScene}
+              onHover={(halo, event) => {
+                setHoveredSelection({ type: 'risk_heat_halo', item: halo });
+                setTooltipPoint(pointFromEvent(event));
+              }}
+              onLeave={() => setHoveredSelection(null)}
+              onSelect={(halo) => setSelectedItem({ type: 'risk_heat_halo', item: halo })}
+            />
+            <OrderDensityDotLayer
+              dots={overlays.dots}
+              hoveredId={hoveredId}
+              selectedId={selectedId}
+              selectedWeather={selectedWeather}
+              selectedTimePeriod={selectedTimePeriod}
+              activeScene={activeScene}
+              onHover={(dot, event) => {
+                setHoveredSelection({ type: 'order_dot', item: dot });
+                setTooltipPoint(pointFromEvent(event));
+              }}
+              onLeave={() => setHoveredSelection(null)}
+              onSelect={(dot) => setSelectedItem({ type: 'order_dot', item: dot })}
+            />
+          </>
+        ) : (
+          <>
+            <SubViewEncodingLayer
+              selectedSubView={'overview' as WeatherSubView}
+              selectedWeather={selectedWeather}
+              summary={weatherSummary}
+              trafficRows={weatherOverlayData.trafficRows}
+              timeRows={weatherOverlayData.timeRows}
+              vehicleRows={weatherOverlayData.vehicleRows}
+              riskRows={weatherOverlayData.riskRows}
+              hoveredId={hoveredId}
+              selectedId={selectedId}
+              onHover={handleEncodedHover}
+              onLeave={() => setHoveredSelection(null)}
+              onSelect={handleEncodedSelect}
+              onTimeSelect={setSelectedTimePeriod}
+            />
+            <MapInsetChart
+              selectedSubView={selectedSubView}
+              selectedWeather={selectedWeather}
+              summary={weatherSummary}
+              orderPoints={weatherOverlayData.orderPoints}
+              trafficRows={weatherOverlayData.trafficRows}
+              timeRows={weatherOverlayData.timeRows}
+              vehicleRows={weatherOverlayData.vehicleRows}
+              riskRows={weatherOverlayData.riskRows}
+              selectedId={selectedId}
+              onHover={(selection, event) => {
+                setHoveredSelection(selection);
+                setTooltipPoint(pointFromEvent(event));
+              }}
+              onLeave={() => setHoveredSelection(null)}
+              onSelect={(selection) => {
+                setSelectedItem(selection);
+                setHoveredSelection(null);
+              }}
+              onTimeSelect={setSelectedTimePeriod}
+            />
+          </>
+        )}
+        {!isWeatherModule ? (
+          <MiniMetricTagLayer
+            tags={overlays.tags}
+            hoveredId={hoveredId}
+            selectedId={selectedId}
+            selectedWeather={selectedWeather}
+            selectedTimePeriod={selectedTimePeriod}
+            activeScene={activeScene}
+            onHover={(tag, event) => {
+              setHoveredSelection({ type: 'metric_tag', item: tag });
+              setTooltipPoint(pointFromEvent(event));
+            }}
+            onLeave={() => setHoveredSelection(null)}
+            onSelect={(tag) => setSelectedItem({ type: 'metric_tag', item: tag })}
+          />
+        ) : null}
 
         <MapTooltip selection={hoveredSelection} x={tooltipPoint.x} y={tooltipPoint.y} />
       </div>

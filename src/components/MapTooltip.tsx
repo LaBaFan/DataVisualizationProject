@@ -19,6 +19,7 @@ function tooltipMetrics(selection: MapSelection): Array<[string, string]> {
   const metrics: Array<[string, string]> = [];
 
   if ('weather' in item && item.weather) metrics.push(['weather', item.weather]);
+  if ('order_id' in item && item.order_id) metrics.push(['order_id', item.order_id]);
   if ('traffic_density' in item && item.traffic_density) metrics.push(['traffic_density', item.traffic_density]);
   if ('time_period' in item && item.time_period) metrics.push(['time_period', item.time_period]);
   if ('vehicle_type' in item && item.vehicle_type) metrics.push(['vehicle_type', item.vehicle_type]);
@@ -26,15 +27,16 @@ function tooltipMetrics(selection: MapSelection): Array<[string, string]> {
   if ('avg_delivery_duration_min' in item && item.avg_delivery_duration_min) {
     metrics.push(['avg_delivery_duration_min', `${formatNumber(item.avg_delivery_duration_min, 1)} min`]);
   }
-  if ('delivery_duration_min' in item && item.delivery_duration_min && !('avg_delivery_duration_min' in item)) {
-    metrics.push(['avg_delivery_duration_min', `${formatNumber(item.delivery_duration_min, 1)} min`]);
+  if ('delivery_duration_min' in item && item.delivery_duration_min) {
+    metrics.push(['delivery_duration_min', `${formatNumber(item.delivery_duration_min, 1)} min`]);
   }
   if ('delay_rate' in item && typeof item.delay_rate === 'number') metrics.push(['delay_rate', formatPercent(item.delay_rate)]);
   if ('risk_score' in item && item.risk_score) metrics.push(['risk_score', formatNumber(item.risk_score, 2)]);
   if ('avg_distance_km' in item && item.avg_distance_km) metrics.push(['avg_distance_km', `${formatNumber(item.avg_distance_km, 1)} km`]);
-  if ('distance_km' in item && item.distance_km && !('avg_distance_km' in item)) {
-    metrics.push(['avg_distance_km', `${formatNumber(item.distance_km, 1)} km`]);
+  if ('distance_km' in item && item.distance_km) {
+    metrics.push(['distance_km', `${formatNumber(item.distance_km, 1)} km`]);
   }
+  if ('is_delayed' in item && typeof item.is_delayed === 'boolean') metrics.push(['is_delayed', item.is_delayed ? 'true' : 'false']);
 
   return metrics;
 }

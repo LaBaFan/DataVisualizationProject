@@ -1,0 +1,542 @@
+import { KeyboardEvent, MouseEvent } from 'react';
+import type { WeatherSubView } from '../../store/interactionContext';
+import type {
+  DeliveryFlowSegment,
+  MapSelection,
+  MiniMetricTag,
+  RiskHeatHalo,
+  RiskScenario,
+  ScenarioAnchor,
+  SceneFilterSummary,
+  TrafficSegment,
+  WeatherImpactSummary,
+  WeatherOrderSample,
+  WeatherTrafficSummary,
+  WeatherVehicleSummary
+} from '../../types/data';
+
+interface MapInsetChartProps {
+  selectedSubView: WeatherSubView;
+  selectedWeather: string;
+  summary: WeatherImpactSummary | null;
+  orderPoints: WeatherOrderSample[];
+  trafficRows: WeatherTrafficSummary[];
+  timeRows: SceneFilterSummary[];
+  vehicleRows: WeatherVehicleSummary[];
+  riskRows: RiskScenario[];
+  selectedId?: string | null;
+  onHover: (selection: MapSelection, event: MouseEvent<SVGElement>) => void;
+  onLeave: () => void;
+  onSelect: (selection: MapSelection) => void;
+  onTimeSelect: (timePeriod: string) => void;
+}
+
+const WIDTH = 640;
+const HEIGHT = 390;
+const PAD = { left: 58, right: 34, top: 34, bottom: 58 };
+const RISK_PAD = { left: 86, right: 96, top: 52, bottom: 68 };
+const TRAFFIC_ORDER = ['Low', 'Medium', 'High', 'Jam'];
+const TIME_ORDER = ['breakfast', 'lunch_peak', 'afternoon', 'dinner_peak', 'night'];
+
+function maxOf(values: Array<number | undefined>) {
+  return Math.max(1, ...values.map((value) => (typeof value === 'number' && Number.isFinite(value) ? value : 0)));
+}
+
+function rate(value: number | undefined) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
+  return value > 1 ? value / 100 : Math.max(0, value);
+}
+
+function clamp(value: number, min = 0, max = 1) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function finiteValues(values: Array<number | undefined>) {
+  return values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+}
+
+function paddedDomain(values: Array<number | undefined>, fallback: [number, number], paddingRatio = 0.12): [number, number] {
+  const nums = finiteValues(values);
+  if (!nums.length) return fallback;
+  const min = Math.min(...nums);
+  const max = Math.max(...nums);
+  if (min === max) {
+    const pad = Math.max(1, Math.abs(min) * paddingRatio);
+    return [min - pad, max + pad];
+  }
+  const pad = (max - min) * paddingRatio;
+  return [min - pad, max + pad];
+}
+
+function scaleLinear(value: number | undefined, domain: [number, number], range: [number, number]) {
+  const safeValue = typeof value === 'number' && Number.isFinite(value) ? value : domain[0];
+  const t = domain[0] === domain[1] ? 0.5 : (safeValue - domain[0]) / (domain[1] - domain[0]);
+  return range[0] + clamp(t) * (range[1] - range[0]);
+}
+
+function deterministicOffset(seed: string | undefined, index: number, amplitude: number) {
+  const source = `${seed ?? 'row'}-${index}`;
+  let hash = 0;
+  for (let i = 0; i < source.length; i += 1) hash = (hash * 31 + source.charCodeAt(i)) % 9973;
+  return ((hash % 200) / 199 - 0.5) * amplitude * 2;
+}
+
+function shortRiskLabel(row: RiskScenario) {
+  return row.traffic_density ?? row.vehicle_type ?? row.time_period ?? row.weather ?? row.label;
+}
+
+function fmt(value: number | undefined, digits = 0) {
+  return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '-';
+}
+
+function pct(value: number | undefined) {
+  return `${Math.round(rate(value) * 100)}%`;
+}
+
+function colorByRate(value: number | undefined) {
+  const v = rate(value);
+  if (v >= 0.55) return '#dc2626';
+  if (v >= 0.34) return '#f97316';
+  if (v >= 0.16) return '#f59e0b';
+  return '#2563eb';
+}
+
+function chartTitle(subView: WeatherSubView) {
+  const labels: Record<WeatherSubView, string> = {
+    overview: '天气基线对比',
+    traffic: '交通密度分组',
+    time: '时段节奏',
+    vehicle: '载具表现',
+    risk: '风险组合',
+    orders: '距离-时长订单散点'
+  };
+  return labels[subView];
+}
+
+function keySelect(event: KeyboardEvent<SVGGElement>, selection: MapSelection, onSelect: (selection: MapSelection) => void) {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  event.preventDefault();
+  event.stopPropagation();
+  onSelect(selection);
+}
+
+function trafficSelection(row: WeatherTrafficSummary): MapSelection {
+  const item: TrafficSegment = {
+    id: `chart-traffic-${row.weather ?? 'All'}-${row.traffic_density ?? 'Unknown'}`,
+    label: row.traffic_density ?? 'Unknown',
+    path: '',
+    points: [],
+    traffic_density: (row.traffic_density ?? 'Unknown') as TrafficSegment['traffic_density'],
+    weather: row.weather ?? undefined,
+    order_count: row.order_count,
+    avg_delivery_duration_min: row.avg_delivery_duration_min,
+    avg_distance_km: row.avg_distance_km,
+    delay_rate: row.delay_rate,
+    risk_score: row.risk_score ?? row.delay_rate
+  };
+  return { type: 'traffic_segment', item };
+}
+
+function timeSelection(row: SceneFilterSummary): MapSelection {
+  const item: DeliveryFlowSegment = {
+    id: `chart-time-${row.weather ?? 'All'}-${row.time_period ?? 'Unknown'}`,
+    label: row.time_period ?? 'Unknown',
+    start: [0, 0],
+    end: [0, 0],
+    weather: row.weather ?? undefined,
+    time_period: row.time_period ?? undefined,
+    order_count: row.order_count,
+    avg_delivery_duration_min: row.avg_delivery_duration_min,
+    delay_rate: row.delay_rate,
+    risk_score: row.risk_score,
+    speed: Math.max(0.5, 1.4 - rate(row.delay_rate))
+  };
+  return { type: 'delivery_flow_segment', item };
+}
+
+function vehicleSelection(row: WeatherVehicleSummary): MapSelection {
+  const item: TrafficSegment = {
+    id: `chart-vehicle-${row.weather ?? 'All'}-${row.vehicle_type}`,
+    label: row.vehicle_type,
+    path: '',
+    points: [],
+    traffic_density: 'Unknown',
+    vehicle_type: row.vehicle_type,
+    weather: row.weather ?? undefined,
+    order_count: row.order_count,
+    avg_delivery_duration_min: row.avg_delivery_duration_min,
+    avg_distance_km: row.avg_distance_km,
+    delay_rate: row.delay_rate,
+    risk_score: row.risk_score ?? row.delay_rate
+  };
+  return { type: 'traffic_segment', item };
+}
+
+function riskSelection(row: RiskScenario): MapSelection {
+  const item: ScenarioAnchor = {
+    id: `chart-risk-${row.scenario_id}`,
+    scenario_id: row.scenario_id,
+    label: row.label,
+    x: 0,
+    y: 0,
+    radius: 20 + rate(row.risk_score) * 34,
+    weather: row.weather ?? undefined,
+    traffic_density: row.traffic_density ?? undefined,
+    time_period: row.time_period ?? undefined,
+    vehicle_type: row.vehicle_type ?? undefined,
+    order_count: row.order_count,
+    avg_delivery_duration_min: row.avg_delivery_duration_min,
+    delay_rate: row.delay_rate,
+    risk_score: row.risk_score
+  };
+  return { type: 'risk_pulse', item };
+}
+
+function orderSelection(point: WeatherOrderSample): MapSelection {
+  return { type: 'order_dot', item: point };
+}
+
+function metricSelections(summary: WeatherImpactSummary | null, weather: string): MapSelection[] {
+  if (!summary) return [];
+  const base = {
+    x: 0,
+    y: 0,
+    weather: summary.weather ?? weather,
+    order_count: summary.order_count,
+    avg_delivery_duration_min: summary.avg_delivery_duration_min,
+    delay_rate: summary.delay_rate,
+    risk_score: summary.risk_score
+  };
+  const avg: MiniMetricTag = { ...base, id: `chart-metric-avg-${weather}`, label: '平均时长' };
+  const delay: MiniMetricTag = { ...base, id: `chart-metric-delay-${weather}`, label: '延迟率' };
+  const risk: RiskHeatHalo = {
+    id: `chart-metric-risk-${weather}`,
+    label: '风险评分',
+    x: 0,
+    y: 0,
+    radius: 0,
+    weather: base.weather,
+    order_count: base.order_count ?? 0,
+    avg_delivery_duration_min: base.avg_delivery_duration_min,
+    delay_rate: base.delay_rate ?? 0,
+    risk_score: base.risk_score ?? base.delay_rate ?? 0
+  };
+  return [
+    { type: 'metric_tag', item: avg },
+    { type: 'metric_tag', item: delay },
+    { type: 'risk_heat_halo', item: risk }
+  ];
+}
+
+export default function MapInsetChart({
+  selectedSubView,
+  selectedWeather,
+  summary,
+  orderPoints,
+  trafficRows,
+  timeRows,
+  vehicleRows,
+  riskRows,
+  selectedId,
+  onHover,
+  onLeave,
+  onSelect,
+  onTimeSelect
+}: MapInsetChartProps) {
+  const plotW = WIDTH - PAD.left - PAD.right;
+  const plotH = HEIGHT - PAD.top - PAD.bottom;
+  const riskPlotW = WIDTH - RISK_PAD.left - RISK_PAD.right;
+  const riskPlotH = HEIGHT - RISK_PAD.top - RISK_PAD.bottom;
+  const dataFilter = selectedWeather === 'All' ? '全部订单' : `weather == ${selectedWeather}`;
+  const maxOrders = maxOf([
+    ...trafficRows.map((row) => row.order_count),
+    ...timeRows.map((row) => row.order_count),
+    ...vehicleRows.map((row) => row.order_count),
+    ...riskRows.map((row) => row.order_count)
+  ]);
+  const ordersSample = orderPoints.slice(0, 180);
+  const orderXDomain = paddedDomain(ordersSample.map((point) => point.distance_km), [0, maxOf(orderPoints.map((point) => point.distance_km))], 0.1);
+  const orderYDomain = paddedDomain(ordersSample.map((point) => point.delivery_duration_min), [0, Math.max(42, maxOf(orderPoints.map((point) => point.delivery_duration_min)))], 0.1);
+  const riskRowsForChart = riskRows
+    .slice()
+    .sort((a, b) => (b.risk_score ?? 0) - (a.risk_score ?? 0))
+    .slice(0, 16);
+  const riskXDomain = paddedDomain(riskRowsForChart.map((row) => row.avg_delivery_duration_min), [0, 45], 0.18);
+  const riskYDomain = paddedDomain(riskRowsForChart.map((row) => rate(row.delay_rate)), [0, 0.7], 0.18);
+  const vehicleXDomain = paddedDomain(vehicleRows.map((row) => row.avg_delivery_duration_min), [0, 45], 0.14);
+  const metricRows = metricSelections(summary, selectedWeather);
+
+  return (
+    <aside className={`map-inset-chart inset-${selectedSubView}`} aria-label="天气模块主交互图表">
+      <div className="map-inset-chart-head">
+        <div>
+          <strong>{selectedWeather} / {chartTitle(selectedSubView)}</strong>
+          <span>Data Filter: {dataFilter}</span>
+        </div>
+        <em>{selectedSubView}</em>
+      </div>
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={`${selectedWeather} ${selectedSubView} chart`}>
+        <rect className="map-inset-plot-bg" x={PAD.left} y={PAD.top} width={plotW} height={plotH} rx={10} />
+
+        {selectedSubView === 'overview' ? (
+          <g>
+            {metricRows.map((selection, index) => {
+              const item = selection.item;
+              const label = 'label' in item ? item.label : '指标';
+              const value = index === 0
+                ? summary?.avg_delivery_duration_min
+                : index === 1
+                  ? rate(summary?.delay_rate) * 100
+                  : summary?.risk_score;
+              const max = index === 0 ? 45 : index === 1 ? 70 : 1;
+              const y = 96 + index * 82;
+              const width = clamp((value ?? 0) / max) * 420;
+              const active = selectedId === item.id;
+              return (
+                <g
+                  key={item.id}
+                  className={`map-inset-overview-row${active ? ' is-active' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  onMouseMove={(event) => onHover(selection, event)}
+                  onMouseLeave={onLeave}
+                  onBlur={onLeave}
+                  onKeyDown={(event) => keySelect(event, selection, onSelect)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelect(selection);
+                  }}
+                >
+                  <text x={PAD.left} y={y - 14}>{label}</text>
+                  <rect x={PAD.left} y={y} width={plotW} height={22} rx={11} className="map-inset-track" />
+                  <rect x={PAD.left} y={y} width={Math.max(8, width)} height={22} rx={11} className="map-inset-fill" />
+                  <text className="map-inset-value" x={PAD.left + Math.max(52, width + 14)} y={y + 15}>
+                    {index === 0 ? `${fmt(summary?.avg_delivery_duration_min, 1)} min` : index === 1 ? pct(summary?.delay_rate) : fmt(summary?.risk_score, 2)}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+        ) : null}
+
+        {selectedSubView === 'traffic' ? (
+          <g>
+            {trafficRows
+              .slice()
+              .sort((a, b) => TRAFFIC_ORDER.indexOf(a.traffic_density ?? '') - TRAFFIC_ORDER.indexOf(b.traffic_density ?? ''))
+              .map((row, index) => {
+                const selection = trafficSelection(row);
+                const bandH = plotH / TRAFFIC_ORDER.length;
+                const y = PAD.top + index * bandH + 15;
+                const barX = PAD.left + 104;
+                const barW = plotW - 178;
+                const width = Math.max(18, clamp(row.order_count / maxOrders) * barW);
+                const active = selectedId === selection.item.id;
+                return (
+                  <g
+                    key={selection.item.id}
+                    className={`map-inset-bar-row${active ? ' is-active' : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    onMouseMove={(event) => onHover(selection, event)}
+                    onMouseLeave={onLeave}
+                    onBlur={onLeave}
+                    onKeyDown={(event) => keySelect(event, selection, onSelect)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onSelect(selection);
+                    }}
+                  >
+                    <rect className="map-inset-hit-area" x={PAD.left} y={y - 10} width={plotW} height={bandH - 10} rx={8} />
+                    <text className="map-inset-category" x={PAD.left} y={y + 25}>{row.traffic_density}</text>
+                    <rect className="map-inset-track" x={barX} y={y} width={barW} height={30} rx={7} />
+                    <rect className="map-inset-bar" x={barX} y={y} width={width} height={30} rx={7} fill={colorByRate(row.delay_rate)} />
+                    <text className="map-inset-value" x={barX + barW + 12} y={y + 20}>
+                      {row.order_count}
+                    </text>
+                    <text className="map-inset-note" x={barX + Math.min(width + 10, barW - 42)} y={y - 6}>{pct(row.delay_rate)}</text>
+                  </g>
+                );
+              })}
+            <text className="map-inset-label" x={PAD.left + plotW - 56} y={PAD.top + plotH + 34}>order_count</text>
+          </g>
+        ) : null}
+
+        {selectedSubView === 'time' ? (
+          <g>
+            <line className="map-inset-axis" x1={PAD.left} y1={PAD.top + plotH} x2={PAD.left + plotW} y2={PAD.top + plotH} />
+            {TIME_ORDER
+              .map((period) => timeRows.find((row) => row.time_period === period))
+              .filter((row): row is SceneFilterSummary => Boolean(row))
+              .map((row, index) => {
+                const selection = timeSelection(row);
+                const slotW = plotW / TIME_ORDER.length;
+                const barW = Math.min(72, slotW - 22);
+                const x = PAD.left + index * slotW + (slotW - barW) / 2;
+                const h = 38 + clamp(row.avg_delivery_duration_min / 45) * (plotH - 76);
+                const y = PAD.top + plotH - h;
+                const active = selectedId === selection.item.id;
+                const dimmed = Boolean(selectedId && !active);
+                return (
+                  <g
+                    key={selection.item.id}
+                    className={`map-inset-time-segment${active ? ' is-active' : ''}${dimmed ? ' is-dimmed' : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    onMouseMove={(event) => onHover(selection, event)}
+                    onMouseLeave={onLeave}
+                    onBlur={onLeave}
+                    onKeyDown={(event) => keySelect(event, selection, (item) => {
+                      onTimeSelect(row.time_period ?? 'All');
+                      onSelect(item);
+                    })}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onTimeSelect(row.time_period ?? 'All');
+                      onSelect(selection);
+                    }}
+                  >
+                    <rect className="map-inset-hit-area" x={PAD.left + index * slotW + 4} y={PAD.top} width={slotW - 8} height={plotH} rx={8} />
+                    <rect x={x} y={y} width={barW} height={h} rx={8} fill={colorByRate(row.delay_rate)} />
+                    <text className="map-inset-value" x={x + barW / 2} y={Math.max(PAD.top + 16, y - 10)}>{fmt(row.avg_delivery_duration_min, 1)} min</text>
+                    <text className="map-inset-category" x={x + barW / 2} y={PAD.top + plotH + 25}>{row.time_period}</text>
+                  </g>
+                );
+              })}
+          </g>
+        ) : null}
+
+        {selectedSubView === 'vehicle' ? (
+          <g>
+            <line className="map-inset-axis" x1={PAD.left} y1={PAD.top + plotH} x2={PAD.left + plotW} y2={PAD.top + plotH} />
+            <line className="map-inset-axis" x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + plotH} />
+            {vehicleRows.slice(0, 8).map((row, index) => {
+              const selection = vehicleSelection(row);
+              const rowH = plotH / Math.max(4, Math.min(vehicleRows.length, 8));
+              const x = scaleLinear(row.avg_delivery_duration_min, vehicleXDomain, [PAD.left + 12, PAD.left + plotW - 28]);
+              const y = PAD.top + rowH * index + rowH / 2;
+              const r = 7 + clamp(row.order_count / maxOrders) * 15;
+              const active = selectedId === selection.item.id;
+              return (
+                <g
+                  key={selection.item.id}
+                  className={`map-inset-bubble-node${active ? ' is-active' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  onMouseMove={(event) => onHover(selection, event)}
+                  onMouseLeave={onLeave}
+                  onBlur={onLeave}
+                  onKeyDown={(event) => keySelect(event, selection, onSelect)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelect(selection);
+                  }}
+                >
+                  <line className="map-inset-grid-line" x1={PAD.left} y1={y} x2={PAD.left + plotW} y2={y} />
+                  <rect className="map-inset-hit-area" x={PAD.left} y={y - rowH / 2 + 4} width={plotW} height={rowH - 8} rx={8} />
+                  <text className="map-inset-category" x={PAD.left + 6} y={y + 5}>{row.vehicle_type}</text>
+                  <circle cx={x} cy={y} r={r} fill={colorByRate(row.delay_rate)} opacity={0.76} />
+                  <text className="map-inset-value" x={Math.min(PAD.left + plotW - 34, x + r + 10)} y={y + 4}>{fmt(row.avg_delivery_duration_min, 1)}m</text>
+                </g>
+              );
+            })}
+            <text className="map-inset-label" x={PAD.left + plotW - 60} y={PAD.top + plotH + 34}>avg_delivery_duration_min</text>
+          </g>
+        ) : null}
+
+        {selectedSubView === 'risk' ? (
+          <g>
+            <rect className="map-inset-plot-bg" x={RISK_PAD.left} y={RISK_PAD.top} width={riskPlotW} height={riskPlotH} rx={10} />
+            <line className="map-inset-axis" x1={RISK_PAD.left} y1={RISK_PAD.top + riskPlotH} x2={RISK_PAD.left + riskPlotW} y2={RISK_PAD.top + riskPlotH} />
+            <line className="map-inset-axis" x1={RISK_PAD.left} y1={RISK_PAD.top} x2={RISK_PAD.left} y2={RISK_PAD.top + riskPlotH} />
+            {riskRowsForChart.map((row, index) => {
+              const selection = riskSelection(row);
+              const xBase = scaleLinear(row.avg_delivery_duration_min, riskXDomain, [RISK_PAD.left + 12, RISK_PAD.left + riskPlotW - 12]);
+              const yBase = scaleLinear(rate(row.delay_rate), riskYDomain, [RISK_PAD.top + riskPlotH - 12, RISK_PAD.top + 12]);
+              const x = clamp(xBase + deterministicOffset(row.scenario_id, index, 8), RISK_PAD.left + 12, RISK_PAD.left + riskPlotW - 12);
+              const y = clamp(yBase + deterministicOffset(row.label, index, 7), RISK_PAD.top + 12, RISK_PAD.top + riskPlotH - 12);
+              const r = 7 + clamp(row.order_count / maxOrders) * 15;
+              const active = selectedId === selection.item.id;
+              const showLabel = index < 5;
+              const labelRight = x < RISK_PAD.left + riskPlotW * 0.62;
+              const labelY = y + (index % 3 - 1) * 12 + 4;
+              return (
+                <g
+                  key={selection.item.id}
+                  className={`map-inset-risk-node${active ? ' is-active' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  onMouseMove={(event) => onHover(selection, event)}
+                  onMouseLeave={onLeave}
+                  onBlur={onLeave}
+                  onKeyDown={(event) => keySelect(event, selection, onSelect)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelect(selection);
+                  }}
+                >
+                  <circle className="map-inset-hit-dot" cx={x} cy={y} r={Math.max(18, r + 8)} />
+                  <circle cx={x} cy={y} r={r} fill={colorByRate(row.risk_score)} opacity={0.68} />
+                  {showLabel ? (
+                    <text
+                      className="map-inset-label-text"
+                      x={x + (labelRight ? r + 8 : -r - 8)}
+                      y={clamp(labelY, RISK_PAD.top + 14, RISK_PAD.top + riskPlotH - 6)}
+                      textAnchor={labelRight ? 'start' : 'end'}
+                    >
+                      {shortRiskLabel(row)}
+                    </text>
+                  ) : null}
+                </g>
+              );
+            })}
+            <text className="map-inset-label" x={RISK_PAD.left + riskPlotW - 70} y={RISK_PAD.top + riskPlotH + 38}>avg_delivery_duration_min</text>
+            <text className="map-inset-label" x={28} y={RISK_PAD.top + 18}>delay_rate</text>
+          </g>
+        ) : null}
+
+        {selectedSubView === 'orders' ? (
+          <g>
+            <line className="map-inset-axis" x1={PAD.left} y1={PAD.top + plotH} x2={PAD.left + plotW} y2={PAD.top + plotH} />
+            <line className="map-inset-axis" x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + plotH} />
+            <line
+              className="map-inset-reference"
+              x1={PAD.left}
+              y1={scaleLinear(32, orderYDomain, [PAD.top + plotH, PAD.top])}
+              x2={PAD.left + plotW}
+              y2={scaleLinear(32, orderYDomain, [PAD.top + plotH, PAD.top])}
+            />
+            <text className="map-inset-note" x={PAD.left + plotW - 34} y={scaleLinear(32, orderYDomain, [PAD.top + plotH, PAD.top]) - 8}>32 min</text>
+            {ordersSample.map((point) => {
+              const selection = orderSelection(point);
+              const x = scaleLinear(point.distance_km, orderXDomain, [PAD.left + 8, PAD.left + plotW - 8]);
+              const y = scaleLinear(point.delivery_duration_min, orderYDomain, [PAD.top + plotH - 8, PAD.top + 8]);
+              const active = selectedId === point.id;
+              return (
+                <g
+                  key={point.id}
+                  className={`map-inset-order-point${active ? ' is-active' : ''}${point.is_delayed ? ' is-delayed' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  onMouseMove={(event) => onHover(selection, event)}
+                  onMouseLeave={onLeave}
+                  onBlur={onLeave}
+                  onKeyDown={(event) => keySelect(event, selection, onSelect)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelect(selection);
+                  }}
+                >
+                  <circle className="map-inset-hit-dot" cx={x} cy={y} r={9} />
+                  <circle cx={x} cy={y} r={2.8 + clamp(point.risk_visual_score ?? 0) * 2.8} />
+                </g>
+              );
+            })}
+            <text className="map-inset-label" x={PAD.left + plotW - 52} y={PAD.top + plotH + 34}>distance_km</text>
+            <text className="map-inset-label" x={24} y={PAD.top + 18}>min</text>
+          </g>
+        ) : null}
+      </svg>
+    </aside>
+  );
+}

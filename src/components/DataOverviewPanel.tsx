@@ -142,7 +142,9 @@ function selectionTitle(selection: MapSelection | null) {
 function selectionTypeLabel(selection: MapSelection | null) {
   if (!selection) return '-';
   if (selection.type === 'scene_hotspot') return '天气模块入口';
-  if (selection.type === 'traffic_segment') return '天气 × 交通';
+  if (selection.type === 'traffic_segment') {
+    return selection.item.vehicle_type ? '天气 × 载具' : '天气 × 交通';
+  }
   if (selection.type === 'order_dot') return '订单样本';
   if (selection.type === 'risk_pulse') return '风险组合';
   if (selection.type === 'metric_tag') return '指标摘要';
@@ -178,7 +180,7 @@ function dataFilterForSelection(selection: MapSelection | null, weather: string,
   const item = selection.item;
   const filters = [
     'weather' in item && item.weather ? `weather == ${item.weather}` : weather !== 'All' ? `weather == ${weather}` : null,
-    'traffic_density' in item && item.traffic_density ? `traffic_density == ${item.traffic_density}` : null,
+    'traffic_density' in item && item.traffic_density && item.traffic_density !== 'Unknown' ? `traffic_density == ${item.traffic_density}` : null,
     'time_period' in item && item.time_period ? `time_period == ${item.time_period}` : null,
     'vehicle_type' in item && item.vehicle_type ? `vehicle_type == ${item.vehicle_type}` : null,
     'order_id' in item && item.order_id ? `order_id == ${item.order_id}` : null,
@@ -251,6 +253,9 @@ function selectionExplanation(selection: MapSelection | null) {
     return selection.item.description ?? '该入口用于从总览进入对应 weather 过滤模块。';
   }
   if (selection.type === 'traffic_segment') {
+    if (selection.item.vehicle_type) {
+      return '该对象按 vehicle_type 汇总当前天气下的订单表现，平均配送时长、延迟率和风险评分用于比较载具稳定性。';
+    }
     return '该对象按 traffic_density 汇总当前天气下的订单表现，延迟率和风险评分用于判断 ETA 风险是否被交通条件放大。';
   }
   if (selection.type === 'order_dot') {
@@ -287,7 +292,7 @@ function sectionForSelection(selection: MapSelection | null, fallback: ActiveSec
   if (!selection) return fallback;
   if (selection.type === 'scene_hotspot') return 'overview';
   if (selection.type === 'order_dot') return 'outlier';
-  if (selection.type === 'traffic_segment') return 'traffic';
+  if (selection.type === 'traffic_segment') return selection.item.vehicle_type ? 'weather' : 'traffic';
   if (selection.type === 'delivery_flow_segment') return 'time';
   if (selection.type === 'risk_heat_halo' || selection.type === 'metric_tag' || selection.type === 'risk_pulse') {
     return 'risk';

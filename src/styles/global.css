@@ -1644,6 +1644,84 @@ button:focus-visible,
   z-index: 5;
 }
 
+.weather-order-sample-layer {
+  z-index: 4;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.weather-order-sample-layer.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.weather-order-sample-layer.is-muted {
+  opacity: 0.08;
+}
+
+.weather-subview-layer {
+  z-index: 4;
+}
+
+.weather-encoding-group {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 240ms ease, transform 240ms ease;
+  pointer-events: none;
+}
+
+.weather-encoding-group.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.map-inset-chart {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 5;
+  width: clamp(520px, 38vw, 640px);
+  height: clamp(320px, 34vh, 420px);
+  max-width: 45%;
+  max-height: 48%;
+  border: 1px solid rgb(15 23 42 / 0.14);
+  border-radius: 8px;
+  background: rgb(248 250 252 / 0.82);
+  box-shadow: 0 16px 34px rgb(15 23 42 / 0.14);
+  padding: 12px 13px 11px;
+  backdrop-filter: blur(12px);
+}
+
+.map-inset-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.map-inset-chart-head div {
+  display: grid;
+  gap: 2px;
+}
+
+.map-inset-chart-head span,
+.map-inset-chart-head em {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-style: normal;
+}
+
+.map-inset-chart svg {
+  display: block;
+  width: 100%;
+  height: calc(100% - 44px);
+}
+
 .view-context-hud {
   position: absolute;
   z-index: 6;
@@ -1952,6 +2030,329 @@ button:focus-visible,
   transform: scale(1.16);
   transform-box: fill-box;
   transform-origin: center;
+}
+
+.weather-order-dot,
+.weather-summary-node,
+.weather-traffic-node,
+.weather-time-band,
+.weather-vehicle-node,
+.weather-risk-bubble {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.weather-order-dot-hit {
+  fill: transparent;
+}
+
+.weather-order-dot-core {
+  fill: var(--order-dot-color);
+  stroke: rgb(255 255 255 / 0.9);
+  stroke-width: 2;
+  opacity: 0.78;
+  vector-effect: non-scaling-stroke;
+  transition: opacity 180ms ease, transform 180ms ease, stroke 180ms ease, filter 180ms ease;
+}
+
+.weather-order-dot.is-active .weather-order-dot-core,
+.weather-order-dot:hover .weather-order-dot-core,
+.weather-order-dot:focus-visible .weather-order-dot-core {
+  opacity: 1;
+  stroke: #0f172a;
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--order-dot-color) 46%, transparent));
+}
+
+.weather-summary-halo {
+  fill: rgb(37 99 235 / 0.08);
+  stroke: rgb(37 99 235 / 0.2);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+  transition: opacity 180ms ease, transform 180ms ease, filter 180ms ease;
+}
+
+.weather-summary-node rect {
+  fill: rgb(255 255 255 / 0.8);
+  stroke: rgb(37 99 235 / 0.28);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  transition: fill 180ms ease, stroke 180ms ease, filter 180ms ease;
+}
+
+.weather-summary-node text,
+.weather-traffic-node text,
+.weather-vehicle-node text,
+.weather-time-band text,
+.weather-risk-bubble text {
+  fill: #0f172a;
+  font-size: 18px;
+  font-weight: 850;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+
+.weather-node-value {
+  fill: #475569;
+  font-size: 14px;
+  font-weight: 780;
+}
+
+.weather-node-ring,
+.weather-risk-bubble-ring {
+  fill: none;
+  stroke: var(--traffic-node-color, #f97316);
+  stroke-width: 3;
+  opacity: 0.34;
+  vector-effect: non-scaling-stroke;
+}
+
+.weather-node-core,
+.weather-risk-bubble-core {
+  fill: color-mix(in srgb, var(--traffic-node-color, #f97316) 72%, white);
+  stroke: rgb(255 255 255 / 0.92);
+  stroke-width: 2;
+  opacity: 0.86;
+  vector-effect: non-scaling-stroke;
+  transition: opacity 180ms ease, transform 180ms ease, filter 180ms ease;
+}
+
+.weather-traffic-node.is-active .weather-node-core,
+.weather-traffic-node:hover .weather-node-core,
+.weather-traffic-node:focus-visible .weather-node-core,
+.weather-vehicle-node.is-active .weather-node-core,
+.weather-vehicle-node:hover .weather-node-core,
+.weather-vehicle-node:focus-visible .weather-node-core,
+.weather-risk-bubble.is-active .weather-risk-bubble-core,
+.weather-risk-bubble:hover .weather-risk-bubble-core,
+.weather-risk-bubble:focus-visible .weather-risk-bubble-core {
+  opacity: 1;
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 10px rgb(15 23 42 / 0.22));
+}
+
+.weather-summary-node.is-active .weather-summary-halo,
+.weather-summary-node:hover .weather-summary-halo,
+.weather-summary-node:focus-visible .weather-summary-halo {
+  opacity: 1;
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 10px rgb(15 23 42 / 0.18));
+}
+
+.weather-summary-node.is-active rect,
+.weather-summary-node:hover rect,
+.weather-summary-node:focus-visible rect {
+  fill: rgb(255 255 255 / 0.94);
+  stroke: rgb(37 99 235 / 0.55);
+  filter: drop-shadow(0 0 10px rgb(15 23 42 / 0.16));
+}
+
+.weather-time-hit {
+  fill: transparent;
+}
+
+.weather-time-bar {
+  fill: rgb(37 99 235 / 0.58);
+  stroke: rgb(255 255 255 / 0.8);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transition: fill 180ms ease, transform 180ms ease, filter 180ms ease;
+}
+
+.weather-time-band.is-active .weather-time-bar,
+.weather-time-band:hover .weather-time-bar,
+.weather-time-band:focus-visible .weather-time-bar {
+  fill: rgb(249 115 22 / 0.7);
+  transform: translateY(-4px);
+  filter: drop-shadow(0 7px 12px rgb(15 23 42 / 0.18));
+}
+
+.weather-risk-bubble-ring {
+  stroke: #ef4444;
+}
+
+.weather-risk-bubble-core {
+  fill: rgb(239 68 68 / 0.62);
+}
+
+.map-inset-axis {
+  stroke: rgb(100 116 139 / 0.42);
+  stroke-width: 1.2;
+}
+
+.map-inset-plot-bg {
+  fill: rgb(255 255 255 / 0.34);
+  stroke: rgb(15 23 42 / 0.08);
+}
+
+.map-inset-reference {
+  stroke: rgb(239 68 68 / 0.66);
+  stroke-dasharray: 5 5;
+  stroke-width: 1.2;
+}
+
+.map-inset-overview-row,
+.map-inset-bar-row,
+.map-inset-time-segment,
+.map-inset-bubble-node,
+.map-inset-risk-node,
+.map-inset-order-point {
+  cursor: pointer;
+  outline: none;
+}
+
+.map-inset-time-segment.is-dimmed rect,
+.map-inset-time-segment.is-dimmed text {
+  opacity: 0.34;
+}
+
+.map-inset-hit-area,
+.map-inset-hit-dot {
+  fill: transparent;
+  stroke: transparent;
+  pointer-events: all;
+}
+
+.map-inset-grid-line {
+  stroke: rgb(148 163 184 / 0.28);
+  stroke-width: 1;
+}
+
+.map-inset-overview-row text,
+.map-inset-bar-row text,
+.map-inset-time-segment text,
+.map-inset-bubble-node text,
+.map-inset-risk-node text,
+.map-inset-category,
+.map-inset-value,
+.map-inset-label-text {
+  fill: #0f172a;
+  font-size: 13px;
+  font-weight: 820;
+  pointer-events: none;
+}
+
+.map-inset-track {
+  fill: rgb(226 232 240 / 0.68);
+}
+
+.map-inset-fill {
+  fill: rgb(37 99 235 / 0.74);
+}
+
+.map-inset-category {
+  font-size: 11px;
+  font-weight: 760;
+  fill: #334155;
+}
+
+.map-inset-value {
+  font-size: 11px;
+  font-weight: 820;
+  fill: #0f172a;
+}
+
+.map-inset-label-text {
+  font-size: 11px;
+  font-weight: 820;
+  fill: #0f172a;
+}
+
+.map-inset-bar-row rect,
+.map-inset-time-segment rect,
+.map-inset-bubble-node circle,
+.map-inset-risk-node circle,
+.map-inset-risk-node .map-inset-hit-dot,
+.map-inset-order-point circle,
+.map-inset-fill {
+  transition: opacity 160ms ease, stroke 160ms ease, filter 160ms ease, transform 160ms ease;
+}
+
+.map-inset-order-point circle {
+  fill: rgb(37 99 235 / 0.62);
+  stroke: rgb(255 255 255 / 0.86);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-inset-order-point.is-delayed circle {
+  fill: rgb(239 68 68 / 0.76);
+}
+
+.map-inset-overview-row:hover .map-inset-fill,
+.map-inset-overview-row.is-active .map-inset-fill,
+.map-inset-overview-row:hover .map-inset-value,
+.map-inset-overview-row.is-active .map-inset-value,
+.map-inset-bar-row:hover rect,
+.map-inset-bar-row.is-active rect,
+.map-inset-bar-row:hover .map-inset-category,
+.map-inset-bar-row.is-active .map-inset-category,
+.map-inset-bar-row:hover .map-inset-value,
+.map-inset-bar-row.is-active .map-inset-value,
+.map-inset-time-segment:hover rect,
+.map-inset-time-segment.is-active rect,
+.map-inset-time-segment:hover .map-inset-category,
+.map-inset-time-segment.is-active .map-inset-category,
+.map-inset-time-segment:hover .map-inset-value,
+.map-inset-time-segment.is-active .map-inset-value,
+.map-inset-bubble-node:hover circle,
+.map-inset-bubble-node.is-active circle,
+.map-inset-bubble-node:hover .map-inset-category,
+.map-inset-bubble-node.is-active .map-inset-category,
+.map-inset-bubble-node:hover .map-inset-value,
+.map-inset-bubble-node.is-active .map-inset-value,
+.map-inset-risk-node:hover circle,
+.map-inset-risk-node.is-active circle,
+.map-inset-risk-node:hover .map-inset-label-text,
+.map-inset-risk-node.is-active .map-inset-label-text,
+.map-inset-order-point:hover circle,
+.map-inset-order-point.is-active circle,
+.map-inset-overview-row:focus-visible .map-inset-fill,
+.map-inset-bar-row:focus-visible rect,
+.map-inset-time-segment:focus-visible rect,
+.map-inset-bubble-node:focus-visible circle,
+.map-inset-risk-node:focus-visible circle,
+.map-inset-order-point:focus-visible circle {
+  opacity: 1;
+  stroke: #0f172a;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 10px rgb(15 23 42 / 0.22));
+}
+
+.map-inset-risk-node .map-inset-label-text {
+  paint-order: stroke fill;
+  stroke: rgb(248 250 252 / 0.95);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.map-inset-risk-node:hover .map-inset-hit-dot,
+.map-inset-risk-node.is-active .map-inset-hit-dot,
+.map-inset-order-point:hover .map-inset-hit-dot,
+.map-inset-order-point.is-active .map-inset-hit-dot {
+  opacity: 1;
+}
+
+.map-inset-bar {
+  fill: rgb(37 99 235 / 0.58);
+}
+
+.map-inset-dot {
+  fill: #f97316;
+}
+
+.map-inset-label,
+.map-inset-note {
+  fill: #64748b;
+  font-size: 10px;
+  font-weight: 760;
+  text-anchor: middle;
+}
+
+.map-inset-note {
+  fill: #334155;
+  font-size: 10.5px;
 }
 
 .risk-pulse-node {
@@ -3752,6 +4153,14 @@ button.order-row.is-selected {
     max-height: none;
   }
 
+  .map-inset-chart {
+    width: clamp(420px, 42vw, 520px);
+    height: 340px;
+    max-width: 48%;
+    max-height: 48%;
+    min-width: 0;
+  }
+
   .module-analysis-header {
     grid-template-columns: 1fr;
     align-items: start;
@@ -4905,6 +5314,23 @@ button.order-row.is-selected {
 }
 
 @media (max-width: 760px) {
+  .interactive-scene-map {
+    overflow: visible;
+    margin-bottom: 376px;
+  }
+
+  .map-inset-chart {
+    top: calc(100% + 14px);
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    height: 360px;
+    max-height: none;
+    min-width: 0;
+  }
+
   .weather-kpi-rail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

@@ -49,6 +49,7 @@ export interface DistanceTimePoint {
   scenario_id?: string;
   distance_km: number;
   delivery_duration_min: number;
+  risk_score?: number;
   weather: Nullable<string>;
   traffic_density: Nullable<string>;
   vehicle_type: Nullable<string>;
@@ -216,6 +217,9 @@ export interface TrafficSegment {
   y?: number;
   node_kind?: 'intersection' | 'merge' | 'customer_gate' | 'restaurant_gate' | 'weather_edge';
   traffic_density: 'Low' | 'Medium' | 'High' | 'Jam' | 'Unknown';
+  weather?: string;
+  time_period?: string;
+  vehicle_type?: string;
   order_count: number;
   avg_delivery_duration_min: number;
   avg_distance_km?: number;
@@ -227,12 +231,14 @@ export interface OrderDot {
   id: string;
   x: number;
   y: number;
+  city?: Nullable<string>;
   order_count?: number;
   order_id?: string;
   distance_km?: number;
   delivery_duration_min: number;
   delay_rate?: number;
   risk_score?: number;
+  risk_visual_score?: number;
   is_delayed?: boolean;
   weather?: string;
   traffic_density?: string;
@@ -271,6 +277,24 @@ export interface DeliveryFlowSegment {
   traffic_density?: string;
   time_period?: string;
   vehicle_type?: string;
+}
+
+export interface WeatherOrderSample extends OrderDot {
+  order_id: string;
+  scenario_id?: string;
+  weather: string;
+  traffic_density: string;
+  time_period: string;
+  vehicle_type: string;
+  distance_km: number;
+  delivery_duration_min: number;
+  is_delayed: boolean;
+}
+
+export interface WeatherVehicleSummary extends MetricSummary {
+  vehicle_type: string;
+  risk_score?: number;
+  weather?: Nullable<string>;
 }
 
 export interface ViewContextMetrics {
