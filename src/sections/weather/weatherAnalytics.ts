@@ -271,7 +271,7 @@ export function aggregateRiskScenarios(weatherOrders: DistanceTimePoint[], minOr
       };
     })
     .filter((row) => row.order_count >= minOrderCount)
-    .sort((a, b) => b.risk_score - a.risk_score || b.order_count - a.order_count);
+    .sort((a, b) => b.delay_rate - a.delay_rate || b.avg_delivery_duration_min - a.avg_delivery_duration_min || b.order_count - a.order_count);
 }
 
 function hashString(value: string) {
@@ -349,11 +349,11 @@ export function getWeatherInsight(type: string, rows: WeatherMetricRow[] | RiskS
     return shortInsight(`${label}ETA较全局${delta >= 0 ? '高' : '低'}${Math.abs(delta).toFixed(1)}分钟`);
   }
   if (type === 'traffic') {
-    const top = [...(rows as WeatherMetricRow[])].sort((a, b) => b.risk_score - a.risk_score)[0];
+    const top = [...(rows as WeatherMetricRow[])].sort((a, b) => b.delay_rate - a.delay_rate || b.avg_delivery_duration_min - a.avg_delivery_duration_min)[0];
     return top ? shortInsight(`${top.label}延迟压力最突出`) : '暂无交通分组样本';
   }
   if (type === 'time') {
-    const top = [...(rows as WeatherMetricRow[])].sort((a, b) => b.risk_score - a.risk_score)[0];
+    const top = [...(rows as WeatherMetricRow[])].sort((a, b) => b.avg_delivery_duration_min - a.avg_delivery_duration_min || b.delay_rate - a.delay_rate)[0];
     return top ? shortInsight(`${top.label}窗口需加密监控`) : '暂无时段样本';
   }
   if (type === 'vehicle') {

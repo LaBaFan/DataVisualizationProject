@@ -1,7 +1,6 @@
 import {
   aggregateByTrafficDensity,
   filterOrdersByWeather,
-  getRiskColor,
   getWeatherInsight
 } from './weatherAnalytics';
 import { fmt, pct, trafficLabel, type WeatherViewData } from './weatherViewUtils';
@@ -28,7 +27,7 @@ export default function WeatherTrafficView({ selectedWeather, data }: WeatherTra
     <section className="weather-subview" aria-label="天气条件下的交通压力带">
       <div className="weather-subview-copy">
         <span className="detail-eyebrow">交通 / 02</span>
-        <h2>交通密度风险分带</h2>
+        <h2>交通密度分带</h2>
         <p>{getWeatherInsight('traffic', rows, selectedWeather)}</p>
       </div>
 
@@ -50,9 +49,9 @@ export default function WeatherTrafficView({ selectedWeather, data }: WeatherTra
               return (
                 <g key={row.key} className="weather-bubble-row">
                   <text x={PAD.left - 14} y={y + 4} textAnchor="end" className="weather-axis-label">{trafficLabel(row.traffic_density)}</text>
-                  <line x1={PAD.left} x2={x(row.delay_rate)} y1={y} y2={y} className="weather-risk-bar" style={{ stroke: getRiskColor(row.risk_score) }} />
-                  <circle cx={x(row.delay_rate)} cy={y} r={radius} fill={getRiskColor(row.risk_score)} className="weather-risk-bubble">
-                    <title>{`${trafficLabel(row.traffic_density)}：延迟率 ${pct(row.delay_rate)}，订单 ${row.order_count} 单，风险 ${fmt(row.risk_score, 2)}`}</title>
+                  <line x1={PAD.left} x2={x(row.delay_rate)} y1={y} y2={y} className="weather-risk-bar" style={{ stroke: row.delay_rate >= 0.5 ? '#dc2626' : row.delay_rate >= 0.3 ? '#f97316' : '#2563eb' }} />
+                  <circle cx={x(row.delay_rate)} cy={y} r={radius} fill={row.delay_rate >= 0.5 ? '#dc2626' : row.delay_rate >= 0.3 ? '#f97316' : '#2563eb'} className="weather-risk-bubble">
+                    <title>{`${trafficLabel(row.traffic_density)}：延迟率 ${pct(row.delay_rate)}，订单 ${row.order_count} 单，平均 ${fmt(row.avg_delivery_duration_min, 1)} 分钟`}</title>
                   </circle>
                   <text x={x(row.delay_rate)} y={y + 4} textAnchor="middle" className="weather-bubble-value">{fmt(row.order_count)}</text>
                   <text x={W - PAD.right + 8} y={y + 4} className="weather-row-note">{fmt(row.avg_delivery_duration_min, 1)} 分钟</text>
@@ -65,10 +64,9 @@ export default function WeatherTrafficView({ selectedWeather, data }: WeatherTra
         ) : <p className="detail-empty">暂无当前天气的交通分带数据</p>}
 
         <div className="weather-chart-legend">
-          <span><i style={{ background: '#2563eb' }} />低风险</span>
-          <span><i style={{ background: '#f59e0b' }} />中风险</span>
-          <span><i style={{ background: '#f97316' }} />高风险</span>
-          <span><i style={{ background: '#dc2626' }} />严重</span>
+          <span><i style={{ background: '#2563eb' }} />低延迟</span>
+          <span><i style={{ background: '#f97316' }} />中高延迟</span>
+          <span><i style={{ background: '#dc2626' }} />高延迟</span>
           <em>气泡大小 = 订单量</em>
         </div>
       </div>

@@ -3,7 +3,6 @@ import {
   DELAY_THRESHOLD_MIN,
   filterOrdersByTimePeriod,
   filterOrdersByWeather,
-  getRiskColor,
   getWeatherInsight
 } from './weatherAnalytics';
 import { fmt, pct, vehicleLabel, type WeatherViewData } from './weatherViewUtils';
@@ -53,11 +52,12 @@ export default function WeatherVehicleView({ selectedWeather, selectedTimePeriod
             {rows.map((row, index) => {
               const y = PAD.top + index * rowH + rowH * 0.23;
               const h = Math.max(16, rowH * 0.46);
+              const fill = row.avg_delivery_duration_min > DELAY_THRESHOLD_MIN ? '#dc2626' : row.delay_rate >= 0.3 ? '#f97316' : '#2563eb';
               return (
                 <g key={row.key}>
                   <text x={PAD.left - 12} y={y + h * 0.68} textAnchor="end" className="weather-axis-label">{vehicleLabel(row.vehicle_type)}</text>
-                  <rect x={PAD.left} y={y} width={Math.max(4, x(row.avg_delivery_duration_min) - PAD.left)} height={h} rx={6} fill={getRiskColor(row.risk_score)} className="weather-duration-bar">
-                    <title>{`${vehicleLabel(row.vehicle_type)}：平均 ${fmt(row.avg_delivery_duration_min, 1)} 分钟，延迟率 ${pct(row.delay_rate)}，订单 ${row.order_count} 单，风险 ${fmt(row.risk_score, 2)}`}</title>
+                  <rect x={PAD.left} y={y} width={Math.max(4, x(row.avg_delivery_duration_min) - PAD.left)} height={h} rx={6} fill={fill} className="weather-duration-bar">
+                    <title>{`${vehicleLabel(row.vehicle_type)}：平均 ${fmt(row.avg_delivery_duration_min, 1)} 分钟，延迟率 ${pct(row.delay_rate)}，订单 ${row.order_count} 单`}</title>
                   </rect>
                   <text x={x(row.avg_delivery_duration_min) + 8} y={y + h * 0.68} className="weather-row-note">
                     {fmt(row.avg_delivery_duration_min, 1)} 分钟 · {pct(row.delay_rate)} · {fmt(row.order_count)} 单

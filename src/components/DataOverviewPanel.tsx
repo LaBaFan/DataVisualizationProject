@@ -22,7 +22,6 @@ import {
   WeatherImpactSummary
 } from '../types/data';
 
-const baselineRiskScore = 0.52;
 
 const moduleDisplayName: Record<string, string> = {
   overall: '总览',
@@ -235,7 +234,7 @@ function selectionTypeLabel(selection: MapSelection | null) {
   if (selection.type === 'order_dot') return '订单样本';
   if (selection.type === 'risk_pulse') return '风险组合';
   if (selection.type === 'metric_tag') return '指标摘要';
-  if (selection.type === 'risk_heat_halo') return '风险评分摘要';
+  if (selection.type === 'risk_heat_halo') return '延迟风险摘要';
   if (selection.type === 'delivery_flow_segment') return '时段节奏摘要';
 
   const labels: Record<typeof selection.item.type, string> = {
@@ -295,7 +294,7 @@ function keyDifferenceText(
   if (subView === 'traffic') return `${moduleLabel} 内优先比较拥堵与低密度。相对基线：平均时长 ${avgDelta}，延迟率 ${delayDelta}。`;
   if (subView === 'time') return `${moduleLabel} 内优先比较高峰与非高峰。相对基线：平均时长 ${avgDelta}，延迟率 ${delayDelta}。`;
   if (subView === 'vehicle') return `${moduleLabel} 内按载具类型比较。相对基线：平均时长 ${avgDelta}，延迟率 ${delayDelta}。`;
-  if (subView === 'risk') return `高风险组合按综合风险优先排序。当前模块风险评分：${fmt(moduleMetrics.risk_score, 2)}。`;
+  if (subView === 'risk') return `高风险组合按延迟率和平均时长优先排序。当前模块延迟率：${pct(moduleMetrics.delay_rate)}。`;
   if (subView === 'orders') return `订单点用于比较配送距离与配送时长。当前模块平均时长相对基线：${avgDelta}。`;
   return `${moduleLabel} 相对全局：平均时长 ${avgDelta}，延迟率 ${delayDelta}。`;
 }
@@ -314,7 +313,6 @@ function metricsForSelection(
       ['订单数', fmt(filteredRow.order_count)],
       ['平均时长', `${fmt(filteredRow.avg_delivery_duration_min, 1)} 分钟`],
       ['延迟率', pct(filteredRow.delay_rate)],
-      ['风险评分', fmt(filteredRow.risk_score, 2)],
       ['平均距离', filteredRow.avg_distance_km ? `${fmt(filteredRow.avg_distance_km, 1)} 公里` : '-']
     ];
     return rows.filter(([, value]) => value !== '-');
@@ -326,7 +324,6 @@ function metricsForSelection(
     ['平均时长', 'avg_delivery_duration_min' in item ? `${fmt(item.avg_delivery_duration_min, 1)} 分钟` : '-'],
     ['配送时长', 'delivery_duration_min' in item ? `${fmt(item.delivery_duration_min, 1)} 分钟` : '-'],
     ['延迟率', 'delay_rate' in item ? pct(item.delay_rate) : '-'],
-    ['风险评分', 'risk_score' in item ? fmt(item.risk_score, 2) : '-'],
     ['平均距离', 'avg_distance_km' in item ? `${fmt(item.avg_distance_km, 1)} 公里` : '-'],
     ['距离', 'distance_km' in item ? `${fmt(item.distance_km, 1)} 公里` : '-']
   ];
@@ -340,24 +337,24 @@ function selectionExplanation(selection: MapSelection | null) {
   }
   if (selection.type === 'traffic_segment') {
     if (selection.item.vehicle_type) {
-      return '该对象按载具类型汇总当前天气下的订单表现，平均配送时长、延迟率和风险评分用于比较载具稳定性。';
+      return '该对象按载具类型汇总当前天气下的订单表现，平均配送时长和延迟率用于比较载具稳定性。';
     }
-    return '该对象按交通密度汇总当前天气下的订单表现，延迟率和风险评分用于判断 ETA 风险是否被交通条件放大。';
+    return '该对象按交通密度汇总当前天气下的订单表现，延迟率用于判断 ETA 风险是否被交通条件放大。';
   }
   if (selection.type === 'order_dot') {
-    return '该对象表示订单样本或订单聚合点，配送距离、配送时长和风险评分用于识别异常 ETA。';
+    return '该对象表示订单样本或订单聚合点，配送距离、配送时长和延迟状态用于识别异常 ETA。';
   }
   if (selection.type === 'metric_tag') {
-    return '该标签仅汇总当前筛选下的真实指标，用于快速读取延迟率、平均时长和风险评分。';
+    return '该标签仅汇总当前筛选下的真实指标，用于快速读取延迟率、平均时长和订单量。';
   }
   if (selection.type === 'risk_heat_halo') {
-    return '该对象用订单量、延迟率和风险评分表达当前筛选下的 ETA 风险强度。';
+    return '该对象用订单量、延迟率和平均时长表达当前筛选下的 ETA 风险强度。';
   }
   if (selection.type === 'delivery_flow_segment') {
     return '该对象用于表达当前筛选下的配送节奏摘要，重点读取订单量、平均配送时长和延迟率。';
   }
   if (selection.type === 'risk_pulse') {
-    return '该对象表示风险评分较高的组合，可结合天气、交通密度、时段和载具解释延迟。';
+    return '该对象表示延迟率较高的组合，可结合天气、交通密度、时段和载具解释延迟。';
   }
   return selection.item.description ?? '当前对象用于解释真实字段组合下的 ETA 延迟风险。';
 }
@@ -557,15 +554,13 @@ function buildReceipt(selection: MapSelection, filteredRow?: SceneFilterSummary 
       ['配送时长', typeof duration === 'number' ? `${fmt(duration, 1)} 分钟` : undefined],
       ['延迟阈值', `${ETA_THRESHOLD_MIN.toFixed(1)} 分钟`],
       ['延迟状态', statusLabel],
-      ['延迟率', delayRate !== undefined ? pct(delayRate) : statusCode === 'DELAYED' ? '100%' : '0%'],
-      ['风险评分', fmt(riskScore, 2)]
+      ['延迟率', delayRate !== undefined ? pct(delayRate) : statusCode === 'DELAYED' ? '100%' : '0%']
     ]
     : [
       ['订单量', typeof orderCount === 'number' ? `${fmt(orderCount)} 单` : undefined],
       ['平均配送时长', typeof duration === 'number' ? `${fmt(duration, 1)} 分钟` : undefined],
       ['延迟阈值', `${ETA_THRESHOLD_MIN.toFixed(1)} 分钟`],
-      ['延迟率', delayRate !== undefined ? pct(delayRate) : undefined],
-      ['风险评分', fmt(riskScore, 2)]
+      ['延迟率', delayRate !== undefined ? pct(delayRate) : undefined]
     ];
   const sources = receiptSources({ weather, traffic, timePeriod, vehicle, distance, duration });
   const note = receiptNote({ kind, duration, overTime, weather, traffic, distance, timePeriod, orderCount, delayRate });
@@ -615,7 +610,7 @@ function AnalysisReceipt({
   comparisonRows,
   explanation,
   keyDifference,
-  riskScore
+  delayRate
 }: {
   title: string;
   moduleName: string;
@@ -633,10 +628,9 @@ function AnalysisReceipt({
   }>;
   explanation: string;
   keyDifference: string;
-  riskScore: number;
+  delayRate: number | undefined;
 }) {
-  const normalizedRiskScore = normalizeRate(riskScore);
-  const riskLevel = receiptRiskLevel(normalizedRiskScore);
+  const riskLevel = receiptRiskLevel(normalizeRate(delayRate));
   const riskLabel = receiptRiskLabel(riskLevel);
   const etaTotal = metricRows.find(([label]) => label === '平均时长')?.[1] ?? '-';
   const orderTotal = metricRows.find(([label]) => label === '样本订单')?.[1] ?? '-';
@@ -699,15 +693,6 @@ function AnalysisReceipt({
         </div>
       </section>
 
-      <section className="eta-risk-score-block">
-        <div>
-          <span>RISK SCORE</span>
-          <strong>{fmt(normalizedRiskScore, 2)} / 1.00</strong>
-        </div>
-        <div className="eta-risk-meter" aria-hidden="true"><i style={{ width: `${Math.round(normalizedRiskScore * 100)}%` }} /></div>
-        <em>{riskLabel}</em>
-      </section>
-
       <section className="eta-risk-note">
         <strong>当前发现</strong>
         <p>{explanation}</p>
@@ -768,14 +753,6 @@ function RiskReceipt({
         <div className="eta-ticket-metrics">
           {receipt.details.map(([label, value]) => <ReceiptRow key={label} label={label} value={value} />)}
         </div>
-      </section>
-      <section className="eta-risk-score-block">
-        <div>
-          <span>RISK SCORE</span>
-          <strong>{fmt(receipt.riskScore, 2)} / 1.00</strong>
-        </div>
-        <div className="eta-risk-meter" aria-hidden="true"><i style={{ width: `${Math.round(receipt.riskScore * 100)}%` }} /></div>
-        <em>{receipt.riskLabel}</em>
       </section>
       {receipt.sources.length ? (
         <section className="eta-receipt-section">
@@ -912,21 +889,19 @@ export default function DataOverviewPanel() {
       ['样本订单', fmt(contextMetrics.order_count)],
       ['平均时长', `${fmt(contextMetrics.avg_delivery_duration_min, 1)} 分钟`],
       ['延迟率', pct(contextMetrics.delay_rate)],
-      ['平均距离', `${fmt(contextMetrics.avg_distance_km, 1)} 公里`],
-      ['风险评分', fmt(contextMetrics.risk_score, 2)]
+      ['平均距离', `${fmt(contextMetrics.avg_distance_km, 1)} 公里`]
     ];
   }, [contextMetrics, moduleSummary, selectedMetrics]);
 
   const globalMetrics = {
     avg_delivery_duration_min: overview?.avg_delivery_duration_min,
     delay_rate: overview?.delay_rate,
-    risk_score: baselineRiskScore
+    avg_distance_km: overview?.avg_distance_km
   };
   const moduleMetrics = {
     order_count: moduleSummary?.order_count ?? contextMetrics.order_count,
     avg_delivery_duration_min: moduleSummary?.avg_delivery_duration_min ?? contextMetrics.avg_delivery_duration_min,
     delay_rate: moduleSummary?.delay_rate ?? contextMetrics.delay_rate,
-    risk_score: moduleSummary?.risk_score ?? contextMetrics.risk_score,
     avg_distance_km: moduleSummary?.avg_distance_km ?? contextMetrics.avg_distance_km
   };
   const currentSubView = subViewCopy[selectedSubView];
@@ -949,12 +924,12 @@ export default function DataOverviewPanel() {
       delta: deltaRatePoints(moduleMetrics.delay_rate, globalMetrics.delay_rate)
     },
     {
-      label: '风险影响评分',
+      label: '平均配送距离',
       currentLabel: currentModuleName,
-      currentValue: fmt(moduleMetrics.risk_score, 2),
-      baselineLabel: '基线',
-      baselineValue: fmt(globalMetrics.risk_score, 2),
-      delta: deltaPercent(moduleMetrics.risk_score, globalMetrics.risk_score)
+      currentValue: `${fmt(moduleMetrics.avg_distance_km, 1)} 公里`,
+      baselineLabel: '全局',
+      baselineValue: `${fmt(globalMetrics.avg_distance_km, 1)} 公里`,
+      delta: deltaPercent(moduleMetrics.avg_distance_km, globalMetrics.avg_distance_km)
     }
   ];
 
@@ -1016,7 +991,7 @@ export default function DataOverviewPanel() {
             comparisonRows={comparisonRows}
             explanation={explanation}
             keyDifference={keyDifference}
-            riskScore={moduleMetrics.risk_score ?? 0}
+            delayRate={moduleMetrics.delay_rate}
           />
         )}
       </div>

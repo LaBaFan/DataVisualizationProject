@@ -19,10 +19,10 @@ export default function WeatherOverviewView({ selectedWeather, data }: WeatherOv
   const overview = aggregateWeatherOverview(data.orders, selectedWeather);
   const { current, baseline } = overview;
   const maxDuration = Math.max(1, current.avg_delivery_duration_min ?? 0, baseline.avg_delivery_duration_min ?? 0);
-  const maxRisk = Math.max(1, current.risk_score ?? 0, baseline.risk_score ?? 0);
+  const maxDistance = Math.max(1, current.avg_distance_km ?? 0, baseline.avg_distance_km ?? 0);
   const durationDelta = (current.avg_delivery_duration_min ?? 0) - (baseline.avg_delivery_duration_min ?? 0);
   const delayDelta = (current.delay_rate ?? 0) - (baseline.delay_rate ?? 0);
-  const riskDelta = (current.risk_score ?? 0) - (baseline.risk_score ?? 0);
+  const distanceDelta = (current.avg_distance_km ?? 0) - (baseline.avg_distance_km ?? 0);
   const sampleWarning = (current.order_count ?? 0) < 50;
 
   return (
@@ -51,9 +51,9 @@ export default function WeatherOverviewView({ selectedWeather, data }: WeatherOv
             <em>{deltaText(delayDelta * 100, '%')}</em>
           </div>
           <div>
-            <span>风险评分</span>
-            <strong>{fmt(current.risk_score, 2)}</strong>
-            <em>{deltaText(riskDelta, '')}</em>
+            <span>平均配送距离</span>
+            <strong>{fmt(current.avg_distance_km, 1)} 公里</strong>
+            <em>{deltaText(distanceDelta, ' 公里')}</em>
           </div>
         </div>
 
@@ -69,14 +69,14 @@ export default function WeatherOverviewView({ selectedWeather, data }: WeatherOv
             <strong>{fmt(baseline.avg_delivery_duration_min, 1)} 分钟</strong>
           </div>
           <div className="compare-row">
-            <span>当前风险</span>
-            <i className="is-risk" style={{ width: barWidth(current.risk_score, maxRisk) }} />
-            <strong>{fmt(current.risk_score, 2)}</strong>
+            <span>当前距离</span>
+            <i className="is-risk" style={{ width: barWidth(current.avg_distance_km, maxDistance) }} />
+            <strong>{fmt(current.avg_distance_km, 1)} 公里</strong>
           </div>
           <div className="compare-row is-baseline">
-            <span>基线风险</span>
-            <i style={{ width: barWidth(baseline.risk_score, maxRisk) }} />
-            <strong>{fmt(baseline.risk_score, 2)}</strong>
+            <span>基线距离</span>
+            <i style={{ width: barWidth(baseline.avg_distance_km, maxDistance) }} />
+            <strong>{fmt(baseline.avg_distance_km, 1)} 公里</strong>
           </div>
         </div>
 

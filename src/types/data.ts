@@ -332,6 +332,7 @@ export interface MiniMetricTag {
   y: number;
   delay_rate?: number;
   avg_delivery_duration_min?: number;
+  avg_distance_km?: number;
   order_count?: number;
   risk_score?: number;
   scenario_id?: string;

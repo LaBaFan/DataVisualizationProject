@@ -157,14 +157,13 @@ export default function DetailPanel({
             <p className="detail-copy">
               {labelOf(selectedScenario.weather)} 天气叠加 {labelOf(selectedScenario.traffic_density)} 交通，
               {labelOf(selectedScenario.time_period)} 时段的延迟率为 {formatPercent(selectedScenario.delay_rate)}。
-              {selectedScenario.risk_score >= 0.7 ? '这是需要优先调度关注的高风险组合。' : '当前风险相对可控，可作为对照场景。'}
+              {selectedScenario.delay_rate >= 0.5 ? '这是需要优先调度关注的高延迟组合。' : '当前延迟压力相对可控，可作为对照场景。'}
             </p>
           </div>
           <div className="summary-metrics">
             <TicketRow label="订单数" value={formatNumber(selectedScenario.order_count)} />
             <TicketRow label="平均配送时长" value={`${formatNumber(selectedScenario.avg_delivery_duration_min, 1)} min`} />
             <TicketRow label="延迟率" value={formatPercent(selectedScenario.delay_rate)} />
-            <TicketRow label="风险评分" value={formatNumber(selectedScenario.risk_score, 2)} />
           </div>
           <div className="comparison-block">
             <span className="detail-label">摘要判断</span>
@@ -256,8 +255,7 @@ export default function DetailPanel({
               {labelOf(selectedMatrix.weather)} × {labelOf(selectedMatrix.traffic_density)}
             </h3>
             <p className="detail-copy">
-              组合延迟率为 {formatPercent(selectedMatrix.delay_rate)}，风险分{' '}
-              {formatNumber(selectedMatrix.risk_score, 2)}，平均配送{' '}
+              组合延迟率为 {formatPercent(selectedMatrix.delay_rate)}，平均配送{' '}
               {formatNumber(selectedMatrix.avg_delivery_duration_min, 1)} 分钟。
             </p>
           </div>
@@ -265,7 +263,6 @@ export default function DetailPanel({
             <MetricPill label="订单量" value={formatNumber(selectedMatrix.order_count)} />
             <MetricPill label="平均距离" value={`${formatNumber(selectedMatrix.avg_distance_km, 1)}km`} />
             <MetricPill label="延迟率" value={formatPercent(selectedMatrix.delay_rate)} />
-            <MetricPill label="风险分" value={formatNumber(selectedMatrix.risk_score, 2)} />
           </div>
         </div>
       ) : null}

@@ -191,10 +191,6 @@ export default function ScenarioAnalysisDrawer({ module, open, selectedOrderId, 
             <span>平均距离</span>
             <strong>{formatNumber(avgDistance)} km</strong>
           </div>
-          <div>
-            <span>风险评分</span>
-            <strong>{formatNumber(module.risk_score, 2)}</strong>
-          </div>
         </div>
         <p className="analysis-explanation">{buildExplanation(module)}</p>
       </section>

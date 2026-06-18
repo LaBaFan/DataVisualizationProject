@@ -164,7 +164,7 @@ function RiskTable({ scenarios }: { scenarios: RiskScenario[] }) {
             <div className="risk-top-main">
               <div className="risk-top-title">
                 <strong>{s.weather ?? '–'} · {s.traffic_density ?? '–'} · {TIME_LABELS[s.time_period ?? ''] ?? s.time_period ?? '–'}</strong>
-                <span>风险评分 {fmt(s.risk_score, 2)}</span>
+                <span>延迟率 {pct(s.delay_rate)}</span>
               </div>
               <div className="risk-top-metrics">
                 <span>订单 <strong>{s.order_count.toLocaleString()}</strong></span>
@@ -449,7 +449,7 @@ export default function SceneDetailPanel({ activeTab = 'all', embedded = false }
           <section className="detail-card" id="detail-traffic-pressure">
             <h3>交通与当前筛选摘要</h3>
             <p className="detail-card-desc">
-              当前天气模块下的样本规模、配送时长、延迟率和风险评分
+              当前天气模块下的样本规模、配送时长、延迟率和平均距离
               {filterParts.length > 0 ? ` · 已筛选 ${filterLabel}` : ''}
             </p>
             <p className="detail-insight">
@@ -460,7 +460,7 @@ export default function SceneDetailPanel({ activeTab = 'all', embedded = false }
                 ['样本订单', fmt(currentSummary?.order_count)],
                 ['平均时长', `${fmt(currentSummary?.avg_delivery_duration_min, 1)} min`],
                 ['延迟率', pct(currentSummary?.delay_rate)],
-                ['风险评分', fmt(currentSummary?.risk_score, 2)]
+                ['平均距离', `${fmt(currentSummary?.avg_distance_km, 1)} km`]
               ] as Array<[string, string]>).map(([label, value], i) => (
                 <div key={label} style={{ animationDelay: `${i * 0.08}s` }}>
                   <span>{label}</span>
@@ -489,7 +489,7 @@ export default function SceneDetailPanel({ activeTab = 'all', embedded = false }
           <section className="detail-card" id="detail-risk-scenarios">
             <h3>高风险场景 Top {sceneScenarios.length}</h3>
             <p className="detail-card-desc">
-              当前场景条件下风险评分最高的天气 × 交通 × 时段组合
+              当前场景条件下延迟率最高的天气 × 交通 × 时段组合
               {filterParts.length > 0 ? ` · 已筛选 ${filterLabel}` : ''}
             </p>
             <p className="detail-insight">

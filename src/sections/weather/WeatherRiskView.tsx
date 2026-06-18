@@ -4,7 +4,6 @@ import {
   DELAY_THRESHOLD_MIN,
   filterOrdersByTimePeriod,
   filterOrdersByWeather,
-  getRiskColor,
   getWeatherInsight
 } from './weatherAnalytics';
 import {
@@ -89,8 +88,8 @@ export default function WeatherRiskView({ selectedWeather, selectedTimePeriod, d
                     }
                   }}
                 >
-                  <circle cx={x(row.avg_delivery_duration_min)} cy={y(row.delay_rate)} r={active ? radius + 4 : radius} fill={getRiskColor(row.risk_score)} opacity={active ? 0.95 : 0.74}>
-                    <title>{`${label}：${row.order_count} 单，均时 ${fmt(row.avg_delivery_duration_min, 1)} 分钟，延迟率 ${pct(row.delay_rate)}，风险 ${fmt(row.risk_score, 2)}`}</title>
+                  <circle cx={x(row.avg_delivery_duration_min)} cy={y(row.delay_rate)} r={active ? radius + 4 : radius} fill={row.delay_rate >= 0.5 ? '#dc2626' : row.delay_rate >= 0.3 ? '#f97316' : '#2563eb'} opacity={active ? 0.95 : 0.74}>
+                    <title>{`${label}：${row.order_count} 单，均时 ${fmt(row.avg_delivery_duration_min, 1)} 分钟，延迟率 ${pct(row.delay_rate)}`}</title>
                   </circle>
                   {topLabels.has(row.scenario_id) ? (
                     <text x={x(row.avg_delivery_duration_min) + radius + 5} y={y(row.delay_rate) + 4} className="weather-risk-label">

@@ -2,7 +2,6 @@ import {
   aggregateByTimePeriod,
   DELAY_THRESHOLD_MIN,
   filterOrdersByWeather,
-  getRiskColor,
   getWeatherInsight
 } from './weatherAnalytics';
 import { fmt, pct, timeLabel, type WeatherViewData } from './weatherViewUtils';
@@ -26,7 +25,7 @@ export default function WeatherTimeView({ selectedWeather, selectedTimePeriod, d
   const barGap = 20;
   const barW = rows.length ? (plotW - barGap * (rows.length - 1)) / rows.length : 0;
   const y = (value: number) => H - PAD.bottom - (value / maxDuration) * plotH;
-  const topRiskKey = rows.reduce((top, row) => row.risk_score > (top?.risk_score ?? -1) ? row : top, rows[0])?.key;
+  const slowestKey = rows.reduce((top, row) => row.avg_delivery_duration_min > (top?.avg_delivery_duration_min ?? -1) ? row : top, rows[0])?.key;
 
   return (
     <section className="weather-subview" aria-label="天气条件下的时段节奏">
@@ -55,7 +54,8 @@ export default function WeatherTimeView({ selectedWeather, selectedTimePeriod, d
               const height = H - PAD.bottom - y(row.avg_delivery_duration_min);
               const active = selectedTimePeriod === row.time_period;
               const muted = selectedTimePeriod !== 'All' && !active;
-              const highest = row.key === topRiskKey;
+              const highest = row.key === slowestKey;
+              const fill = row.avg_delivery_duration_min > DELAY_THRESHOLD_MIN ? '#dc2626' : row.delay_rate >= 0.3 ? '#f97316' : '#2563eb';
               return (
                 <g key={row.key} className={`${muted ? 'is-muted' : ''}${highest ? ' is-highlight' : ''}`}>
                   <rect
@@ -64,7 +64,7 @@ export default function WeatherTimeView({ selectedWeather, selectedTimePeriod, d
                     width={barW}
                     height={height}
                     rx={6}
-                    fill={getRiskColor(row.risk_score)}
+                    fill={fill}
                     className="weather-duration-bar"
                   >
                     <title>{`${timeLabel(row.time_period)}：平均 ${fmt(row.avg_delivery_duration_min, 1)} 分钟，延迟率 ${pct(row.delay_rate)}，订单 ${row.order_count} 单`}</title>

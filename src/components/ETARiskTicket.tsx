@@ -290,15 +290,13 @@ function buildTicketModel(selection: MapSelection): TicketModel {
       ['配送时长', typeof duration === 'number' ? `${formatNumber(duration, 1)} 分钟` : undefined],
       ['延迟阈值', `${DELAY_THRESHOLD_MIN.toFixed(1)} 分钟`],
       ['延迟状态', statusLabel],
-      ['延迟率', delayRate !== undefined ? formatPercent(delayRate) : status === 'DELAYED' ? '100%' : '0%'],
-      ['风险评分', formatNumber(riskScore, 2)]
+      ['延迟率', delayRate !== undefined ? formatPercent(delayRate) : status === 'DELAYED' ? '100%' : '0%']
     ]
     : [
       ['订单量', orderCount ? `${formatNumber(orderCount)} 单` : undefined],
       [kind === 'weather' ? '平均配送时长' : '平均配送时长', typeof duration === 'number' ? `${formatNumber(duration, 1)} 分钟` : undefined],
       ['延迟阈值', `${DELAY_THRESHOLD_MIN.toFixed(1)} 分钟`],
-      ['延迟率', delayRate !== undefined ? formatPercent(delayRate) : undefined],
-      ['风险评分', formatNumber(riskScore, 2)]
+      ['延迟率', delayRate !== undefined ? formatPercent(delayRate) : undefined]
     ];
 
   const sources = riskSources(base);
@@ -401,17 +399,6 @@ export default function ETARiskTicket({ selection, onClose, onOpenAnalysis }: ET
             <ReceiptRow key={label} label={label} value={value} />
           ))}
         </div>
-      </section>
-
-      <section className="eta-risk-score-block" aria-label="风险评分">
-        <div>
-          <span>RISK SCORE</span>
-          <strong>{formatNumber(ticket.riskScore, 2)} / 1.00</strong>
-        </div>
-        <div className="eta-risk-meter" aria-hidden="true">
-          <i style={{ width: `${Math.round(ticket.riskScore * 100)}%` }} />
-        </div>
-        <em>{ticket.riskLabel}</em>
       </section>
 
       {ticket.sources.length ? (

@@ -37,10 +37,6 @@ export default function TrafficDensityTooltip({ item, x, y }: TrafficDensityTool
           <dd>{percent(item.delay_rate)}</dd>
         </div>
         <div>
-          <dt>风险评分</dt>
-          <dd>{number(item.risk_score, 2)}</dd>
-        </div>
-        <div>
           <dt>平均距离</dt>
           <dd>{number(item.avg_distance_km, 1)} km</dd>
         </div>

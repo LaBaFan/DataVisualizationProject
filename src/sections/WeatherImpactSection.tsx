@@ -33,7 +33,7 @@ export default function WeatherImpactSection() {
   return (
     <section id="section-weather" data-section-id="weather" className="story-section weather-impact-section">
       <SectionTitle eyebrow="Section 02" title="Weather Risk Ranking / 天气影响">
-        哪些天气会让 ETA 变慢？按综合风险评分排序，条长表达风险，辅助查看订单量、平均配送时长和延迟率。
+        哪些天气会让 ETA 变慢？按延迟率与平均配送时长排序，辅助查看订单量和配送效率。
       </SectionTitle>
       <div className="story-panel weather-ranking" aria-label="Weather Risk Ranking">
         {rankedRows.map((row, index) => {

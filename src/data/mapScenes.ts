@@ -77,7 +77,7 @@ export const mapScenes: MapScene[] = [
     type: 'weather',
     title: '雾天 ETA 模块',
     question: '低能见度天气下，ETA 如何变慢？',
-    description: '雾天模块用于观察 weather == Fog 条件下的订单量、配送时长、延迟率和风险评分。',
+    description: '雾天模块用于观察 weather == Fog 条件下的订单量、配送时长、延迟率和平均距离。',
     image: '/assets/backgrounds/fog.png',
     relatedWeather: 'Fog',
     summary: {
@@ -101,7 +101,7 @@ export const mapScenes: MapScene[] = [
     type: 'weather',
     title: '雷暴 ETA 模块',
     question: '暴雨雷暴是否导致高延迟率场景集中出现？',
-    description: '雷暴模块用于观察 weather == Stormy 条件下的订单量、配送时长、延迟率和风险评分。',
+    description: '雷暴模块用于观察 weather == Stormy 条件下的订单量、配送时长、延迟率和平均距离。',
     image: '/assets/backgrounds/stormy.png',
     relatedWeather: 'Stormy',
     summary: {
@@ -242,7 +242,7 @@ export const mapScenes: MapScene[] = [
     type: 'weather',
     title: '沙尘 ETA 模块',
     question: '沙尘天气是否改变骑手速度和订单履约稳定性？',
-    description: '沙尘模块用于观察 weather == Sandstorms 条件下的配送时长、延迟率和风险评分。',
+    description: '沙尘模块用于观察 weather == Sandstorms 条件下的配送时长、延迟率和平均距离。',
     image: '/assets/backgrounds/sandstorms.png',
     relatedWeather: 'Sandstorms',
     summary: {
@@ -290,7 +290,7 @@ export const mapScenes: MapScene[] = [
     type: 'weather',
     title: '大风 ETA 模块',
     question: '大风天气是否会提高骑手路径和速度的不稳定性？',
-    description: '大风模块用于观察 weather == Windy 条件下的配送时长、延迟率和风险评分。',
+    description: '大风模块用于观察 weather == Windy 条件下的配送时长、延迟率和平均距离。',
     image: '/assets/backgrounds/windy.png',
     relatedWeather: 'Windy',
     summary: {

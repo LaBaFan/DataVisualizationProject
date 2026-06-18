@@ -265,22 +265,11 @@ function metricSelections(summary: WeatherImpactSummary | null, weather: string)
   };
   const avg: MiniMetricTag = { ...base, id: `chart-metric-avg-${weather}`, label: '平均时长' };
   const delay: MiniMetricTag = { ...base, id: `chart-metric-delay-${weather}`, label: '延迟率' };
-  const risk: RiskHeatHalo = {
-    id: `chart-metric-risk-${weather}`,
-    label: '风险评分',
-    x: 0,
-    y: 0,
-    radius: 0,
-    weather: base.weather,
-    order_count: base.order_count ?? 0,
-    avg_delivery_duration_min: base.avg_delivery_duration_min,
-    delay_rate: base.delay_rate ?? 0,
-    risk_score: base.risk_score ?? base.delay_rate ?? 0
-  };
+  const distance: MiniMetricTag = { ...base, id: `chart-metric-distance-${weather}`, label: '平均距离' };
   return [
     { type: 'metric_tag', item: avg },
     { type: 'metric_tag', item: delay },
-    { type: 'risk_heat_halo', item: risk }
+    { type: 'metric_tag', item: distance }
   ];
 }
 
@@ -386,7 +375,7 @@ export default function MapInsetChart({
     if (!isTimeFiltered) return [];
     return riskRows
       .filter((r) => r.time_period === selectedTimePeriod)
-      .sort((a, b) => (b.risk_score ?? 0) - (a.risk_score ?? 0))
+      .sort((a, b) => rate(b.delay_rate) - rate(a.delay_rate) || (b.avg_delivery_duration_min ?? 0) - (a.avg_delivery_duration_min ?? 0))
       .slice(0, 16);
   }, [riskRows, selectedTimePeriod, isTimeFiltered]);
   const maxOrders = maxOf([
@@ -402,7 +391,7 @@ export default function MapInsetChart({
     const source = isTimeFiltered ? currentRiskRows : riskRows;
     return source
       .slice()
-      .sort((a, b) => (b.risk_score ?? 0) - (a.risk_score ?? 0))
+      .sort((a, b) => rate(b.delay_rate) - rate(a.delay_rate) || (b.avg_delivery_duration_min ?? 0) - (a.avg_delivery_duration_min ?? 0))
       .slice(0, 16);
   }, [riskRows, currentRiskRows, isTimeFiltered]);
   const riskXDomain = paddedDomain(riskRowsForChart.map((row) => row.avg_delivery_duration_min), [0, 45], 0.18);
@@ -478,7 +467,7 @@ export default function MapInsetChart({
                   <rect x={PAD.left} y={y} width={plotW} height={20} rx={10} className="map-inset-track" />
                   <rect x={PAD.left} y={y} width={Math.max(8, baseW)} height={20} rx={10} className="map-inset-fill" style={{ animationDelay: `${index * 0.1}s` }} />
                   <text className="map-inset-value" x={PAD.left + Math.max(52, baseW + 14)} y={y + 14}>
-                    {index === 0 ? `${fmt(summary?.avg_delivery_duration_min, 1)} 分钟` : index === 1 ? pct(summary?.delay_rate) : fmt(summary?.risk_score, 2)}
+                    {index === 0 ? `${fmt(summary?.avg_delivery_duration_min, 1)} 分钟` : index === 1 ? pct(summary?.delay_rate) : `${fmt(summary?.avg_distance_km, 1)} 公里`}
                   </text>
                   {/* ── Current time period bar (new bar below) ── */}
                   {curW != null && isTimeFiltered && (
@@ -740,7 +729,7 @@ export default function MapInsetChart({
                     }}
                   >
                     <circle className="map-inset-hit-dot" cx={x} cy={y} r={Math.max(18, r + 8)} />
-                    <circle cx={x} cy={y} r={r} fill={colorByRate(row.risk_score)} opacity={0.68} />
+                    <circle cx={x} cy={y} r={r} fill={colorByRate(row.delay_rate)} opacity={0.68} />
                     {lp ? (
                       <text
                         className="map-inset-label-text"

@@ -81,8 +81,8 @@ export default function RiskScenarioDetailPanel({ scenario, fallbackScenario, se
           <strong>{formatPercent(activeScenario.delay_rate)}</strong>
         </div>
         <div>
-          <span>风险评分</span>
-          <strong>{formatNumber(activeScenario.risk_score, 3)}</strong>
+          <span>平均距离</span>
+          <strong>{formatNumber(activeScenario.avg_distance_km, 1)} km</strong>
         </div>
         <div>
           <span>平均距离</span>

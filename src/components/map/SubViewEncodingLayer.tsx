@@ -164,15 +164,14 @@ function summaryTags(summary: WeatherImpactSummary | null, weather: string): Min
       risk_score: summary.risk_score
     },
     {
-      id: `weather-summary-risk-${weather}`,
-      label: '风险评分',
+      id: `weather-summary-distance-${weather}`,
+      label: '平均距离',
       x: 1060,
       y: 270,
       weather: summary.weather ?? weather,
       order_count: summary.order_count,
       avg_delivery_duration_min: summary.avg_delivery_duration_min,
-      delay_rate: summary.delay_rate,
-      risk_score: summary.risk_score
+      delay_rate: summary.delay_rate
     }
   ];
 }
@@ -241,7 +240,7 @@ function riskSelection(row: RiskScenario, index: number): ScenarioAnchor {
     label: row.label,
     x,
     y,
-    radius: 24 + rate(row.risk_score) * 42,
+    radius: 24 + rate(row.delay_rate) * 42,
     weather: row.weather ?? undefined,
     traffic_density: row.traffic_density ?? undefined,
     time_period: row.time_period ?? undefined,
@@ -317,7 +316,7 @@ export default function SubViewEncodingLayer({
               <rect x={-72} y={-24} width={144} height={48} rx={8} />
               <text x={0} y={-4}>{tag.label}</text>
               <text className="weather-node-value" x={0} y={15}>
-                {index === 0 ? `${fmt(tag.avg_delivery_duration_min, 1)}分` : index === 1 ? pct(tag.delay_rate) : fmt(tag.risk_score, 2)}
+                {index === 0 ? `${fmt(tag.avg_delivery_duration_min, 1)}分` : index === 1 ? pct(tag.delay_rate) : `${fmt(tag.avg_distance_km, 1)}公里`}
               </text>
             </g>
           );
@@ -438,7 +437,7 @@ export default function SubViewEncodingLayer({
               transform={`translate(${item.x} ${item.y})`}
               role="button"
               tabIndex={0}
-              aria-label={`风险评分 ${fmt(item.risk_score, 2)}`}
+              aria-label={`延迟率 ${pct(item.delay_rate)}`}
               style={{ '--risk-node-size': item.radius } as CSSProperties}
               onMouseMove={(event) => onHover({ type: 'risk_pulse', item }, event)}
               onMouseLeave={onLeave}
@@ -451,7 +450,7 @@ export default function SubViewEncodingLayer({
             >
               <circle className="weather-risk-bubble-ring" r={item.radius} />
               <circle className="weather-risk-bubble-core" r={item.radius * 0.66} />
-              <text x={0} y={5}>{fmt(item.risk_score, 2)}</text>
+              <text x={0} y={5}>{pct(item.delay_rate)}</text>
             </g>
           );
         })}

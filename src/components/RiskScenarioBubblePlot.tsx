@@ -207,7 +207,6 @@ export default function RiskScenarioBubblePlot({ scenarios, selectedScenarioId, 
             <div><dt>订单数</dt><dd>{hovered.scenario.order_count.toLocaleString()}</dd></div>
             <div><dt>平均时长</dt><dd>{formatNumber(hovered.scenario.avg_delivery_duration_min, 1)} min</dd></div>
             <div><dt>延迟率</dt><dd>{formatPercent(hovered.scenario.delay_rate)}</dd></div>
-            <div><dt>风险评分</dt><dd>{formatNumber(hovered.scenario.risk_score, 3)}</dd></div>
             <div><dt>平均距离</dt><dd>{formatNumber(hovered.scenario.avg_distance_km, 1)} km</dd></div>
           </dl>
         </div>
