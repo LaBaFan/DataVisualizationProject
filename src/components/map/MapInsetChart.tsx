@@ -317,24 +317,20 @@ export default function MapInsetChart({
   const riskPlotH = HEIGHT - RISK_PAD.top - RISK_PAD.bottom;
   const isTimeFiltered = selectedTimePeriod !== 'All' && selectedTimePeriod !== '';
 
-  // Current time period overview (aggregated from riskRows)
+  // Current time period overview (from timeRows = exact scene_filter_summary data)
   const currentOverview = useMemo(() => {
-    if (!isTimeFiltered || !riskRows.length) return null;
-    const filtered = riskRows.filter((r) => r.time_period === selectedTimePeriod);
-    if (!filtered.length) return null;
-    const totalOrders = filtered.reduce((s, r) => s + (r.order_count ?? 0), 0);
-    if (!totalOrders) return null;
-    const wDur = filtered.reduce((s, r) => s + (r.avg_delivery_duration_min ?? 0) * (r.order_count ?? 0), 0);
-    const wDelay = filtered.reduce((s, r) => s + rate(r.delay_rate) * (r.order_count ?? 0), 0);
-    const wRisk = filtered.reduce((s, r) => s + rate(r.risk_score) * (r.order_count ?? 0), 0);
+    if (!isTimeFiltered) return null;
+    const row = timeRows.find((r) => r.time_period === selectedTimePeriod);
+    if (!row) return null;
     return {
       weather: selectedWeather,
-      order_count: totalOrders,
-      avg_delivery_duration_min: wDur / totalOrders,
-      delay_rate: wDelay / totalOrders,
-      risk_score: wRisk / totalOrders
+      order_count: row.order_count,
+      avg_delivery_duration_min: row.avg_delivery_duration_min,
+      delay_rate: row.delay_rate,
+      risk_score: row.risk_score,
+      avg_distance_km: row.avg_distance_km
     };
-  }, [riskRows, selectedWeather, selectedTimePeriod, isTimeFiltered]);
+  }, [timeRows, selectedWeather, selectedTimePeriod, isTimeFiltered]);
 
   // Current time period traffic (aggregated from riskRows)
   const currentTrafficRows = useMemo(() => {
@@ -452,15 +448,15 @@ export default function MapInsetChart({
                 ? summary?.avg_delivery_duration_min
                 : index === 1
                   ? rate(summary?.delay_rate) * 100
-                  : summary?.risk_score;
+                  : summary?.avg_distance_km;
               const curValue = currentOverview
                 ? (index === 0
                     ? currentOverview.avg_delivery_duration_min
                     : index === 1
                       ? rate(currentOverview.delay_rate) * 100
-                      : currentOverview.risk_score)
+                      : currentOverview.avg_distance_km)
                 : null;
-              const max = index === 0 ? 45 : index === 1 ? 70 : 1;
+              const max = index === 0 ? 45 : index === 1 ? 70 : 15;
               const y = 56 + index * 100;
               const baseW = clamp((baseValue ?? 0) / max) * 420;
               const curW = curValue != null ? clamp(curValue / max) * 420 : null;
@@ -497,7 +493,7 @@ export default function MapInsetChart({
                       <rect x={PAD.left} y={y + 26} width={plotW} height={20} rx={10} className="map-inset-track" />
                       <rect x={PAD.left} y={y + 26} width={Math.max(8, curW)} height={20} rx={10} style={{ fill: compareColor, animation: 'map-inset-bar-grow 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both', transformBox: 'fill-box', transformOrigin: 'left center', animationDelay: `${index * 0.1 + 0.3}s` }} />
                       <text className="map-inset-value" x={PAD.left + Math.max(52, curW + 14)} y={y + 40} fill={compareColor} fontWeight={800}>
-                        {index === 0 ? `${fmt(curValue ?? undefined, 1)} 分钟` : index === 1 ? `${Math.round(curValue ?? 0)}%` : fmt(curValue ?? undefined, 2)}
+                        {index === 0 ? `${fmt(curValue ?? undefined, 1)} 分钟` : index === 1 ? `${Math.round(curValue ?? 0)}%` : `${fmt(curValue ?? undefined, 1)} 公里`}
                       </text>
                     </>
                   )}
