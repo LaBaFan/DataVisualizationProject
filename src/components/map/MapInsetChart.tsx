@@ -1,4 +1,4 @@
-import { KeyboardEvent, MouseEvent } from 'react';
+import { KeyboardEvent, MouseEvent, useMemo } from 'react';
 import type { WeatherSubView } from '../../store/interactionContext';
 import type {
   DeliveryFlowSegment,
@@ -18,6 +18,7 @@ import type {
 interface MapInsetChartProps {
   selectedSubView: WeatherSubView;
   selectedWeather: string;
+  selectedTimePeriod: string;
   summary: WeatherImpactSummary | null;
   orderPoints: WeatherOrderSample[];
   trafficRows: WeatherTrafficSummary[];
@@ -231,6 +232,7 @@ function metricSelections(summary: WeatherImpactSummary | null, weather: string)
 export default function MapInsetChart({
   selectedSubView,
   selectedWeather,
+  selectedTimePeriod,
   summary,
   orderPoints,
   trafficRows,
@@ -248,6 +250,91 @@ export default function MapInsetChart({
   const riskPlotW = WIDTH - RISK_PAD.left - RISK_PAD.right;
   const riskPlotH = HEIGHT - RISK_PAD.top - RISK_PAD.bottom;
   const dataFilter = selectedWeather === 'All' ? '全部订单' : `weather == ${selectedWeather}`;
+  const isTimeFiltered = selectedTimePeriod !== 'All' && selectedTimePeriod !== '';
+
+  // Current time period overview (aggregated from riskRows)
+  const currentOverview = useMemo(() => {
+    if (!isTimeFiltered || !riskRows.length) return null;
+    const filtered = riskRows.filter((r) => r.time_period === selectedTimePeriod);
+    if (!filtered.length) return null;
+    const totalOrders = filtered.reduce((s, r) => s + (r.order_count ?? 0), 0);
+    if (!totalOrders) return null;
+    const wDur = filtered.reduce((s, r) => s + (r.avg_delivery_duration_min ?? 0) * (r.order_count ?? 0), 0);
+    const wDelay = filtered.reduce((s, r) => s + rate(r.delay_rate) * (r.order_count ?? 0), 0);
+    const wRisk = filtered.reduce((s, r) => s + rate(r.risk_score) * (r.order_count ?? 0), 0);
+    return {
+      weather: selectedWeather,
+      order_count: totalOrders,
+      avg_delivery_duration_min: wDur / totalOrders,
+      delay_rate: wDelay / totalOrders,
+      risk_score: wRisk / totalOrders
+    };
+  }, [riskRows, selectedWeather, selectedTimePeriod, isTimeFiltered]);
+
+  // Current time period traffic (aggregated from riskRows)
+  const currentTrafficRows = useMemo(() => {
+    if (!isTimeFiltered || !riskRows.length) return [];
+    const filtered = riskRows.filter((r) => r.time_period === selectedTimePeriod);
+    const grouped = new Map<string, { oc: number; dur: number; del: number; cnt: number }>();
+    filtered.forEach((row) => {
+      const td = row.traffic_density ?? 'Unknown';
+      const cur = grouped.get(td) ?? { oc: 0, dur: 0, del: 0, cnt: 0 };
+      const w = row.order_count ?? 0;
+      cur.oc += w;
+      cur.dur += (row.avg_delivery_duration_min ?? 0) * w;
+      cur.del += rate(row.delay_rate) * w;
+      cur.cnt += w;
+      grouped.set(td, cur);
+    });
+    return TRAFFIC_ORDER.filter((td) => grouped.has(td)).map((td) => {
+      const d = grouped.get(td)!;
+      return {
+        weather: selectedWeather,
+        traffic_density: td,
+        order_count: d.oc,
+        avg_delivery_duration_min: d.cnt ? d.dur / d.cnt : 0,
+        delay_rate: d.cnt ? d.del / d.cnt : 0,
+        risk_score: 0
+      } as WeatherTrafficSummary;
+    });
+  }, [riskRows, selectedWeather, selectedTimePeriod, isTimeFiltered]);
+
+  // Current time period vehicle (aggregated from riskRows)
+  const currentVehicleRows = useMemo(() => {
+    if (!isTimeFiltered || !riskRows.length) return [];
+    const filtered = riskRows.filter((r) => r.time_period === selectedTimePeriod && r.vehicle_type);
+    const grouped = new Map<string, { oc: number; dur: number; del: number; cnt: number }>();
+    filtered.forEach((row) => {
+      const vt = row.vehicle_type ?? 'Unknown';
+      const cur = grouped.get(vt) ?? { oc: 0, dur: 0, del: 0, cnt: 0 };
+      const w = row.order_count ?? 0;
+      cur.oc += w;
+      cur.dur += (row.avg_delivery_duration_min ?? 0) * w;
+      cur.del += rate(row.delay_rate) * w;
+      cur.cnt += w;
+      grouped.set(vt, cur);
+    });
+    return Array.from(grouped.entries())
+      .sort((a, b) => b[1].oc - a[1].oc)
+      .slice(0, 8)
+      .map(([vt, d]) => ({
+        vehicle_type: vt,
+        weather: selectedWeather,
+        order_count: d.oc,
+        avg_delivery_duration_min: d.cnt ? d.dur / d.cnt : 0,
+        delay_rate: d.cnt ? d.del / d.cnt : 0,
+        risk_score: d.cnt ? d.del / d.cnt : 0
+      }));
+  }, [riskRows, selectedWeather, selectedTimePeriod, isTimeFiltered]);
+
+  // Current time period risk rows
+  const currentRiskRows = useMemo(() => {
+    if (!isTimeFiltered) return [];
+    return riskRows
+      .filter((r) => r.time_period === selectedTimePeriod)
+      .sort((a, b) => (b.risk_score ?? 0) - (a.risk_score ?? 0))
+      .slice(0, 16);
+  }, [riskRows, selectedTimePeriod, isTimeFiltered]);
   const maxOrders = maxOf([
     ...trafficRows.map((row) => row.order_count),
     ...timeRows.map((row) => row.order_count),
@@ -257,10 +344,13 @@ export default function MapInsetChart({
   const ordersSample = orderPoints.slice(0, 180);
   const orderXDomain = paddedDomain(ordersSample.map((point) => point.distance_km), [0, maxOf(orderPoints.map((point) => point.distance_km))], 0.1);
   const orderYDomain = paddedDomain(ordersSample.map((point) => point.delivery_duration_min), [0, Math.max(42, maxOf(orderPoints.map((point) => point.delivery_duration_min)))], 0.1);
-  const riskRowsForChart = riskRows
-    .slice()
-    .sort((a, b) => (b.risk_score ?? 0) - (a.risk_score ?? 0))
-    .slice(0, 16);
+  const riskRowsForChart = useMemo(() => {
+    const source = isTimeFiltered ? currentRiskRows : riskRows;
+    return source
+      .slice()
+      .sort((a, b) => (b.risk_score ?? 0) - (a.risk_score ?? 0))
+      .slice(0, 16);
+  }, [riskRows, currentRiskRows, isTimeFiltered]);
   const riskXDomain = paddedDomain(riskRowsForChart.map((row) => row.avg_delivery_duration_min), [0, 45], 0.18);
   const riskYDomain = paddedDomain(riskRowsForChart.map((row) => rate(row.delay_rate)), [0, 0.7], 0.18);
   const vehicleXDomain = paddedDomain(vehicleRows.map((row) => row.avg_delivery_duration_min), [0, 45], 0.14);
@@ -283,14 +373,26 @@ export default function MapInsetChart({
             {metricRows.map((selection, index) => {
               const item = selection.item;
               const label = 'label' in item ? item.label : '指标';
-              const value = index === 0
+              const baseValue = index === 0
                 ? summary?.avg_delivery_duration_min
                 : index === 1
                   ? rate(summary?.delay_rate) * 100
                   : summary?.risk_score;
+              const curValue = currentOverview
+                ? (index === 0
+                    ? currentOverview.avg_delivery_duration_min
+                    : index === 1
+                      ? rate(currentOverview.delay_rate) * 100
+                      : currentOverview.risk_score)
+                : null;
               const max = index === 0 ? 45 : index === 1 ? 70 : 1;
-              const y = 96 + index * 82;
-              const width = clamp((value ?? 0) / max) * 420;
+              const y = 56 + index * 100;
+              const baseW = clamp((baseValue ?? 0) / max) * 420;
+              const curW = curValue != null ? clamp(curValue / max) * 420 : null;
+              // Green = current shorter (better), Red = current longer (worse)
+              const compareColor = curValue != null && baseValue != null
+                ? (curValue < baseValue * 0.97 ? '#10b981' : curValue > baseValue * 1.03 ? '#ef4444' : '#64748b')
+                : '#64748b';
               const active = selectedId === item.id;
               return (
                 <g
@@ -308,11 +410,22 @@ export default function MapInsetChart({
                   }}
                 >
                   <text x={PAD.left} y={y - 14}>{label}</text>
-                  <rect x={PAD.left} y={y} width={plotW} height={22} rx={11} className="map-inset-track" />
-                  <rect x={PAD.left} y={y} width={Math.max(8, width)} height={22} rx={11} className="map-inset-fill" style={{ animationDelay: `${index * 0.1}s` }} />
-                  <text className="map-inset-value" x={PAD.left + Math.max(52, width + 14)} y={y + 15}>
+                  {/* ── Baseline bar (always full color, unchanged) ── */}
+                  <rect x={PAD.left} y={y} width={plotW} height={20} rx={10} className="map-inset-track" />
+                  <rect x={PAD.left} y={y} width={Math.max(8, baseW)} height={20} rx={10} className="map-inset-fill" style={{ animationDelay: `${index * 0.1}s` }} />
+                  <text className="map-inset-value" x={PAD.left + Math.max(52, baseW + 14)} y={y + 14}>
                     {index === 0 ? `${fmt(summary?.avg_delivery_duration_min, 1)} min` : index === 1 ? pct(summary?.delay_rate) : fmt(summary?.risk_score, 2)}
                   </text>
+                  {/* ── Current time period bar (new bar below) ── */}
+                  {curW != null && isTimeFiltered && (
+                    <>
+                      <rect x={PAD.left} y={y + 26} width={plotW} height={20} rx={10} className="map-inset-track" />
+                      <rect x={PAD.left} y={y + 26} width={Math.max(8, curW)} height={20} rx={10} fill={compareColor} opacity={0.85} className="map-inset-fill" style={{ animationDelay: `${index * 0.1 + 0.3}s` }} />
+                      <text className="map-inset-value" x={PAD.left + Math.max(52, curW + 14)} y={y + 40} fill={compareColor} fontWeight={800}>
+                        {index === 0 ? `${fmt(curValue ?? undefined, 1)} min` : index === 1 ? `${Math.round(curValue ?? 0)}%` : fmt(curValue ?? undefined, 2)}
+                      </text>
+                    </>
+                  )}
                 </g>
               );
             })}
@@ -327,11 +440,16 @@ export default function MapInsetChart({
               .map((row, index) => {
                 const selection = trafficSelection(row);
                 const bandH = plotH / TRAFFIC_ORDER.length;
-                const y = PAD.top + index * bandH + 15;
+                const y = PAD.top + index * bandH + 10;
                 const barX = PAD.left + 104;
                 const barW = plotW - 178;
                 const width = Math.max(18, clamp(row.order_count / maxOrders) * barW);
                 const active = selectedId === selection.item.id;
+                const curRow = currentTrafficRows.find((r) => r.traffic_density === row.traffic_density);
+                const curWidth = curRow ? Math.max(18, clamp(curRow.order_count / maxOrders) * barW) : null;
+                const compareColor = curRow
+                  ? (curRow.order_count < row.order_count * 0.97 ? '#10b981' : curRow.order_count > row.order_count * 1.03 ? '#ef4444' : colorByRate(curRow.delay_rate))
+                  : colorByRate(row.delay_rate);
                 return (
                   <g
                     key={selection.item.id}
@@ -347,14 +465,22 @@ export default function MapInsetChart({
                       onSelect(selection);
                     }}
                   >
-                    <rect className="map-inset-hit-area" x={PAD.left} y={y - 10} width={plotW} height={bandH - 10} rx={8} />
-                    <text className="map-inset-category" x={PAD.left} y={y + 25}>{row.traffic_density}</text>
-                    <rect className="map-inset-track" x={barX} y={y} width={barW} height={30} rx={7} />
-                    <rect className="map-inset-bar" x={barX} y={y} width={width} height={30} rx={7} fill={colorByRate(row.delay_rate)} style={{ animationDelay: `${index * 0.08}s` }} />
-                    <text className="map-inset-value" x={barX + barW + 12} y={y + 20}>
-                      {row.order_count}
-                    </text>
-                    <text className="map-inset-note" x={barX + Math.min(width + 10, barW - 42)} y={y - 6}>{pct(row.delay_rate)}</text>
+                    <rect className="map-inset-hit-area" x={PAD.left} y={y - 6} width={plotW} height={bandH - 6} rx={8} />
+                    <text className="map-inset-category" x={PAD.left} y={y + 20}>{row.traffic_density}</text>
+                    <rect className="map-inset-track" x={barX} y={y} width={barW} height={22} rx={6} />
+                    {/* Baseline bar (unchanged) */}
+                    <rect className="map-inset-bar" x={barX} y={y} width={width} height={22} rx={6} fill={colorByRate(row.delay_rate)} style={{ animationDelay: `${index * 0.08}s` }} />
+                    <text className="map-inset-value" x={barX + barW + 12} y={y + 15}>{row.order_count}</text>
+                    <text className="map-inset-note" x={barX + Math.min(width + 10, barW - 42)} y={y - 4}>{pct(row.delay_rate)}</text>
+                    {/* Current time period bar (new bar below) */}
+                    {curRow && curWidth != null && isTimeFiltered && (
+                      <>
+                        <rect className="map-inset-track" x={barX} y={y + 28} width={barW} height={22} rx={6} />
+                        <rect x={barX} y={y + 28} width={curWidth} height={22} rx={6} fill={compareColor} opacity={0.85} style={{ animationDelay: `${index * 0.08 + 0.3}s` }} className="map-inset-bar" />
+                        <text className="map-inset-value" x={barX + barW + 12} y={y + 43} fill={compareColor} fontWeight={800}>{curRow.order_count}</text>
+                        <text className="map-inset-note" x={barX + Math.min(curWidth + 10, barW - 42)} y={y + 24}>{pct(curRow.delay_rate)}</text>
+                      </>
+                    )}
                   </g>
                 );
               })}
@@ -417,6 +543,7 @@ export default function MapInsetChart({
               const y = PAD.top + rowH * index + rowH / 2;
               const r = 7 + clamp(row.order_count / maxOrders) * 15;
               const active = selectedId === selection.item.id;
+              const curRow = currentVehicleRows.find((v) => v.vehicle_type === row.vehicle_type);
 
               return (
                 <g
@@ -437,8 +564,26 @@ export default function MapInsetChart({
                   <line className="map-inset-grid-line" x1={PAD.left} y1={y} x2={PAD.left + plotW} y2={y} />
                   <rect className="map-inset-hit-area" x={PAD.left} y={y - rowH / 2 + 4} width={plotW} height={rowH - 8} rx={8} />
                   <text className="map-inset-category" x={x} y={y - r - 8} textAnchor="middle">{row.vehicle_type}</text>
+                  {/* Baseline bubble (always visible, full color) */}
                   <circle cx={x} cy={y} r={r} fill={colorByRate(row.delay_rate)} opacity={0.76} />
                   <text className="map-inset-value" x={Math.min(PAD.left + plotW - 34, x + r + 10)} y={y + 4}>{fmt(row.avg_delivery_duration_min, 1)}m</text>
+                  {/* Current time period bubble (beside baseline, not overlapping) */}
+                  {curRow && isTimeFiltered && (() => {
+                    const curX = scaleLinear(curRow.avg_delivery_duration_min, vehicleXDomain, [PAD.left + 12, PAD.left + plotW - 28]);
+                    const maxCurOrders = Math.max(1, ...currentVehicleRows.map(v => v.order_count));
+                    const curR = 5 + clamp(curRow.order_count / maxCurOrders) * 10;
+                    const curColor = curRow.avg_delivery_duration_min < row.avg_delivery_duration_min * 0.97 ? '#10b981'
+                      : curRow.avg_delivery_duration_min > row.avg_delivery_duration_min * 1.03 ? '#ef4444'
+                      : '#64748b';
+                    return (
+                      <>
+                        <circle cx={curX} cy={y - r - 18} r={curR} fill={curColor} opacity={0.85} />
+                        <text className="map-inset-value" x={curX} y={y - r - 18 - curR - 4} textAnchor="middle" fill={curColor} fontWeight={800} fontSize="10">
+                          {fmt(curRow.avg_delivery_duration_min, 1)}m
+                        </text>
+                      </>
+                    );
+                  })()}
                 </g>
               );
             })}

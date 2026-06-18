@@ -392,6 +392,7 @@ export default function InteractiveSceneMap() {
             <MapInsetChart
               selectedSubView={selectedSubView}
               selectedWeather={selectedWeather}
+              selectedTimePeriod={selectedTimePeriod}
               summary={weatherSummary}
               orderPoints={weatherOverlayData.orderPoints}
               trafficRows={weatherOverlayData.trafficRows}

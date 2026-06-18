@@ -18,29 +18,32 @@ function matchesScene(
   sceneId: string,
   item: { weather?: string | null; traffic_density?: string | null; time_period?: string | null }
 ): boolean {
+  const w = keyOf(item.weather);
+  const tp = keyOf(item.time_period);
+  const td = keyOf(item.traffic_density);
   switch (sceneId) {
     case 'sunny':
-      return item.weather === 'Sunny';
+      return w === 'sunny';
     case 'cloudy':
-      return item.weather === 'Cloudy';
+      return w === 'cloudy';
     case 'fog_business':
-      return item.weather === 'Fog';
+      return w === 'fog';
     case 'storm_area':
-      return item.weather === 'Stormy';
+      return w === 'stormy';
     case 'sandstorm':
-      return item.weather === 'Sandstorms';
+      return w === 'sandstorms';
     case 'windy':
-      return item.weather === 'Windy';
+      return w === 'windy';
     case 'night_low_peak':
-      return item.time_period === 'night';
+      return tp === 'night';
     case 'traffic_hub':
-      return ['High', 'Jam'].includes(item.traffic_density ?? '');
+      return td === 'high' || td === 'jam';
     case 'dispatch_center':
     case 'restaurant_street':
     case 'mixed_food_community':
-      return ['lunch_peak', 'dinner_peak'].includes(item.time_period ?? '');
+      return tp === 'lunch_peak' || tp === 'dinner_peak';
     case 'high_risk_residential':
-      return ['High', 'Jam'].includes(item.traffic_density ?? '');
+      return td === 'high' || td === 'jam';
     default:
       return true;
   }
@@ -48,6 +51,10 @@ function matchesScene(
 
 function isAll(v: string | null | undefined) {
   return !v || v === 'All';
+}
+
+function keyOf(v: string | null | undefined): string {
+  return (v ?? '').trim().toLowerCase();
 }
 
 /* ───────── helpers ───────── */
@@ -334,34 +341,59 @@ export default function SceneDetailPanel({ activeTab = 'all', embedded = false }
   }, [selectedSceneId]);
 
   // Time rhythm: show all time periods for the scene, highlight selected
-  const sceneTimeRows = useMemo(
-    () =>
-      filterRows
-        .filter((r) => r.scene_id === selectedSceneId && r.time_period !== 'All' && r.weather === 'All')
-        .sort((a, b) => TIME_ORDER.indexOf(a.time_period ?? '') - TIME_ORDER.indexOf(b.time_period ?? '')),
-    [filterRows, selectedSceneId]
-  );
+  const sceneTimeRows = useMemo(() => {
+    const weather = isAll(selectedWeather) ? 'All' : selectedWeather;
+    // Try scene + selected weather first, fall back to scene + All weather
+    const weatherRows = filterRows.filter(
+      (r) => r.scene_id === selectedSceneId && r.time_period !== 'All' && keyOf(r.weather) === keyOf(weather)
+    );
+    const rows = weatherRows.length > 0
+      ? weatherRows
+      : filterRows.filter(
+          (r) => r.scene_id === selectedSceneId && r.time_period !== 'All' && keyOf(r.weather) === 'all'
+        );
+    return rows.sort((a, b) => TIME_ORDER.indexOf(a.time_period ?? '') - TIME_ORDER.indexOf(b.time_period ?? ''));
+  }, [filterRows, selectedSceneId, selectedWeather]);
 
   // Filter summary: the current scene's metrics with selected filters
   const sceneFilteredRow = useMemo(() => {
     const weather = isAll(selectedWeather) ? 'All' : selectedWeather;
     const timePeriod = isAll(selectedTimePeriod) ? 'All' : selectedTimePeriod;
+    // Exact match first
+    const exact = filterRows.find(
+      (r) =>
+        r.scene_id === selectedSceneId &&
+        keyOf(r.weather) === keyOf(weather) &&
+        keyOf(r.time_period) === keyOf(timePeriod)
+    );
+    if (exact) return exact;
+    // Fallback: scene + time only (weather='All')
+    if (weather !== 'All') {
+      const timeOnly = filterRows.find(
+        (r) =>
+          r.scene_id === selectedSceneId &&
+          keyOf(r.weather) === 'all' &&
+          keyOf(r.time_period) === keyOf(timePeriod)
+      );
+      if (timeOnly) return timeOnly;
+    }
+    // Fallback: scene base
     return filterRows.find(
       (r) =>
         r.scene_id === selectedSceneId &&
-        r.weather === weather &&
-        r.time_period === timePeriod
-    );
+        keyOf(r.weather) === 'all' &&
+        keyOf(r.time_period) === 'all'
+    ) ?? null;
   }, [filterRows, selectedSceneId, selectedWeather, selectedTimePeriod]);
 
   // Risk scenarios: filter by scene + time period + weather
   const sceneScenarios = useMemo(() => {
     let filtered = scenarios.filter((s) => matchesScene(selectedSceneId, s));
     if (!isAll(selectedTimePeriod)) {
-      filtered = filtered.filter((s) => s.time_period === selectedTimePeriod);
+      filtered = filtered.filter((s) => keyOf(s.time_period) === keyOf(selectedTimePeriod));
     }
     if (!isAll(selectedWeather)) {
-      filtered = filtered.filter((s) => s.weather === selectedWeather);
+      filtered = filtered.filter((s) => keyOf(s.weather) === keyOf(selectedWeather));
     }
     return filtered.slice(0, 8);
   }, [scenarios, selectedSceneId, selectedTimePeriod, selectedWeather]);
@@ -370,10 +402,10 @@ export default function SceneDetailPanel({ activeTab = 'all', embedded = false }
   const sceneScatter = useMemo(() => {
     let filtered = scatterPoints.filter((p) => matchesScene(selectedSceneId, p));
     if (!isAll(selectedTimePeriod)) {
-      filtered = filtered.filter((p) => p.time_period === selectedTimePeriod);
+      filtered = filtered.filter((p) => keyOf(p.time_period) === keyOf(selectedTimePeriod));
     }
     if (!isAll(selectedWeather)) {
-      filtered = filtered.filter((p) => p.weather === selectedWeather);
+      filtered = filtered.filter((p) => keyOf(p.weather) === keyOf(selectedWeather));
     }
     return filtered;
   }, [scatterPoints, selectedSceneId, selectedTimePeriod, selectedWeather]);
