@@ -1860,11 +1860,48 @@ button:active {
   padding: 10px;
 }
 
-.eta-compact-note p {
+.eta-expandable-note p {
+  margin: 6px 0 0;
+  color: #334155;
+  font-size: 0.84rem;
+  line-height: 1.58;
+  overflow-wrap: anywhere;
+}
+
+.eta-expandable-note p.is-collapsed {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.eta-expandable-note p.is-expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+.eta-note-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  border: none;
+  background: transparent;
+  color: #f97316;
+  padding: 2px 0;
+  font-size: 0.72rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.eta-note-expand-btn:hover {
+  color: #c2410c;
+}
+
+.eta-note-expand-btn:active {
+  transform: translateY(1px);
 }
 
 .eta-receipt-copy {

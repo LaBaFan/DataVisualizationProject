@@ -187,6 +187,32 @@ function shortNote(text: string) {
   return (sentences.length ? sentences.slice(0, 2).join('') : compact).slice(0, 86);
 }
 
+function ExpandableNote({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > 70;
+
+  return (
+    <div className="eta-expandable-note">
+      <p className={expanded ? 'is-expanded' : 'is-collapsed'}>
+        {text}
+      </p>
+      {isLong && (
+        <button
+          type="button"
+          className="eta-note-expand-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpanded(!expanded);
+          }}
+          aria-expanded={expanded}
+        >
+          {expanded ? '收起 ▲' : '展开全文 ▼'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function weatherLabel(value: string | null | undefined) {
   return WEATHER_LABELS[value ?? ''] ?? value ?? '-';
 }
@@ -526,7 +552,7 @@ function buildReceipt(selection: MapSelection, filteredRow?: SceneFilterSummary 
     traffic,
     timePeriod,
     vehicle,
-    note: shortNote(note)
+    note: note(note)
   };
 }
 
@@ -621,7 +647,7 @@ function AnalysisReceipt({
   const distanceTotal = metricRows.find(([label]) => label === '平均距离')?.[1] ?? '-';
   const durationDelta = comparisonRows.find((row) => row.label === '平均配送时长')?.delta ?? '-';
   const delayDelta = comparisonRows.find((row) => row.label === '延迟率')?.delta ?? '-';
-  const note = shortNote(explanation);
+  const note = explanation;
 
   return (
     <section className={`eta-risk-receipt default-analysis-receipt receipt-risk-${riskLevel}`} aria-label="FoodETA 分析小票">
@@ -664,7 +690,7 @@ function AnalysisReceipt({
 
       <section className="eta-risk-note eta-compact-note">
         <strong>备注</strong>
-        <p>{note}</p>
+        <ExpandableNote text={note} />
       </section>
     </section>
   );
@@ -765,7 +791,7 @@ function RiskReceipt({
 
       <section className="eta-risk-note eta-compact-note">
         <strong>备注</strong>
-        <p>{receipt.note}</p>
+        <ExpandableNote text={receipt.note} />
       </section>
       <div className="overview-ticket-actions eta-receipt-actions">
         <button type="button" onClick={onFullAnalysis}>查看完整分析</button>
@@ -866,7 +892,7 @@ function WeatherComparisonReceipt({ context }: { context: WeatherComparisonConte
 
       <section className="eta-risk-note eta-compact-note">
         <strong>备注</strong>
-        <p>{row ? shortNote(row.description) : '列表按当前指标排序，点击任一天气进入对应天气模块继续分析。'}</p>
+        <ExpandableNote text={row ? row.description : '列表按当前指标排序，点击任一天气进入对应天气模块继续分析。'} />
       </section>
     </section>
   );
