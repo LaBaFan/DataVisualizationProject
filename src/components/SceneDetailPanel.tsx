@@ -103,7 +103,7 @@ function TimeRhythmChart({
 
   return (
     <div className="time-rhythm-bars">
-      {rows.map((row) => {
+      {rows.map((row, index) => {
         const tp = row.time_period ?? '';
         const isActive = activeTimePeriod === tp;
         const isMuted = !isAll(activeTimePeriod) && !isActive;
@@ -118,7 +118,8 @@ function TimeRhythmChart({
                 className="rhythm-fill"
                 style={{
                   width: barWidth(row.order_count, maxOrders),
-                  opacity: 0.35 + (row.delay_rate > 1 ? row.delay_rate / 100 : row.delay_rate) * 0.65
+                  opacity: 0.35 + (row.delay_rate > 1 ? row.delay_rate / 100 : row.delay_rate) * 0.65,
+                  animationDelay: `${index * 0.1}s`
                 }}
               />
             </div>
@@ -148,7 +149,7 @@ function RiskTable({ scenarios }: { scenarios: RiskScenario[] }) {
     <div className="risk-report">
       <div className="risk-top-list" aria-label="高风险场景前三名">
         {topScenarios.map((s, i) => (
-          <article key={s.scenario_id} className="risk-top-card">
+          <article key={s.scenario_id} className="risk-top-card" style={{ animationDelay: `${i * 0.12}s` }}>
             <div className="risk-top-rank">
               <span>TOP</span>
               <strong>{i + 1}</strong>
@@ -183,7 +184,7 @@ function RiskTable({ scenarios }: { scenarios: RiskScenario[] }) {
             <span>风险</span>
           </div>
           {restScenarios.map((s, i) => (
-            <div key={s.scenario_id} className="risk-table-row">
+            <div key={s.scenario_id} className="risk-table-row" style={{ animationDelay: `${(i + 3) * 0.06}s` }}>
               <span className="risk-rank">{i + 4}</span>
               <span>{s.weather ?? '–'}</span>
               <span>{s.traffic_density ?? '–'}</span>
@@ -257,13 +258,14 @@ function ScatterPlot({ points }: { points: DistanceTimePoint[] }) {
       <text x={SCATTER_W - SCATTER_PAD - 30} y={scaleY(meanDur) - 4} className="scatter-ref-label">均值</text>
 
       {/* points */}
-      {points.map((p) => (
+      {points.map((p, i) => (
         <circle
           key={p.order_id}
           cx={scaleX(p.distance_km)}
           cy={scaleY(p.delivery_duration_min)}
           r={p.is_delayed ? 3.2 : 2.4}
           className={`scatter-dot ${p.is_delayed ? 'is-delayed' : ''}`}
+          style={{ animationDelay: `${Math.min(i * 0.008, 2.4)}s` }}
         />
       ))}
 
@@ -422,22 +424,17 @@ export default function SceneDetailPanel({ activeTab = 'all', embedded = false }
               先用该摘要判断当前筛选是否明显高于模块基准，再回到地图查看风险热晕和订单点位置。
             </p>
             <div className="detail-summary-grid">
-              <div>
-                <span>样本订单</span>
-                <strong>{fmt(currentSummary?.order_count)}</strong>
-              </div>
-              <div>
-                <span>平均时长</span>
-                <strong>{fmt(currentSummary?.avg_delivery_duration_min, 1)} min</strong>
-              </div>
-              <div>
-                <span>延迟率</span>
-                <strong>{pct(currentSummary?.delay_rate)}</strong>
-              </div>
-              <div>
-                <span>风险评分</span>
-                <strong>{fmt(currentSummary?.risk_score, 2)}</strong>
-              </div>
+              {([
+                ['样本订单', fmt(currentSummary?.order_count)],
+                ['平均时长', `${fmt(currentSummary?.avg_delivery_duration_min, 1)} min`],
+                ['延迟率', pct(currentSummary?.delay_rate)],
+                ['风险评分', fmt(currentSummary?.risk_score, 2)]
+              ] as Array<[string, string]>).map(([label, value], i) => (
+                <div key={label} style={{ animationDelay: `${i * 0.08}s` }}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
             </div>
           </section>
         ) : null}

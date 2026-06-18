@@ -5345,6 +5345,139 @@ button.order-row.is-selected {
   }
 }
 
+/* ───────── scatter / bubble pop-in animation ───────── */
+
+@keyframes map-inset-pop-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.scatter-dot {
+  animation: map-inset-pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.map-inset-order-point {
+  animation: map-inset-pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.map-inset-bubble-node {
+  animation: map-inset-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.map-inset-risk-node {
+  animation: map-inset-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* ───────── detail panel rhythm bar animation ───────── */
+
+@keyframes rhythm-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.rhythm-fill {
+  animation: rhythm-grow 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  transform-origin: left center;
+}
+
+/* ───────── detail summary grid pop-in ───────── */
+
+@keyframes detail-summary-pop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.detail-summary-grid > div {
+  animation: detail-summary-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ───────── risk top card slide-in ───────── */
+
+@keyframes risk-card-slide {
+  0% {
+    transform: translateX(-24px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.risk-top-card {
+  animation: risk-card-slide 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+/* ───────── risk table row pop-in ───────── */
+
+@keyframes risk-row-pop {
+  0% {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.risk-table-row {
+  animation: risk-row-pop 0.35s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+/* ───────── chart bar animations ───────── */
+
+@keyframes map-inset-bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes map-inset-bar-grow-v {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+.map-inset-fill {
+  animation: map-inset-bar-grow 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+
+.map-inset-bar {
+  animation: map-inset-bar-grow 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+
+.map-inset-time-bar {
+  animation: map-inset-bar-grow-v 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -5355,6 +5488,20 @@ button.order-row.is-selected {
   }
 
   .risk-pulse-ring-outer {
+    animation: none;
+  }
+
+  .rhythm-fill,
+  .scatter-dot,
+  .map-inset-order-point,
+  .map-inset-bubble-node,
+  .map-inset-risk-node,
+  .map-inset-fill,
+  .map-inset-bar,
+  .map-inset-time-bar,
+  .risk-top-card,
+  .risk-table-row,
+  .detail-summary-grid > div {
     animation: none;
   }
 }

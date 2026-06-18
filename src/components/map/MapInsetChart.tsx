@@ -309,7 +309,7 @@ export default function MapInsetChart({
                 >
                   <text x={PAD.left} y={y - 14}>{label}</text>
                   <rect x={PAD.left} y={y} width={plotW} height={22} rx={11} className="map-inset-track" />
-                  <rect x={PAD.left} y={y} width={Math.max(8, width)} height={22} rx={11} className="map-inset-fill" />
+                  <rect x={PAD.left} y={y} width={Math.max(8, width)} height={22} rx={11} className="map-inset-fill" style={{ animationDelay: `${index * 0.1}s` }} />
                   <text className="map-inset-value" x={PAD.left + Math.max(52, width + 14)} y={y + 15}>
                     {index === 0 ? `${fmt(summary?.avg_delivery_duration_min, 1)} min` : index === 1 ? pct(summary?.delay_rate) : fmt(summary?.risk_score, 2)}
                   </text>
@@ -350,7 +350,7 @@ export default function MapInsetChart({
                     <rect className="map-inset-hit-area" x={PAD.left} y={y - 10} width={plotW} height={bandH - 10} rx={8} />
                     <text className="map-inset-category" x={PAD.left} y={y + 25}>{row.traffic_density}</text>
                     <rect className="map-inset-track" x={barX} y={y} width={barW} height={30} rx={7} />
-                    <rect className="map-inset-bar" x={barX} y={y} width={width} height={30} rx={7} fill={colorByRate(row.delay_rate)} />
+                    <rect className="map-inset-bar" x={barX} y={y} width={width} height={30} rx={7} fill={colorByRate(row.delay_rate)} style={{ animationDelay: `${index * 0.08}s` }} />
                     <text className="map-inset-value" x={barX + barW + 12} y={y + 20}>
                       {row.order_count}
                     </text>
@@ -397,7 +397,7 @@ export default function MapInsetChart({
                     }}
                   >
                     <rect className="map-inset-hit-area" x={PAD.left + index * slotW + 4} y={PAD.top} width={slotW - 8} height={plotH} rx={8} />
-                    <rect x={x} y={y} width={barW} height={h} rx={8} fill={colorByRate(row.delay_rate)} />
+                    <rect x={x} y={y} width={barW} height={h} rx={8} fill={colorByRate(row.delay_rate)} className="map-inset-time-bar" style={{ animationDelay: `${index * 0.08}s` }} />
                     <text className="map-inset-value" x={x + barW / 2} y={Math.max(PAD.top + 16, y - 10)}>{fmt(row.avg_delivery_duration_min, 1)} min</text>
                     <text className="map-inset-category" x={x + barW / 2} y={PAD.top + plotH + 25}>{row.time_period}</text>
                   </g>
@@ -422,6 +422,7 @@ export default function MapInsetChart({
                 <g
                   key={selection.item.id}
                   className={`map-inset-bubble-node${active ? ' is-active' : ''}`}
+                  style={{ animationDelay: `${index * 0.08}s` }}
                   role="button"
                   tabIndex={0}
                   onMouseMove={(event) => onHover(selection, event)}
@@ -521,6 +522,7 @@ export default function MapInsetChart({
                   <g
                     key={selection.item.id}
                     className={`map-inset-risk-node${active ? ' is-active' : ''}`}
+                    style={{ animationDelay: `${index * 0.06}s` }}
                     role="button"
                     tabIndex={0}
                     onMouseMove={(event) => onHover(selection, event)}
@@ -565,7 +567,7 @@ export default function MapInsetChart({
               y2={scaleLinear(32, orderYDomain, [PAD.top + plotH, PAD.top])}
             />
             <text className="map-inset-note" x={PAD.left + plotW - 34} y={scaleLinear(32, orderYDomain, [PAD.top + plotH, PAD.top]) - 8}>32 min</text>
-            {ordersSample.map((point) => {
+            {ordersSample.map((point, index) => {
               const selection = orderSelection(point);
               const x = scaleLinear(point.distance_km, orderXDomain, [PAD.left + 8, PAD.left + plotW - 8]);
               const y = scaleLinear(point.delivery_duration_min, orderYDomain, [PAD.top + plotH - 8, PAD.top + 8]);
@@ -574,6 +576,7 @@ export default function MapInsetChart({
                 <g
                   key={point.id}
                   className={`map-inset-order-point${active ? ' is-active' : ''}${point.is_delayed ? ' is-delayed' : ''}`}
+                  style={{ animationDelay: `${Math.min(index * 0.012, 2.0)}s` }}
                   role="button"
                   tabIndex={0}
                   onMouseMove={(event) => onHover(selection, event)}
