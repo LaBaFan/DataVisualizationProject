@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { MapSelection } from '../types/data';
 
 interface MapTooltipProps {
@@ -48,12 +49,51 @@ function title(selection: MapSelection) {
 }
 
 export default function MapTooltip({ selection, x, y }: MapTooltipProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ left: x + 14, top: y + 14 });
+
+  useEffect(() => {
+    if (!selection || !ref.current) return;
+
+    const el = ref.current;
+    const parent = el.closest('.interactive-scene-map, .module-map-card, .overall-module-map') as HTMLElement | null;
+    if (!parent) {
+      setPos({ left: x + 14, top: y + 14 });
+      return;
+    }
+
+    const rect = parent.getBoundingClientRect();
+    const tipW = el.offsetWidth || 220;
+    const tipH = el.offsetHeight || 160;
+
+    let left = x + 14;
+    let top = y + 14;
+
+    // Flip horizontally if overflowing right edge
+    if (left + tipW > rect.width - 8) {
+      left = x - tipW - 14;
+    }
+    // Flip vertically if overflowing bottom edge
+    if (top + tipH > rect.height - 8) {
+      top = y - tipH - 14;
+    }
+    // Clamp to not go negative
+    left = Math.max(4, left);
+    top = Math.max(4, top);
+
+    setPos({ left, top });
+  }, [x, y, selection]);
+
   if (!selection) return null;
 
   const metrics = tooltipMetrics(selection);
 
   return (
-    <div className="map-tooltip" style={{ left: x + 14, top: y + 14 }}>
+    <div
+      ref={ref}
+      className="map-tooltip"
+      style={{ left: pos.left, top: pos.top }}
+    >
       <strong>{title(selection)}</strong>
       {metrics.length ? (
         <dl>

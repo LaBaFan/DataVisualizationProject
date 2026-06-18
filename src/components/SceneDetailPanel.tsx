@@ -18,29 +18,32 @@ function matchesScene(
   sceneId: string,
   item: { weather?: string | null; traffic_density?: string | null; time_period?: string | null }
 ): boolean {
+  const w = keyOf(item.weather);
+  const tp = keyOf(item.time_period);
+  const td = keyOf(item.traffic_density);
   switch (sceneId) {
     case 'sunny':
-      return item.weather === 'Sunny';
+      return w === 'sunny';
     case 'cloudy':
-      return item.weather === 'Cloudy';
+      return w === 'cloudy';
     case 'fog_business':
-      return item.weather === 'Fog';
+      return w === 'fog';
     case 'storm_area':
-      return item.weather === 'Stormy';
+      return w === 'stormy';
     case 'sandstorm':
-      return item.weather === 'Sandstorms';
+      return w === 'sandstorms';
     case 'windy':
-      return item.weather === 'Windy';
+      return w === 'windy';
     case 'night_low_peak':
-      return item.time_period === 'night';
+      return tp === 'night';
     case 'traffic_hub':
-      return ['High', 'Jam'].includes(item.traffic_density ?? '');
+      return td === 'high' || td === 'jam';
     case 'dispatch_center':
     case 'restaurant_street':
     case 'mixed_food_community':
-      return ['lunch_peak', 'dinner_peak'].includes(item.time_period ?? '');
+      return tp === 'lunch_peak' || tp === 'dinner_peak';
     case 'high_risk_residential':
-      return ['High', 'Jam'].includes(item.traffic_density ?? '');
+      return td === 'high' || td === 'jam';
     default:
       return true;
   }
@@ -48,6 +51,10 @@ function matchesScene(
 
 function isAll(v: string | null | undefined) {
   return !v || v === 'All';
+}
+
+function keyOf(v: string | null | undefined): string {
+  return (v ?? '').trim().toLowerCase();
 }
 
 /* ───────── helpers ───────── */
@@ -103,7 +110,7 @@ function TimeRhythmChart({
 
   return (
     <div className="time-rhythm-bars">
-      {rows.map((row) => {
+      {rows.map((row, index) => {
         const tp = row.time_period ?? '';
         const isActive = activeTimePeriod === tp;
         const isMuted = !isAll(activeTimePeriod) && !isActive;
@@ -118,7 +125,8 @@ function TimeRhythmChart({
                 className="rhythm-fill"
                 style={{
                   width: barWidth(row.order_count, maxOrders),
-                  opacity: 0.35 + (row.delay_rate > 1 ? row.delay_rate / 100 : row.delay_rate) * 0.65
+                  opacity: 0.35 + (row.delay_rate > 1 ? row.delay_rate / 100 : row.delay_rate) * 0.65,
+                  animationDelay: `${index * 0.1}s`
                 }}
               />
             </div>
@@ -148,7 +156,7 @@ function RiskTable({ scenarios }: { scenarios: RiskScenario[] }) {
     <div className="risk-report">
       <div className="risk-top-list" aria-label="高风险场景前三名">
         {topScenarios.map((s, i) => (
-          <article key={s.scenario_id} className="risk-top-card">
+          <article key={s.scenario_id} className="risk-top-card" style={{ animationDelay: `${i * 0.12}s` }}>
             <div className="risk-top-rank">
               <span>TOP</span>
               <strong>{i + 1}</strong>
@@ -183,7 +191,7 @@ function RiskTable({ scenarios }: { scenarios: RiskScenario[] }) {
             <span>风险</span>
           </div>
           {restScenarios.map((s, i) => (
-            <div key={s.scenario_id} className="risk-table-row">
+            <div key={s.scenario_id} className="risk-table-row" style={{ animationDelay: `${(i + 3) * 0.06}s` }}>
               <span className="risk-rank">{i + 4}</span>
               <span>{s.weather ?? '–'}</span>
               <span>{s.traffic_density ?? '–'}</span>
@@ -257,13 +265,14 @@ function ScatterPlot({ points }: { points: DistanceTimePoint[] }) {
       <text x={SCATTER_W - SCATTER_PAD - 30} y={scaleY(meanDur) - 4} className="scatter-ref-label">均值</text>
 
       {/* points */}
-      {points.map((p) => (
+      {points.map((p, i) => (
         <circle
           key={p.order_id}
           cx={scaleX(p.distance_km)}
           cy={scaleY(p.delivery_duration_min)}
           r={p.is_delayed ? 3.2 : 2.4}
           className={`scatter-dot ${p.is_delayed ? 'is-delayed' : ''}`}
+          style={{ animationDelay: `${Math.min(i * 0.008, 2.4)}s` }}
         />
       ))}
 
@@ -332,34 +341,59 @@ export default function SceneDetailPanel({ activeTab = 'all', embedded = false }
   }, [selectedSceneId]);
 
   // Time rhythm: show all time periods for the scene, highlight selected
-  const sceneTimeRows = useMemo(
-    () =>
-      filterRows
-        .filter((r) => r.scene_id === selectedSceneId && r.time_period !== 'All' && r.weather === 'All')
-        .sort((a, b) => TIME_ORDER.indexOf(a.time_period ?? '') - TIME_ORDER.indexOf(b.time_period ?? '')),
-    [filterRows, selectedSceneId]
-  );
+  const sceneTimeRows = useMemo(() => {
+    const weather = isAll(selectedWeather) ? 'All' : selectedWeather;
+    // Try scene + selected weather first, fall back to scene + All weather
+    const weatherRows = filterRows.filter(
+      (r) => r.scene_id === selectedSceneId && r.time_period !== 'All' && keyOf(r.weather) === keyOf(weather)
+    );
+    const rows = weatherRows.length > 0
+      ? weatherRows
+      : filterRows.filter(
+          (r) => r.scene_id === selectedSceneId && r.time_period !== 'All' && keyOf(r.weather) === 'all'
+        );
+    return rows.sort((a, b) => TIME_ORDER.indexOf(a.time_period ?? '') - TIME_ORDER.indexOf(b.time_period ?? ''));
+  }, [filterRows, selectedSceneId, selectedWeather]);
 
   // Filter summary: the current scene's metrics with selected filters
   const sceneFilteredRow = useMemo(() => {
     const weather = isAll(selectedWeather) ? 'All' : selectedWeather;
     const timePeriod = isAll(selectedTimePeriod) ? 'All' : selectedTimePeriod;
+    // Exact match first
+    const exact = filterRows.find(
+      (r) =>
+        r.scene_id === selectedSceneId &&
+        keyOf(r.weather) === keyOf(weather) &&
+        keyOf(r.time_period) === keyOf(timePeriod)
+    );
+    if (exact) return exact;
+    // Fallback: scene + time only (weather='All')
+    if (weather !== 'All') {
+      const timeOnly = filterRows.find(
+        (r) =>
+          r.scene_id === selectedSceneId &&
+          keyOf(r.weather) === 'all' &&
+          keyOf(r.time_period) === keyOf(timePeriod)
+      );
+      if (timeOnly) return timeOnly;
+    }
+    // Fallback: scene base
     return filterRows.find(
       (r) =>
         r.scene_id === selectedSceneId &&
-        r.weather === weather &&
-        r.time_period === timePeriod
-    );
+        keyOf(r.weather) === 'all' &&
+        keyOf(r.time_period) === 'all'
+    ) ?? null;
   }, [filterRows, selectedSceneId, selectedWeather, selectedTimePeriod]);
 
   // Risk scenarios: filter by scene + time period + weather
   const sceneScenarios = useMemo(() => {
     let filtered = scenarios.filter((s) => matchesScene(selectedSceneId, s));
     if (!isAll(selectedTimePeriod)) {
-      filtered = filtered.filter((s) => s.time_period === selectedTimePeriod);
+      filtered = filtered.filter((s) => keyOf(s.time_period) === keyOf(selectedTimePeriod));
     }
     if (!isAll(selectedWeather)) {
-      filtered = filtered.filter((s) => s.weather === selectedWeather);
+      filtered = filtered.filter((s) => keyOf(s.weather) === keyOf(selectedWeather));
     }
     return filtered.slice(0, 8);
   }, [scenarios, selectedSceneId, selectedTimePeriod, selectedWeather]);
@@ -368,10 +402,10 @@ export default function SceneDetailPanel({ activeTab = 'all', embedded = false }
   const sceneScatter = useMemo(() => {
     let filtered = scatterPoints.filter((p) => matchesScene(selectedSceneId, p));
     if (!isAll(selectedTimePeriod)) {
-      filtered = filtered.filter((p) => p.time_period === selectedTimePeriod);
+      filtered = filtered.filter((p) => keyOf(p.time_period) === keyOf(selectedTimePeriod));
     }
     if (!isAll(selectedWeather)) {
-      filtered = filtered.filter((p) => p.weather === selectedWeather);
+      filtered = filtered.filter((p) => keyOf(p.weather) === keyOf(selectedWeather));
     }
     return filtered;
   }, [scatterPoints, selectedSceneId, selectedTimePeriod, selectedWeather]);
@@ -422,22 +456,17 @@ export default function SceneDetailPanel({ activeTab = 'all', embedded = false }
               先用该摘要判断当前筛选是否明显高于模块基准，再回到地图查看风险热晕和订单点位置。
             </p>
             <div className="detail-summary-grid">
-              <div>
-                <span>样本订单</span>
-                <strong>{fmt(currentSummary?.order_count)}</strong>
-              </div>
-              <div>
-                <span>平均时长</span>
-                <strong>{fmt(currentSummary?.avg_delivery_duration_min, 1)} min</strong>
-              </div>
-              <div>
-                <span>延迟率</span>
-                <strong>{pct(currentSummary?.delay_rate)}</strong>
-              </div>
-              <div>
-                <span>风险评分</span>
-                <strong>{fmt(currentSummary?.risk_score, 2)}</strong>
-              </div>
+              {([
+                ['样本订单', fmt(currentSummary?.order_count)],
+                ['平均时长', `${fmt(currentSummary?.avg_delivery_duration_min, 1)} min`],
+                ['延迟率', pct(currentSummary?.delay_rate)],
+                ['风险评分', fmt(currentSummary?.risk_score, 2)]
+              ] as Array<[string, string]>).map(([label, value], i) => (
+                <div key={label} style={{ animationDelay: `${i * 0.08}s` }}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
             </div>
           </section>
         ) : null}
