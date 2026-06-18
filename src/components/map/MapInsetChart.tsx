@@ -39,6 +39,41 @@ const RISK_PAD = { left: 86, right: 96, top: 52, bottom: 68 };
 const TRAFFIC_ORDER = ['Low', 'Medium', 'High', 'Jam'];
 const TIME_ORDER = ['breakfast', 'lunch_peak', 'afternoon', 'dinner_peak', 'night'];
 
+const WEATHER_LABELS: Record<string, string> = {
+  All: '全部天气',
+  Sunny: '晴天',
+  Cloudy: '多云',
+  Fog: '雾天',
+  Windy: '大风',
+  Stormy: '暴雨',
+  Sandstorms: '沙尘'
+};
+
+const TRAFFIC_LABELS: Record<string, string> = {
+  Low: '低密度',
+  Medium: '中密度',
+  High: '高密度',
+  Jam: '拥堵',
+  Unknown: '未知交通'
+};
+
+const TIME_LABELS: Record<string, string> = {
+  breakfast: '早餐',
+  lunch_peak: '午高峰',
+  afternoon: '下午',
+  dinner_peak: '晚高峰',
+  night: '夜间',
+  Unknown: '未知时段'
+};
+
+const VEHICLE_LABELS: Record<string, string> = {
+  electric_scooter: '电动车',
+  scooter: '踏板车',
+  motorcycle: '摩托车',
+  bicycle: '自行车',
+  Unknown: '未知载具'
+};
+
 function maxOf(values: Array<number | undefined>) {
   return Math.max(1, ...values.map((value) => (typeof value === 'number' && Number.isFinite(value) ? value : 0)));
 }
@@ -83,7 +118,11 @@ function deterministicOffset(seed: string | undefined, index: number, amplitude:
 }
 
 function shortRiskLabel(row: RiskScenario) {
-  return row.traffic_density ?? row.vehicle_type ?? row.time_period ?? row.weather ?? row.label;
+  if (row.traffic_density) return trafficLabel(row.traffic_density);
+  if (row.vehicle_type) return vehicleLabel(row.vehicle_type);
+  if (row.time_period) return timeLabel(row.time_period);
+  if (row.weather) return weatherLabel(row.weather);
+  return row.label;
 }
 
 function fmt(value: number | undefined, digits = 0) {
@@ -112,6 +151,26 @@ function chartTitle(subView: WeatherSubView) {
     orders: '距离-时长订单散点'
   };
   return labels[subView];
+}
+
+function weatherLabel(value: string | null | undefined) {
+  return WEATHER_LABELS[value ?? ''] ?? value ?? '-';
+}
+
+function trafficLabel(value: string | null | undefined) {
+  return TRAFFIC_LABELS[value ?? ''] ?? value ?? '-';
+}
+
+function timeLabel(value: string | null | undefined) {
+  return TIME_LABELS[value ?? ''] ?? value ?? '-';
+}
+
+function vehicleLabel(value: string | null | undefined) {
+  return VEHICLE_LABELS[value ?? ''] ?? value ?? '-';
+}
+
+function subViewLabel(value: WeatherSubView) {
+  return chartTitle(value);
 }
 
 function keySelect(event: KeyboardEvent<SVGGElement>, selection: MapSelection, onSelect: (selection: MapSelection) => void) {
@@ -249,7 +308,7 @@ export default function MapInsetChart({
   const plotH = HEIGHT - PAD.top - PAD.bottom;
   const riskPlotW = WIDTH - RISK_PAD.left - RISK_PAD.right;
   const riskPlotH = HEIGHT - RISK_PAD.top - RISK_PAD.bottom;
-  const dataFilter = selectedWeather === 'All' ? '全部订单' : `weather == ${selectedWeather}`;
+  const dataFilter = selectedWeather === 'All' ? '全部订单' : `当前筛选：${weatherLabel(selectedWeather)}`;
   const isTimeFiltered = selectedTimePeriod !== 'All' && selectedTimePeriod !== '';
 
   // Current time period overview (aggregated from riskRows)
@@ -360,12 +419,12 @@ export default function MapInsetChart({
     <aside className={`map-inset-chart inset-${selectedSubView}`} aria-label="天气模块主交互图表">
       <div className="map-inset-chart-head">
         <div>
-          <strong>{selectedWeather} / {chartTitle(selectedSubView)}</strong>
-          <span>Data Filter: {dataFilter}</span>
+          <strong>{weatherLabel(selectedWeather)} / {chartTitle(selectedSubView)}</strong>
+          <span>{dataFilter}</span>
         </div>
-        <em>{selectedSubView}</em>
+        <em>{subViewLabel(selectedSubView)}</em>
       </div>
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={`${selectedWeather} ${selectedSubView} chart`}>
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={`${weatherLabel(selectedWeather)} ${chartTitle(selectedSubView)}图表`}>
         <rect className="map-inset-plot-bg" x={PAD.left} y={PAD.top} width={plotW} height={plotH} rx={10} />
 
         {selectedSubView === 'overview' ? (
@@ -414,7 +473,7 @@ export default function MapInsetChart({
                   <rect x={PAD.left} y={y} width={plotW} height={20} rx={10} className="map-inset-track" />
                   <rect x={PAD.left} y={y} width={Math.max(8, baseW)} height={20} rx={10} className="map-inset-fill" style={{ animationDelay: `${index * 0.1}s` }} />
                   <text className="map-inset-value" x={PAD.left + Math.max(52, baseW + 14)} y={y + 14}>
-                    {index === 0 ? `${fmt(summary?.avg_delivery_duration_min, 1)} min` : index === 1 ? pct(summary?.delay_rate) : fmt(summary?.risk_score, 2)}
+                    {index === 0 ? `${fmt(summary?.avg_delivery_duration_min, 1)} 分钟` : index === 1 ? pct(summary?.delay_rate) : fmt(summary?.risk_score, 2)}
                   </text>
                   {/* ── Current time period bar (new bar below) ── */}
                   {curW != null && isTimeFiltered && (
@@ -422,7 +481,7 @@ export default function MapInsetChart({
                       <rect x={PAD.left} y={y + 26} width={plotW} height={20} rx={10} className="map-inset-track" />
                       <rect x={PAD.left} y={y + 26} width={Math.max(8, curW)} height={20} rx={10} fill={compareColor} opacity={0.85} className="map-inset-fill" style={{ animationDelay: `${index * 0.1 + 0.3}s` }} />
                       <text className="map-inset-value" x={PAD.left + Math.max(52, curW + 14)} y={y + 40} fill={compareColor} fontWeight={800}>
-                        {index === 0 ? `${fmt(curValue ?? undefined, 1)} min` : index === 1 ? `${Math.round(curValue ?? 0)}%` : fmt(curValue ?? undefined, 2)}
+                        {index === 0 ? `${fmt(curValue ?? undefined, 1)} 分钟` : index === 1 ? `${Math.round(curValue ?? 0)}%` : fmt(curValue ?? undefined, 2)}
                       </text>
                     </>
                   )}
@@ -466,7 +525,7 @@ export default function MapInsetChart({
                     }}
                   >
                     <rect className="map-inset-hit-area" x={PAD.left} y={y - 6} width={plotW} height={bandH - 6} rx={8} />
-                    <text className="map-inset-category" x={PAD.left} y={y + 20}>{row.traffic_density}</text>
+                    <text className="map-inset-category" x={PAD.left} y={y + 20}>{trafficLabel(row.traffic_density)}</text>
                     <rect className="map-inset-track" x={barX} y={y} width={barW} height={22} rx={6} />
                     {/* Baseline bar (unchanged) */}
                     <rect className="map-inset-bar" x={barX} y={y} width={width} height={22} rx={6} fill={colorByRate(row.delay_rate)} style={{ animationDelay: `${index * 0.08}s` }} />
@@ -484,7 +543,7 @@ export default function MapInsetChart({
                   </g>
                 );
               })}
-            <text className="map-inset-label" x={PAD.left + plotW - 56} y={PAD.top + plotH + 34}>order_count</text>
+            <text className="map-inset-label" x={PAD.left + plotW - 56} y={PAD.top + plotH + 34}>订单量</text>
           </g>
         ) : null}
 
@@ -524,8 +583,8 @@ export default function MapInsetChart({
                   >
                     <rect className="map-inset-hit-area" x={PAD.left + index * slotW + 4} y={PAD.top} width={slotW - 8} height={plotH} rx={8} />
                     <rect x={x} y={y} width={barW} height={h} rx={8} fill={colorByRate(row.delay_rate)} className="map-inset-time-bar" style={{ animationDelay: `${index * 0.08}s` }} />
-                    <text className="map-inset-value" x={x + barW / 2} y={Math.max(PAD.top + 16, y - 10)}>{fmt(row.avg_delivery_duration_min, 1)} min</text>
-                    <text className="map-inset-category" x={x + barW / 2} y={PAD.top + plotH + 25}>{row.time_period}</text>
+                    <text className="map-inset-value" x={x + barW / 2} y={Math.max(PAD.top + 16, y - 10)}>{fmt(row.avg_delivery_duration_min, 1)} 分钟</text>
+                    <text className="map-inset-category" x={x + barW / 2} y={PAD.top + plotH + 25}>{timeLabel(row.time_period)}</text>
                   </g>
                 );
               })}
@@ -563,10 +622,10 @@ export default function MapInsetChart({
                 >
                   <line className="map-inset-grid-line" x1={PAD.left} y1={y} x2={PAD.left + plotW} y2={y} />
                   <rect className="map-inset-hit-area" x={PAD.left} y={y - rowH / 2 + 4} width={plotW} height={rowH - 8} rx={8} />
-                  <text className="map-inset-category" x={x} y={y - r - 8} textAnchor="middle">{row.vehicle_type}</text>
+                  <text className="map-inset-category" x={x} y={y - r - 8} textAnchor="middle">{vehicleLabel(row.vehicle_type)}</text>
                   {/* Baseline bubble (always visible, full color) */}
                   <circle cx={x} cy={y} r={r} fill={colorByRate(row.delay_rate)} opacity={0.76} />
-                  <text className="map-inset-value" x={Math.min(PAD.left + plotW - 34, x + r + 10)} y={y + 4}>{fmt(row.avg_delivery_duration_min, 1)}m</text>
+                  <text className="map-inset-value" x={Math.min(PAD.left + plotW - 34, x + r + 10)} y={y + 4}>{fmt(row.avg_delivery_duration_min, 1)} 分钟</text>
                   {/* Current time period bubble (beside baseline, not overlapping) */}
                   {curRow && isTimeFiltered && (() => {
                     const curX = scaleLinear(curRow.avg_delivery_duration_min, vehicleXDomain, [PAD.left + 12, PAD.left + plotW - 28]);
@@ -587,7 +646,7 @@ export default function MapInsetChart({
                 </g>
               );
             })}
-            <text className="map-inset-label" x={PAD.left + plotW - 60} y={PAD.top + plotH + 34}>avg_delivery_duration_min</text>
+            <text className="map-inset-label" x={PAD.left + plotW - 92} y={PAD.top + plotH + 34}>平均配送时长 / min</text>
           </g>
         ) : null}
 
@@ -694,8 +753,8 @@ export default function MapInsetChart({
                   </g>
                 );
               })}
-              <text className="map-inset-label" x={RISK_PAD.left + riskPlotW - 70} y={RISK_PAD.top + riskPlotH + 38}>avg_delivery_duration_min</text>
-              <text className="map-inset-label" x={28} y={RISK_PAD.top + 18}>delay_rate</text>
+              <text className="map-inset-label" x={RISK_PAD.left + riskPlotW - 116} y={RISK_PAD.top + riskPlotH + 38}>平均配送时长 / min</text>
+              <text className="map-inset-label" x={28} y={RISK_PAD.top + 18}>延迟率</text>
             </g>
           );
         })() : null}
@@ -711,7 +770,7 @@ export default function MapInsetChart({
               x2={PAD.left + plotW}
               y2={scaleLinear(32, orderYDomain, [PAD.top + plotH, PAD.top])}
             />
-            <text className="map-inset-note" x={PAD.left + plotW - 34} y={scaleLinear(32, orderYDomain, [PAD.top + plotH, PAD.top]) - 8}>32 min</text>
+            <text className="map-inset-note" x={PAD.left + plotW - 44} y={scaleLinear(32, orderYDomain, [PAD.top + plotH, PAD.top]) - 8}>32 分钟</text>
             {ordersSample.map((point, index) => {
               const selection = orderSelection(point);
               const x = scaleLinear(point.distance_km, orderXDomain, [PAD.left + 8, PAD.left + plotW - 8]);
@@ -738,8 +797,8 @@ export default function MapInsetChart({
                 </g>
               );
             })}
-            <text className="map-inset-label" x={PAD.left + plotW - 52} y={PAD.top + plotH + 34}>distance_km</text>
-            <text className="map-inset-label" x={24} y={PAD.top + 18}>min</text>
+            <text className="map-inset-label" x={PAD.left + plotW - 78} y={PAD.top + plotH + 34}>配送距离 / km</text>
+            <text className="map-inset-label" x={24} y={PAD.top + 18}>配送时长 / min</text>
           </g>
         ) : null}
       </svg>

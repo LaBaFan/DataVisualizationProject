@@ -45,6 +45,31 @@ const trafficPositions: Record<string, [number, number]> = {
 
 const timeOrder = ['breakfast', 'lunch_peak', 'afternoon', 'dinner_peak', 'night'];
 
+const TRAFFIC_LABELS: Record<string, string> = {
+  Low: '低密度',
+  Medium: '中密度',
+  High: '高密度',
+  Jam: '拥堵',
+  Unknown: '未知交通'
+};
+
+const TIME_LABELS: Record<string, string> = {
+  breakfast: '早餐',
+  lunch_peak: '午高峰',
+  afternoon: '下午',
+  dinner_peak: '晚高峰',
+  night: '夜间',
+  Unknown: '未知时段'
+};
+
+const VEHICLE_LABELS: Record<string, string> = {
+  electric_scooter: '电动车',
+  scooter: '踏板车',
+  motorcycle: '摩托车',
+  bicycle: '自行车',
+  Unknown: '未知载具'
+};
+
 const vehiclePositions: Array<[number, number]> = [
   [420, 430],
   [690, 330],
@@ -84,6 +109,18 @@ function fmt(value: number | undefined, digits = 0) {
 
 function pct(value: number | undefined) {
   return `${Math.round(rate(value) * 100)}%`;
+}
+
+function trafficLabel(value: string | null | undefined) {
+  return TRAFFIC_LABELS[value ?? ''] ?? value ?? '-';
+}
+
+function timeLabel(value: string | null | undefined) {
+  return TIME_LABELS[value ?? ''] ?? value ?? '-';
+}
+
+function vehicleLabel(value: string | null | undefined) {
+  return VEHICLE_LABELS[value ?? ''] ?? value ?? '-';
 }
 
 function trafficColor(delayRate: number | undefined) {
@@ -299,7 +336,7 @@ export default function SubViewEncodingLayer({
               transform={`translate(${item.x} ${item.y})`}
               role="button"
               tabIndex={0}
-              aria-label={`traffic_density ${item.traffic_density}`}
+              aria-label={`交通密度 ${trafficLabel(item.traffic_density)}`}
               style={{ '--traffic-node-color': trafficColor(row.delay_rate), '--traffic-ring-scale': 1 + rate(row.risk_score) * 0.36 } as CSSProperties}
               onMouseMove={(event) => onHover({ type: 'traffic_segment', item }, event)}
               onMouseLeave={onLeave}
@@ -312,7 +349,7 @@ export default function SubViewEncodingLayer({
             >
               <circle className="weather-node-ring" r={r * (1 + rate(row.risk_score) * 0.3)} />
               <circle className="weather-node-core" r={r} />
-              <text x={0} y={4}>{item.traffic_density}</text>
+              <text x={0} y={4}>{trafficLabel(item.traffic_density)}</text>
               <text className="weather-node-value" x={0} y={r + 24}>{pct(row.delay_rate)}</text>
             </g>
           );
@@ -335,7 +372,7 @@ export default function SubViewEncodingLayer({
                 transform={`translate(${item.start[0]} ${item.start[1]})`}
                 role="button"
                 tabIndex={0}
-                aria-label={`time_period ${item.time_period}`}
+                aria-label={`时段 ${timeLabel(item.time_period)}`}
                 onMouseMove={(event) => onHover(timeSelectionItem, event)}
                 onMouseLeave={onLeave}
                 onBlur={onLeave}
@@ -351,7 +388,7 @@ export default function SubViewEncodingLayer({
               >
                 <rect className="weather-time-hit" x={-26} y={-130} width={202} height={170} rx={8} />
                 <rect className="weather-time-bar" x={0} y={-height} width={150} height={height} rx={7} />
-                <text x={75} y={24}>{item.time_period}</text>
+                <text x={75} y={24}>{timeLabel(item.time_period)}</text>
                 <text className="weather-node-value" x={75} y={-height - 12}>{fmt(row.avg_delivery_duration_min, 1)}分</text>
               </g>
             );
@@ -370,7 +407,7 @@ export default function SubViewEncodingLayer({
               transform={`translate(${item.x} ${item.y})`}
               role="button"
               tabIndex={0}
-              aria-label={`vehicle_type ${item.vehicle_type}`}
+              aria-label={`载具 ${vehicleLabel(item.vehicle_type)}`}
               style={{ '--traffic-node-color': trafficColor(row.delay_rate) } as CSSProperties}
               onMouseMove={(event) => onHover({ type: 'traffic_segment', item }, event)}
               onMouseLeave={onLeave}
@@ -383,7 +420,7 @@ export default function SubViewEncodingLayer({
             >
               <circle className="weather-node-ring" r={r + rate(row.risk_score) * 18} />
               <circle className="weather-node-core" r={r} />
-              <text x={0} y={4}>{item.vehicle_type}</text>
+              <text x={0} y={4}>{vehicleLabel(item.vehicle_type)}</text>
               <text className="weather-node-value" x={0} y={r + 24}>{fmt(row.avg_delivery_duration_min, 1)}分</text>
             </g>
           );
@@ -401,7 +438,7 @@ export default function SubViewEncodingLayer({
               transform={`translate(${item.x} ${item.y})`}
               role="button"
               tabIndex={0}
-              aria-label={`risk_score ${fmt(item.risk_score, 2)}`}
+              aria-label={`风险评分 ${fmt(item.risk_score, 2)}`}
               style={{ '--risk-node-size': item.radius } as CSSProperties}
               onMouseMove={(event) => onHover({ type: 'risk_pulse', item }, event)}
               onMouseLeave={onLeave}

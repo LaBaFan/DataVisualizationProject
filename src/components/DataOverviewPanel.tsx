@@ -39,38 +39,83 @@ const subViewCopy: Record<WeatherSubView, { label: string; groupBy: string; ques
     label: '概览',
     groupBy: '天气基线',
     question: '当前天气的 ETA 表现相对全局基线有何差异？',
-    finding: '当前视图以 weather 字段过滤订单，并用全局均值作为对照解释 ETA 风险。'
+    finding: '当前视图按天气筛选订单，并用全局均值作为对照解释 ETA 风险。'
   },
   traffic: {
     label: '交通',
-    groupBy: 'traffic_density',
-    question: '在当前天气下，不同 traffic_density 如何改变 ETA？',
-    finding: '当前视图按 traffic_density 分组，重点比较 Jam、High、Medium、Low 的配送时长和延迟率。'
+    groupBy: '交通密度',
+    question: '在当前天气下，不同交通密度如何改变 ETA？',
+    finding: '当前视图按交通密度分组，重点比较拥堵、高密度、中密度、低密度的配送时长和延迟率。'
   },
   time: {
     label: '时段',
-    groupBy: 'time_period',
+    groupBy: '履约时段',
     question: '在当前天气下，不同时段的 ETA 节奏如何变化？',
-    finding: '当前视图按 time_period 分组，观察 breakfast、lunch_peak、afternoon、dinner_peak、night 的延迟差异。'
+    finding: '当前视图按履约时段分组，观察早餐、午高峰、下午、晚高峰、夜间的延迟差异。'
   },
   vehicle: {
     label: '载具',
-    groupBy: 'vehicle_type',
-    question: '在当前天气下，不同 vehicle_type 的配送表现有何差异？',
-    finding: '当前视图按 vehicle_type 对比订单量、平均配送时长和延迟率，辅助判断车辆类型的稳定性。'
+    groupBy: '载具类型',
+    question: '在当前天气下，不同载具的配送表现有何差异？',
+    finding: '当前视图按载具类型对比订单量、平均配送时长和延迟率，辅助判断车辆类型的稳定性。'
   },
   risk: {
     label: '风险',
-    groupBy: 'top risk_scenario',
+    groupBy: '高风险组合',
     question: '当前天气下哪些风险组合最容易放大 ETA？',
-    finding: '当前视图筛选当前 weather 下的高 risk_score 组合，并比较其配送时长、延迟率和订单量。'
+    finding: '当前视图筛选当前天气下的高风险组合，并比较其配送时长、延迟率和订单量。'
   },
   orders: {
     label: '订单',
     groupBy: '订单级距离-时长样本',
     question: '当前天气下哪些订单呈现距离-时长异常？',
-    finding: '当前视图使用订单级 distance_km 与 delivery_duration_min 样本，识别短距离长耗时和高风险订单。'
+    finding: '当前视图使用订单级配送距离与配送时长样本，识别短距离长耗时和高风险订单。'
   }
+};
+
+const analysisReceiptTitle: Record<WeatherSubView, string> = {
+  overview: '天气分析小票',
+  traffic: '交通分析小票',
+  time: '时段分析小票',
+  vehicle: '载具分析小票',
+  risk: '风险分析小票',
+  orders: '订单分析小票'
+};
+
+const WEATHER_LABELS: Record<string, string> = {
+  All: '全部天气',
+  Sunny: '晴天',
+  Cloudy: '多云',
+  Fog: '雾天',
+  Windy: '大风',
+  Stormy: '暴雨',
+  Sandstorms: '沙尘'
+};
+
+const TRAFFIC_LABELS: Record<string, string> = {
+  Low: '低密度',
+  Medium: '中密度',
+  High: '高密度',
+  Jam: '拥堵',
+  Unknown: '未知交通'
+};
+
+const TIME_LABELS: Record<string, string> = {
+  All: '全部时段',
+  breakfast: '早餐',
+  lunch_peak: '午高峰',
+  afternoon: '下午',
+  dinner_peak: '晚高峰',
+  night: '夜间',
+  Unknown: '未知时段'
+};
+
+const VEHICLE_LABELS: Record<string, string> = {
+  electric_scooter: '电动车',
+  scooter: '踏板车',
+  motorcycle: '摩托车',
+  bicycle: '自行车',
+  Unknown: '未知载具'
 };
 
 function fmt(value: number | undefined, digits = 0) {
@@ -81,6 +126,11 @@ function pct(value: number | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
   const normalized = value > 1 ? value / 100 : value;
   return `${Math.round(normalized * 100)}%`;
+}
+
+function normalizeRate(value: number | undefined) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(1, value > 1 ? value / 100 : value));
 }
 
 function deltaPercent(current: number | undefined, baseline: number | undefined) {
@@ -116,6 +166,42 @@ function deltaRatePoints(current: number | undefined, baseline: number | undefin
   return `${sign}${delta.toFixed(0)} pts`;
 }
 
+function weatherLabel(value: string | null | undefined) {
+  return WEATHER_LABELS[value ?? ''] ?? value ?? '-';
+}
+
+function trafficLabel(value: string | null | undefined) {
+  return TRAFFIC_LABELS[value ?? ''] ?? value ?? '-';
+}
+
+function timeLabel(value: string | null | undefined) {
+  return TIME_LABELS[value ?? ''] ?? value ?? '-';
+}
+
+function vehicleLabel(value: string | null | undefined) {
+  return VEHICLE_LABELS[value ?? ''] ?? value ?? '-';
+}
+
+function selectionDisplayTitle(selection: MapSelection | null) {
+  if (!selection) return null;
+  const item = selection.item;
+  if (selection.type === 'traffic_segment') {
+    if ('vehicle_type' in item && item.vehicle_type) return vehicleLabel(item.vehicle_type);
+    return trafficLabel(item.traffic_density);
+  }
+  if (selection.type === 'delivery_flow_segment') return timeLabel(item.time_period);
+  if (selection.type === 'risk_pulse' || selection.type === 'risk_heat_halo') {
+    const parts = [
+      'traffic_density' in item ? trafficLabel(item.traffic_density) : null,
+      'time_period' in item ? timeLabel(item.time_period) : null,
+      'vehicle_type' in item ? vehicleLabel(item.vehicle_type) : null
+    ].filter(Boolean);
+    return parts.length ? parts.join(' · ') : ('label' in item ? item.label : item.id);
+  }
+  if ('label' in item) return item.label;
+  return 'order_id' in item && item.order_id ? item.order_id : item.id;
+}
+
 function conciseInsight(moduleLabel: string, moduleWeather: string, moduleDelayRate: number | undefined, globalDelayRate: number | undefined) {
   const current = typeof moduleDelayRate === 'number' ? (moduleDelayRate > 1 ? moduleDelayRate / 100 : moduleDelayRate) : undefined;
   const global = typeof globalDelayRate === 'number' ? (globalDelayRate > 1 ? globalDelayRate / 100 : globalDelayRate) : undefined;
@@ -135,8 +221,9 @@ function hotspotInsight(description: string | undefined, fallback: string) {
 
 function selectionTitle(selection: MapSelection | null) {
   if (!selection) return null;
-  if ('label' in selection.item) return selection.item.label;
-  return selection.item.order_id ?? selection.item.id;
+  const displayTitle = selectionDisplayTitle(selection);
+  if (displayTitle) return displayTitle;
+  return 'order_id' in selection.item && selection.item.order_id ? selection.item.order_id : selection.item.id;
 }
 
 function selectionTypeLabel(selection: MapSelection | null) {
@@ -165,13 +252,12 @@ function selectionTypeLabel(selection: MapSelection | null) {
 }
 
 function dataFilterForSubView(weather: string, subView: WeatherSubView) {
-  const base = `weather == ${weather}`;
-  if (weather === 'All') return '全部清洗订单';
-  if (subView === 'traffic') return `${base}；按 traffic_density 分组`;
-  if (subView === 'time') return `${base}；按 time_period 分组`;
-  if (subView === 'vehicle') return `${base}；按 vehicle_type 分组`;
-  if (subView === 'risk') return `${base}；按 risk_score 提取高风险组合`;
-  if (subView === 'orders') return `${base}；使用订单级距离-时长样本`;
+  const base = weather === 'All' ? '全部清洗订单' : `当前筛选：${weatherLabel(weather)}`;
+  if (subView === 'traffic') return `${base}；按交通密度分组`;
+  if (subView === 'time') return `${base}；按履约时段分组`;
+  if (subView === 'vehicle') return `${base}；按载具类型分组`;
+  if (subView === 'risk') return `${base}；提取高风险组合`;
+  if (subView === 'orders') return `${base}；配送距离与配送时长样本`;
   return base;
 }
 
@@ -179,15 +265,15 @@ function dataFilterForSelection(selection: MapSelection | null, weather: string,
   if (!selection) return dataFilterForSubView(weather, subView);
   const item = selection.item;
   const filters = [
-    'weather' in item && item.weather ? `weather == ${item.weather}` : weather !== 'All' ? `weather == ${weather}` : null,
-    'traffic_density' in item && item.traffic_density && item.traffic_density !== 'Unknown' ? `traffic_density == ${item.traffic_density}` : null,
-    'time_period' in item && item.time_period ? `time_period == ${item.time_period}` : null,
-    'vehicle_type' in item && item.vehicle_type ? `vehicle_type == ${item.vehicle_type}` : null,
-    'order_id' in item && item.order_id ? `order_id == ${item.order_id}` : null,
-    'scenario_id' in item && item.scenario_id ? `scenario_id == ${item.scenario_id}` : null
+    'weather' in item && item.weather ? `天气：${weatherLabel(item.weather)}` : weather !== 'All' ? `天气：${weatherLabel(weather)}` : null,
+    'traffic_density' in item && item.traffic_density && item.traffic_density !== 'Unknown' ? `交通密度：${trafficLabel(item.traffic_density)}` : null,
+    'time_period' in item && item.time_period ? `时段：${timeLabel(item.time_period)}` : null,
+    'vehicle_type' in item && item.vehicle_type ? `载具：${vehicleLabel(item.vehicle_type)}` : null,
+    'order_id' in item && item.order_id ? `订单：${item.order_id}` : null,
+    'scenario_id' in item && item.scenario_id ? `组合：${item.scenario_id}` : null
   ].filter(Boolean);
 
-  return filters.length ? filters.join(' AND ') : dataFilterForSubView(weather, subView);
+  return filters.length ? filters.join('；') : dataFilterForSubView(weather, subView);
 }
 
 function keyDifferenceText(
@@ -206,11 +292,11 @@ function keyDifferenceText(
 ) {
   const avgDelta = deltaPercent(moduleMetrics.avg_delivery_duration_min, globalMetrics.avg_delivery_duration_min);
   const delayDelta = deltaRatePoints(moduleMetrics.delay_rate, globalMetrics.delay_rate);
-  if (subView === 'traffic') return `${moduleLabel} 内优先比较 Jam 与 Low。相对基线：平均时长 ${avgDelta}，延迟率 ${delayDelta}。`;
+  if (subView === 'traffic') return `${moduleLabel} 内优先比较拥堵与低密度。相对基线：平均时长 ${avgDelta}，延迟率 ${delayDelta}。`;
   if (subView === 'time') return `${moduleLabel} 内优先比较高峰与非高峰。相对基线：平均时长 ${avgDelta}，延迟率 ${delayDelta}。`;
   if (subView === 'vehicle') return `${moduleLabel} 内按载具类型比较。相对基线：平均时长 ${avgDelta}，延迟率 ${delayDelta}。`;
-  if (subView === 'risk') return `高风险组合按 risk_score 优先排序。当前模块风险评分：${fmt(moduleMetrics.risk_score, 2)}。`;
-  if (subView === 'orders') return `订单点用于比较 distance_km 与 delivery_duration_min。当前模块平均时长相对基线：${avgDelta}。`;
+  if (subView === 'risk') return `高风险组合按综合风险优先排序。当前模块风险评分：${fmt(moduleMetrics.risk_score, 2)}。`;
+  if (subView === 'orders') return `订单点用于比较配送距离与配送时长。当前模块平均时长相对基线：${avgDelta}。`;
   return `${moduleLabel} 相对全局：平均时长 ${avgDelta}，延迟率 ${delayDelta}。`;
 }
 
@@ -250,28 +336,28 @@ function metricsForSelection(
 function selectionExplanation(selection: MapSelection | null) {
   if (!selection) return '';
   if (selection.type === 'scene_hotspot') {
-    return selection.item.description ?? '该入口用于从总览进入对应 weather 过滤模块。';
+    return selection.item.description ?? '该入口用于从总览进入对应天气模块。';
   }
   if (selection.type === 'traffic_segment') {
     if (selection.item.vehicle_type) {
-      return '该对象按 vehicle_type 汇总当前天气下的订单表现，平均配送时长、延迟率和风险评分用于比较载具稳定性。';
+      return '该对象按载具类型汇总当前天气下的订单表现，平均配送时长、延迟率和风险评分用于比较载具稳定性。';
     }
-    return '该对象按 traffic_density 汇总当前天气下的订单表现，延迟率和风险评分用于判断 ETA 风险是否被交通条件放大。';
+    return '该对象按交通密度汇总当前天气下的订单表现，延迟率和风险评分用于判断 ETA 风险是否被交通条件放大。';
   }
   if (selection.type === 'order_dot') {
-    return '该对象表示订单样本或订单聚合点，distance_km、delivery_duration_min 和 risk_score 用于识别异常 ETA。';
+    return '该对象表示订单样本或订单聚合点，配送距离、配送时长和风险评分用于识别异常 ETA。';
   }
   if (selection.type === 'metric_tag') {
     return '该标签仅汇总当前筛选下的真实指标，用于快速读取延迟率、平均时长和风险评分。';
   }
   if (selection.type === 'risk_heat_halo') {
-    return '该对象用 order_count、delay_rate 和 risk_score 表达当前筛选下的 ETA 风险强度。';
+    return '该对象用订单量、延迟率和风险评分表达当前筛选下的 ETA 风险强度。';
   }
   if (selection.type === 'delivery_flow_segment') {
-    return '该对象用于表达当前筛选下的配送节奏摘要，重点读取 order_count、avg_delivery_duration_min 和 delay_rate。';
+    return '该对象用于表达当前筛选下的配送节奏摘要，重点读取订单量、平均配送时长和延迟率。';
   }
   if (selection.type === 'risk_pulse') {
-    return '该对象表示 risk_score 较高的组合，可结合 weather、traffic_density、time_period 和 vehicle_type 解释延迟。';
+    return '该对象表示风险评分较高的组合，可结合天气、交通密度、时段和载具解释延迟。';
   }
   return selection.item.description ?? '当前对象用于解释真实字段组合下的 ETA 延迟风险。';
 }
@@ -281,11 +367,441 @@ function selectionPills(selection: MapSelection | null) {
   const item = selection.item;
   return [
     ['类型', selectionTypeLabel(selection)],
-    ['天气', 'weather' in item ? item.weather : undefined],
-    ['交通', 'traffic_density' in item ? item.traffic_density : undefined],
-    ['时段', 'time_period' in item ? item.time_period : undefined],
-    ['车辆', 'vehicle_type' in item ? item.vehicle_type : undefined]
+    ['天气', 'weather' in item ? weatherLabel(item.weather) : undefined],
+    ['交通', 'traffic_density' in item ? trafficLabel(item.traffic_density) : undefined],
+    ['时段', 'time_period' in item ? timeLabel(item.time_period) : undefined],
+    ['车辆', 'vehicle_type' in item ? vehicleLabel(item.vehicle_type) : undefined]
   ].filter(([, value]) => Boolean(value)) as Array<[string, string]>;
+}
+
+const ETA_THRESHOLD_MIN = 32;
+
+type ReceiptRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+type ReceiptKind = 'order' | 'scenario' | 'weather';
+type ImpactLevel = '低' | '中' | '中高' | '高';
+
+interface ReceiptModel {
+  kind: ReceiptKind;
+  title: string;
+  identifier?: string;
+  riskScore: number;
+  riskLevel: ReceiptRiskLevel;
+  riskLabel: string;
+  statusCode: 'DELAYED' | 'AT RISK' | 'ON TIME';
+  statusLabel: string;
+  duration?: number;
+  overTime?: number;
+  distance?: number;
+  orderCount?: number;
+  delayRate?: number;
+  weather?: string;
+  traffic?: string;
+  timePeriod?: string;
+  vehicle?: string;
+  details: Array<[string, string | undefined]>;
+  sources: Array<{ label: string; level: ImpactLevel }>;
+  note: string;
+}
+
+function receiptRiskLevel(score: number): ReceiptRiskLevel {
+  if (score >= 0.8) return 'critical';
+  if (score >= 0.6) return 'high';
+  if (score >= 0.35) return 'medium';
+  return 'low';
+}
+
+function receiptRiskLabel(level: ReceiptRiskLevel) {
+  const labels: Record<ReceiptRiskLevel, string> = {
+    low: '低风险',
+    medium: '中风险',
+    high: '高风险',
+    critical: '极高风险'
+  };
+  return labels[level];
+}
+
+function receiptStatus(duration: number | undefined) {
+  if (typeof duration !== 'number') return { statusCode: 'AT RISK' as const, statusLabel: '需关注' };
+  if (duration > ETA_THRESHOLD_MIN) return { statusCode: 'DELAYED' as const, statusLabel: '已延迟' };
+  if (duration >= 28) return { statusCode: 'AT RISK' as const, statusLabel: '临近延迟' };
+  return { statusCode: 'ON TIME' as const, statusLabel: '正常' };
+}
+
+function selectionDuration(selection: MapSelection, filteredRow?: SceneFilterSummary | null) {
+  if (selection.type === 'scene_hotspot' && filteredRow) return filteredRow.avg_delivery_duration_min;
+  const item = selection.item;
+  if ('delivery_duration_min' in item && typeof item.delivery_duration_min === 'number') return item.delivery_duration_min;
+  if ('avg_delivery_duration_min' in item && typeof item.avg_delivery_duration_min === 'number') return item.avg_delivery_duration_min;
+  return undefined;
+}
+
+function selectionRiskScore(selection: MapSelection, filteredRow?: SceneFilterSummary | null) {
+  if (selection.type === 'scene_hotspot' && filteredRow?.risk_score !== undefined) return normalizeRate(filteredRow.risk_score);
+  const item = selection.item;
+  if ('risk_score' in item && typeof item.risk_score === 'number') return normalizeRate(item.risk_score);
+  if ('delay_rate' in item && typeof item.delay_rate === 'number') return normalizeRate(item.delay_rate);
+  const duration = selectionDuration(selection, filteredRow);
+  return typeof duration === 'number' ? Math.max(0, Math.min(1, (duration - 18) / 42)) : 0.18;
+}
+
+function selectionReceiptKind(selection: MapSelection) {
+  if (selection.type === 'order_dot') return 'order';
+  if (selection.type === 'module' && selection.item.type === 'weather') return 'weather';
+  if (selection.type === 'scene_hotspot' && selection.item.weather && !selection.item.traffic_density) return 'weather';
+  return 'scenario';
+}
+
+function impactClass(level: ImpactLevel) {
+  if (level === '高') return 'high';
+  if (level === '中高') return 'midhigh';
+  if (level === '中') return 'medium';
+  return 'low';
+}
+
+function receiptSources(input: {
+  weather?: string;
+  traffic?: string;
+  timePeriod?: string;
+  vehicle?: string;
+  distance?: number;
+  duration?: number;
+}) {
+  const sources: Array<{ label: string; level: ImpactLevel }> = [];
+
+  if (typeof input.duration === 'number' && input.duration > ETA_THRESHOLD_MIN) {
+    sources.push({ label: `配送超时 ${fmt(input.duration - ETA_THRESHOLD_MIN, 1)} 分钟`, level: '高' });
+  }
+  if (input.weather) {
+    const level: ImpactLevel = ['暴雨', '沙尘'].includes(input.weather)
+      ? '高'
+      : ['雾天', '大风'].includes(input.weather)
+        ? '中高'
+        : '低';
+    sources.push({ label: `${input.weather}天气`, level });
+  }
+  if (input.traffic) {
+    const level: ImpactLevel = input.traffic === '拥堵' ? '高' : input.traffic === '高密度' ? '中高' : input.traffic === '中密度' ? '中' : '低';
+    sources.push({ label: `${input.traffic}交通`, level });
+  }
+  if (typeof input.distance === 'number') {
+    const level: ImpactLevel = input.distance > 10 ? '高' : input.distance > 6 ? '中高' : input.distance > 3 ? '中' : '低';
+    sources.push({ label: `配送距离 ${fmt(input.distance, 1)} 公里`, level });
+  }
+  if (input.timePeriod) {
+    const level: ImpactLevel = input.timePeriod === '午高峰' || input.timePeriod === '晚高峰' ? '中高' : input.timePeriod === '夜间' ? '中' : '低';
+    sources.push({ label: `${input.timePeriod}时段`, level });
+  }
+  if (input.vehicle) {
+    const harshWeather = input.weather && ['暴雨', '沙尘', '雾天', '大风'].includes(input.weather);
+    const level: ImpactLevel = input.vehicle === '自行车' && harshWeather ? '中高' : input.vehicle === '踏板车' && harshWeather ? '中' : '低';
+    sources.push({ label: input.vehicle, level });
+  }
+
+  return sources.slice(0, 5);
+}
+
+function receiptNote(model: Pick<ReceiptModel, 'kind' | 'duration' | 'overTime' | 'weather' | 'traffic' | 'distance' | 'timePeriod' | 'orderCount' | 'delayRate'>) {
+  const delayed = typeof model.overTime === 'number' && model.overTime > 0;
+  const subject = model.kind === 'order' ? '该订单' : model.kind === 'weather' ? '该天气模块' : '该风险场景';
+  const prefix = delayed && typeof model.duration === 'number'
+    ? `${subject}配送时长为 ${fmt(model.duration, 1)} 分钟，已超过 ${ETA_THRESHOLD_MIN} 分钟延迟阈值 ${fmt(model.overTime, 1)} 分钟。`
+    : `${subject}当前低于 ${ETA_THRESHOLD_MIN} 分钟延迟阈值，但仍需关注天气、交通或距离带来的 ETA 波动。`;
+  const causes: string[] = [];
+
+  if (model.weather === '暴雨') causes.push('暴雨可能导致骑手速度下降和路径绕行');
+  else if (model.weather === '大风') causes.push('大风会降低骑行速度和路线稳定性');
+  else if (model.weather === '雾天') causes.push('雾天能见度下降，配送速度更保守');
+  else if (model.weather === '沙尘') causes.push('沙尘会恶化道路环境并拖慢骑行');
+  if (model.traffic === '拥堵') causes.push('拥堵会增加等待与绕行时间');
+  else if (model.traffic === '高密度') causes.push('高密度交通会放大局部延迟');
+  if (typeof model.distance === 'number' && model.distance > 6) causes.push('配送距离偏长增加在途不确定性');
+  if (model.timePeriod === '午高峰' || model.timePeriod === '晚高峰') causes.push('高峰时段订单压力更集中');
+  if (model.kind === 'scenario' && model.orderCount) causes.push(`${model.orderCount} 单样本指向该组合风险`);
+  if (model.kind === 'weather' && typeof model.delayRate === 'number') causes.push(`该天气延迟率为 ${pct(model.delayRate)}`);
+
+  return causes.length ? `${prefix}${causes.slice(0, 2).join('，')}。` : prefix;
+}
+
+function buildReceipt(selection: MapSelection, filteredRow?: SceneFilterSummary | null): ReceiptModel {
+  const item = selection.item;
+  const kind = selectionReceiptKind(selection);
+  const duration = selectionDuration(selection, filteredRow);
+  const overTime = typeof duration === 'number' ? duration - ETA_THRESHOLD_MIN : undefined;
+  const riskScore = selectionRiskScore(selection, filteredRow);
+  const riskLevel = receiptRiskLevel(riskScore);
+  const { statusCode, statusLabel } = receiptStatus(duration);
+  const weather = 'weather' in item ? weatherLabel(item.weather) : undefined;
+  const traffic = 'traffic_density' in item ? trafficLabel(item.traffic_density) : undefined;
+  const timePeriod = 'time_period' in item ? timeLabel(item.time_period) : undefined;
+  const vehicle = 'vehicle_type' in item ? vehicleLabel(item.vehicle_type) : undefined;
+  const distance = 'distance_km' in item && typeof item.distance_km === 'number' ? item.distance_km : undefined;
+  const orderCount = selection.type === 'scene_hotspot' && filteredRow
+    ? filteredRow.order_count
+    : 'order_count' in item && typeof item.order_count === 'number'
+      ? item.order_count
+      : undefined;
+  const delayRate = selection.type === 'scene_hotspot' && filteredRow
+    ? filteredRow.delay_rate
+    : 'delay_rate' in item && typeof item.delay_rate === 'number'
+      ? item.delay_rate
+      : undefined;
+  const identifier = kind === 'order'
+    ? 'order_id' in item && item.order_id ? `#${item.order_id}` : 'id' in item ? `#${item.id}` : undefined
+    : kind === 'weather'
+      ? weather
+      : selectionDisplayTitle(selection) ?? undefined;
+  const title = kind === 'order' ? '外卖订单风险小票' : kind === 'weather' ? '天气风险小票' : '风险场景小票';
+  const details: Array<[string, string | undefined]> = kind === 'order'
+    ? [
+      ['配送距离', typeof distance === 'number' ? `${fmt(distance, 1)} 公里` : undefined],
+      ['配送时长', typeof duration === 'number' ? `${fmt(duration, 1)} 分钟` : undefined],
+      ['延迟阈值', `${ETA_THRESHOLD_MIN.toFixed(1)} 分钟`],
+      ['延迟状态', statusLabel],
+      ['延迟率', delayRate !== undefined ? pct(delayRate) : statusCode === 'DELAYED' ? '100%' : '0%'],
+      ['风险评分', fmt(riskScore, 2)]
+    ]
+    : [
+      ['订单量', typeof orderCount === 'number' ? `${fmt(orderCount)} 单` : undefined],
+      ['平均配送时长', typeof duration === 'number' ? `${fmt(duration, 1)} 分钟` : undefined],
+      ['延迟阈值', `${ETA_THRESHOLD_MIN.toFixed(1)} 分钟`],
+      ['延迟率', delayRate !== undefined ? pct(delayRate) : undefined],
+      ['风险评分', fmt(riskScore, 2)]
+    ];
+  const sources = receiptSources({ weather, traffic, timePeriod, vehicle, distance, duration });
+  const note = receiptNote({ kind, duration, overTime, weather, traffic, distance, timePeriod, orderCount, delayRate });
+
+  return {
+    kind,
+    title,
+    identifier,
+    riskScore,
+    riskLevel,
+    riskLabel: receiptRiskLabel(riskLevel),
+    statusCode,
+    statusLabel,
+    duration,
+    overTime,
+    distance,
+    orderCount,
+    delayRate,
+    weather,
+    traffic,
+    timePeriod,
+    vehicle,
+    details,
+    sources,
+    note
+  };
+}
+
+function ReceiptRow({ label, value }: { label: string; value?: string }) {
+  if (!value || value === '-') return null;
+  return (
+    <div className="eta-receipt-row">
+      <span>{label}</span>
+      <i aria-hidden="true" />
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function AnalysisReceipt({
+  title,
+  moduleName,
+  panelIndex,
+  subView,
+  filterRows,
+  metricRows,
+  comparisonRows,
+  explanation,
+  keyDifference,
+  riskScore
+}: {
+  title: string;
+  moduleName: string;
+  panelIndex: string;
+  subView: typeof subViewCopy[WeatherSubView];
+  filterRows: Array<[string, string]>;
+  metricRows: Array<[string, string]>;
+  comparisonRows: Array<{
+    label: string;
+    currentLabel: string;
+    currentValue: string;
+    baselineLabel: string;
+    baselineValue: string;
+    delta: string;
+  }>;
+  explanation: string;
+  keyDifference: string;
+  riskScore: number;
+}) {
+  const normalizedRiskScore = normalizeRate(riskScore);
+  const riskLevel = receiptRiskLevel(normalizedRiskScore);
+  const riskLabel = receiptRiskLabel(riskLevel);
+  const etaTotal = metricRows.find(([label]) => label === '平均时长')?.[1] ?? '-';
+  const orderTotal = metricRows.find(([label]) => label === '样本订单')?.[1] ?? '-';
+
+  return (
+    <section className={`eta-risk-receipt default-analysis-receipt receipt-risk-${riskLevel}`} aria-label="FoodETA 分析小票">
+      <div className="eta-receipt-head">
+        <div>
+          <span>FOODETA ANALYSIS RECEIPT</span>
+          <h2>{title}</h2>
+        </div>
+        <em>{riskLabel}</em>
+      </div>
+
+      <div className="eta-receipt-idline">
+        <div>
+          <small>MODULE</small>
+          <strong>{moduleName} · {subView.label}</strong>
+        </div>
+        <b>{panelIndex}</b>
+      </div>
+      <strong className="eta-receipt-status-label">{subView.question}</strong>
+
+      <div className="eta-receipt-chips" aria-label="当前筛选">
+        {filterRows.map(([label, value]) => (
+          <span key={`${label}-${value}`}>{label}: {value}</span>
+        ))}
+      </div>
+
+      <section className="eta-total-block">
+        <span>ETA TOTAL</span>
+        <strong>{etaTotal}</strong>
+        <em>{orderTotal} 样本 · {subView.groupBy}</em>
+      </section>
+
+      <section className="eta-receipt-section">
+        <h3>筛选条件</h3>
+        <div className="eta-ticket-metrics">
+          {filterRows.map(([label, value]) => <ReceiptRow key={label} label={label} value={value} />)}
+        </div>
+      </section>
+
+      <section className="eta-receipt-section">
+        <h3>ETA 明细</h3>
+        <div className="eta-ticket-metrics overview-metric-list">
+          {metricRows.map(([label, value]) => <ReceiptRow key={label} label={label} value={value} />)}
+        </div>
+      </section>
+
+      <section className="eta-receipt-section">
+        <h3>关键差异</h3>
+        <p className="eta-receipt-copy">{keyDifference}</p>
+        <div className="analysis-compare-stack">
+          {comparisonRows.map((row) => (
+            <article key={row.label} className="analysis-compare-card">
+              <ReceiptRow label={row.label} value={`${row.currentValue} / ${row.baselineValue}`} />
+              <ReceiptRow label={`${row.currentLabel} 对 ${row.baselineLabel}`} value={`差异 ${row.delta}`} />
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="eta-risk-score-block">
+        <div>
+          <span>RISK SCORE</span>
+          <strong>{fmt(normalizedRiskScore, 2)} / 1.00</strong>
+        </div>
+        <div className="eta-risk-meter" aria-hidden="true"><i style={{ width: `${Math.round(normalizedRiskScore * 100)}%` }} /></div>
+        <em>{riskLabel}</em>
+      </section>
+
+      <section className="eta-risk-note">
+        <strong>当前发现</strong>
+        <p>{explanation}</p>
+      </section>
+
+      <p className="eta-receipt-footer">ETA Checked by FoodETA</p>
+    </section>
+  );
+}
+
+function RiskReceipt({
+  receipt,
+  currentModuleName,
+  onFullAnalysis,
+  onReturn
+}: {
+  receipt: ReceiptModel;
+  currentModuleName: string;
+  onFullAnalysis: () => void;
+  onReturn: () => void;
+}) {
+  const chips = [receipt.weather, receipt.traffic ? `${receipt.traffic}交通` : undefined, receipt.timePeriod, receipt.vehicle].filter(Boolean);
+  const returnLabel = receipt.weather ? `返回${receipt.weather}订单` : `返回${currentModuleName}订单`;
+
+  return (
+    <section className={`eta-risk-receipt receipt-risk-${receipt.riskLevel}`} aria-label="FoodETA ETA 风险小票">
+      <div className="eta-receipt-head">
+        <div>
+          <span>FOODETA DELIVERY</span>
+          <h2>{receipt.title}</h2>
+        </div>
+        <em>{receipt.riskLabel}</em>
+      </div>
+      <div className="eta-receipt-idline">
+        <div>
+          <small>{receipt.kind === 'order' ? 'ORDER' : receipt.kind === 'weather' ? 'WEATHER' : 'SCENARIO'}</small>
+          <strong>{receipt.identifier}</strong>
+        </div>
+        <b>{receipt.statusCode}</b>
+      </div>
+      <strong className="eta-receipt-status-label">{receipt.statusLabel}</strong>
+      {chips.length ? (
+        <div className="eta-receipt-chips">
+          {chips.map((chip) => <span key={chip}>{chip}</span>)}
+        </div>
+      ) : null}
+      <section className="eta-total-block">
+        <span>ETA TOTAL</span>
+        <strong>{fmt(receipt.duration, 1)} 分钟</strong>
+        {typeof receipt.overTime === 'number' ? (
+          <em className={receipt.overTime > 0 ? 'is-delayed' : 'is-early'}>
+            {receipt.overTime > 0 ? `超过延迟阈值 +${fmt(receipt.overTime, 1)} 分钟` : `低于延迟阈值 ${fmt(Math.abs(receipt.overTime), 1)} 分钟`}
+          </em>
+        ) : <em>缺少配送时长数据</em>}
+      </section>
+      <section className="eta-receipt-section">
+        <h3>ETA 明细</h3>
+        <div className="eta-ticket-metrics">
+          {receipt.details.map(([label, value]) => <ReceiptRow key={label} label={label} value={value} />)}
+        </div>
+      </section>
+      <section className="eta-risk-score-block">
+        <div>
+          <span>RISK SCORE</span>
+          <strong>{fmt(receipt.riskScore, 2)} / 1.00</strong>
+        </div>
+        <div className="eta-risk-meter" aria-hidden="true"><i style={{ width: `${Math.round(receipt.riskScore * 100)}%` }} /></div>
+        <em>{receipt.riskLabel}</em>
+      </section>
+      {receipt.sources.length ? (
+        <section className="eta-receipt-section">
+          <h3>风险来源</h3>
+          <div className="eta-risk-source-list">
+            {receipt.sources.map((source) => (
+              <div className="eta-risk-source-row" key={source.label}>
+                <span>{source.label}</span>
+                <i aria-hidden="true" />
+                <strong className={`impact-${impactClass(source.level)}`}>{source.level}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+      <section className="eta-risk-note">
+        <strong>风险备注</strong>
+        <p>{receipt.note}</p>
+      </section>
+      <div className="overview-ticket-actions eta-receipt-actions">
+        <button type="button" onClick={onFullAnalysis}>查看完整分析</button>
+        <button type="button" onClick={onReturn}>{returnLabel}</button>
+      </div>
+      <p className="eta-receipt-footer">ETA Risk Checked by FoodETA</p>
+    </section>
+  );
 }
 
 function sectionForSelection(selection: MapSelection | null, fallback: ActiveSection): ActiveSection {
@@ -389,7 +905,7 @@ export default function DataOverviewPanel() {
     [overview, sceneFilterRows, selectedScene, selectedTimePeriod, selectedWeather, timeRows, trafficDensityRows, weatherRows]
   );
 
-  const metrics = useMemo(() => {
+  const metrics = useMemo<Array<[string, string]>>(() => {
     if (selectedMetrics) return selectedMetrics;
 
     return [
@@ -445,17 +961,17 @@ export default function DataOverviewPanel() {
   const filterPills = selectedItem
     ? selectionPills(selectedItem)
     : [
-        ['天气', currentModule.weather],
-        ['时段', selectedTimePeriod],
+        ['天气', weatherLabel(currentModule.weather)],
+        ['时段', timeLabel(selectedTimePeriod)],
         ['子视图', currentSubView.label]
       ];
   const explanation = selectedItem
     ? selectionExplanation(selectedItem)
     : `${currentSubView.finding} ${conciseInsight(currentModuleName, currentModule.weather, moduleMetrics.delay_rate, globalMetrics.delay_rate)}`;
-  const panelStatus = selectedItem ? 'ETA 风险票据' : '分析面板';
   const panelIndex = activeModule === 'overall' ? '00 总览' : `${String(['sunny', 'fog', 'cloudy', 'stormy', 'sandstorms', 'windy'].indexOf(activeModule) + 1).padStart(2, '0')} ${currentModuleName}`;
   const dataFilter = dataFilterForSelection(selectedItem, currentModule.weather, selectedSubView);
   const keyDifference = keyDifferenceText(currentModuleName, selectedSubView, moduleMetrics, globalMetrics);
+  const receipt = selectedItem ? buildReceipt(selectedItem, hotspotFilteredRow) : null;
   const handleFullAnalysisClick = () => {
     const targetSection = sectionForSelection(selectedItem, activeSection ?? 'overview');
     setSelectedItem(null);
@@ -479,82 +995,30 @@ export default function DataOverviewPanel() {
         key={`${activeModule}-${activeSection}-${selectedWeather}-${selectedTimePeriod}-${selectedSubView}-${selectionTitle(selectedItem) ?? 'none'}`}
         className="overview-content"
       >
-        <section className="overview-block overview-current-view" aria-labelledby="overview-current-heading">
-          <span className="overview-status-line">{panelStatus}</span>
-          <small className="overview-panel-index">{selectedItem ? selectionTypeLabel(selectedItem) : panelIndex}</small>
-          <h2 id="overview-current-heading">{selectedItem ? selectionTitle(selectedItem) : `${currentModuleName} ${currentSubView.label}`}</h2>
-          <p className="overview-question">
-            {selectedItem ? '当前对象已锁定，右侧内容切换为 ETA 风险票据。' : currentSubView.question}
-          </p>
-
-          <div className="overview-filter-summary" aria-label="当前筛选">
-            {filterPills.map(([label, value]) => (
-              <span key={`${label}-${value}`}>{label}: {value}</span>
-            ))}
-          </div>
-          <div className="overview-filter-summary" aria-label="数据过滤条件">
-            <span>数据过滤：{dataFilter}</span>
-          </div>
-        </section>
-
-        {selectedItem ? (
-          <section className="overview-block" aria-labelledby="overview-metrics-heading">
-            <h3 id="overview-metrics-heading">票据指标</h3>
-            <div className="overview-metric-list">
-              {metrics.slice(0, 7).map(([label, value]) => (
-                <div key={label}>
-                  <span>{label}</span>
-                  <strong>{value}</strong>
-                </div>
-              ))}
-            </div>
-          </section>
+        {receipt ? (
+          <RiskReceipt
+            receipt={receipt}
+            currentModuleName={currentModuleName}
+            onFullAnalysis={handleFullAnalysisClick}
+            onReturn={() => setSelectedItem(null)}
+          />
         ) : (
-          <section className="overview-block" aria-labelledby="overview-compare-heading">
-            <h3 id="overview-compare-heading">关键差异</h3>
-            <p className="overview-explain">{keyDifference}</p>
-            <div className="analysis-compare-stack">
-              {comparisonRows.slice(0, 2).map((row) => (
-                <article key={row.label} className="analysis-compare-card">
-                  <span>{row.label}</span>
-                  <div>
-                    <strong>{row.currentLabel}: {row.currentValue}</strong>
-                    <em>{row.baselineLabel}: {row.baselineValue}</em>
-                  </div>
-                  <b>Δ {row.delta}</b>
-                </article>
-              ))}
-            </div>
-          </section>
+          <AnalysisReceipt
+            title={analysisReceiptTitle[selectedSubView]}
+            moduleName={currentModuleName}
+            panelIndex={panelIndex}
+            subView={currentSubView}
+            filterRows={[
+              ...(filterPills as Array<[string, string]>),
+              ['数据过滤', dataFilter]
+            ]}
+            metricRows={metrics}
+            comparisonRows={comparisonRows}
+            explanation={explanation}
+            keyDifference={keyDifference}
+            riskScore={moduleMetrics.risk_score ?? 0}
+          />
         )}
-
-        <section className="overview-block" aria-labelledby="overview-explain-heading">
-          <h3 id="overview-explain-heading">{selectedItem ? '解释' : '当前发现'}</h3>
-          <p className="overview-explain">{explanation}</p>
-        </section>
-
-        <section className="overview-block overview-actions-block" aria-labelledby="overview-actions-heading">
-          <h3 id="overview-actions-heading">{selectedItem ? '票据操作' : '交互提示'}</h3>
-          {selectedItem ? (
-            <div className="overview-ticket-actions">
-              <button type="button" onClick={handleFullAnalysisClick}>
-                查看完整分析
-              </button>
-              <button type="button" onClick={() => setSelectedItem(null)}>
-                返回 {currentModuleName} {currentSubView.label} 分析
-              </button>
-            </div>
-          ) : (
-            <div className="analysis-hint-box">
-              <span>点击地图区域可查看：</span>
-              <ul>
-                <li>延迟订单分布</li>
-                <li>异常路径样本</li>
-                <li>风险热区详情</li>
-              </ul>
-            </div>
-          )}
-        </section>
       </div>
     </aside>
   );
