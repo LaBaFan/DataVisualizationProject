@@ -86,6 +86,29 @@ function clamp(value: number, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
 }
 
+function lerpRgb(c1: [number, number, number], c2: [number, number, number], t: number): string {
+  const r = Math.round(c1[0] + (c2[0] - c1[0]) * t);
+  const g = Math.round(c1[1] + (c2[1] - c1[1]) * t);
+  const b = Math.round(c1[2] + (c2[2] - c1[2]) * t);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function gradientCompareColor(cur: number, base: number): string {
+  if (!base || !Number.isFinite(base) || !Number.isFinite(cur)) return '#64748b';
+  const ratio = cur / base;
+  const delta = ratio - 1; // negative = better (shorter), positive = worse (longer)
+  if (Math.abs(delta) < 0.03) return '#94a3b8'; // within 3% = neutral gray
+  if (delta < 0) {
+    // Shorter = green, deeper as delta increases
+    const t = clamp(Math.abs(delta) / 0.35);
+    return lerpRgb([52, 211, 153], [5, 150, 105], t); // light green → deep green
+  } else {
+    // Longer = red, deeper as delta increases
+    const t = clamp(delta / 0.35);
+    return lerpRgb([248, 113, 113], [185, 28, 28], t); // light red → deep red
+  }
+}
+
 function finiteValues(values: Array<number | undefined>) {
   return values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
 }
@@ -443,12 +466,12 @@ export default function MapInsetChart({
               const curW = curValue != null ? clamp(curValue / max) * 420 : null;
               // Green = current shorter (better), Red = current longer (worse)
               const compareColor = curValue != null && baseValue != null
-                ? (curValue < baseValue * 0.97 ? '#10b981' : curValue > baseValue * 1.03 ? '#ef4444' : '#64748b')
+                ? gradientCompareColor(curValue, baseValue)
                 : '#64748b';
               const active = selectedId === item.id;
               return (
                 <g
-                  key={item.id}
+                  key={`${item.id}-${selectedTimePeriod}`}
                   className={`map-inset-overview-row${active ? ' is-active' : ''}`}
                   role="button"
                   tabIndex={0}
@@ -472,7 +495,7 @@ export default function MapInsetChart({
                   {curW != null && isTimeFiltered && (
                     <>
                       <rect x={PAD.left} y={y + 26} width={plotW} height={20} rx={10} className="map-inset-track" />
-                      <rect x={PAD.left} y={y + 26} width={Math.max(8, curW)} height={20} rx={10} fill={compareColor} opacity={0.85} className="map-inset-fill" style={{ animationDelay: `${index * 0.1 + 0.3}s` }} />
+                      <rect x={PAD.left} y={y + 26} width={Math.max(8, curW)} height={20} rx={10} style={{ fill: compareColor, animation: 'map-inset-bar-grow 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both', transformBox: 'fill-box', transformOrigin: 'left center', animationDelay: `${index * 0.1 + 0.3}s` }} />
                       <text className="map-inset-value" x={PAD.left + Math.max(52, curW + 14)} y={y + 40} fill={compareColor} fontWeight={800}>
                         {index === 0 ? `${fmt(curValue ?? undefined, 1)} 分钟` : index === 1 ? `${Math.round(curValue ?? 0)}%` : fmt(curValue ?? undefined, 2)}
                       </text>
@@ -493,16 +516,17 @@ export default function MapInsetChart({
                 const y = PAD.top + index * bandH + 10;
                 const barX = PAD.left + 104;
                 const barW = plotW - 214;
-                const width = Math.max(18, clamp(rate(row.delay_rate) / maxTrafficDelayRate) * barW);
+                const baseRate = rate(row.delay_rate);
+                const width = Math.max(18, clamp(baseRate / maxTrafficDelayRate) * barW);
                 const active = selectedId === selection.item.id;
                 const curRow = currentTrafficRows.find((r) => r.traffic_density === row.traffic_density);
                 const curWidth = curRow ? Math.max(18, clamp(rate(curRow.delay_rate) / maxTrafficDelayRate) * barW) : null;
                 const compareColor = curRow
-                  ? (curRow.order_count < row.order_count * 0.97 ? '#10b981' : curRow.order_count > row.order_count * 1.03 ? '#ef4444' : colorByRate(curRow.delay_rate))
-                  : colorByRate(row.delay_rate);
+                  ? gradientCompareColor(rate(curRow.delay_rate), baseRate)
+                  : '#64748b';
                 return (
                   <g
-                    key={selection.item.id}
+                    key={`${selection.item.id}-${selectedTimePeriod}`}
                     className={`map-inset-bar-row${active ? ' is-active' : ''}`}
                     role="button"
                     tabIndex={0}
@@ -524,7 +548,7 @@ export default function MapInsetChart({
                     {curRow && curWidth != null && isTimeFiltered && (
                       <>
                         <rect className="map-inset-track" x={barX} y={y + 28} width={barW} height={22} rx={6} />
-                        <rect x={barX} y={y + 28} width={curWidth} height={22} rx={6} fill={compareColor} opacity={0.85} style={{ animationDelay: `${index * 0.08 + 0.3}s` }} className="map-inset-bar" />
+                        <rect x={barX} y={y + 28} width={curWidth} height={22} rx={6} style={{ fill: compareColor, animation: 'map-inset-bar-grow 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both', transformBox: 'fill-box', transformOrigin: 'left center', animationDelay: `${index * 0.08 + 0.3}s` }} />
                         <text className="map-inset-value map-inset-delay-value" x={barX + barW + 14} y={y + 37} textAnchor="start" fill={compareColor} fontWeight={800}>{pct(curRow.delay_rate)}</text>
                         <text className="map-inset-note map-inset-sample-note" x={barX + barW + 14} y={y + 52} textAnchor="start">时段 {curRow.order_count}</text>
                       </>
@@ -595,7 +619,7 @@ export default function MapInsetChart({
 
               return (
                 <g
-                  key={selection.item.id}
+                  key={`${selection.item.id}-${selectedTimePeriod}`}
                   className={`map-inset-bubble-node${active ? ' is-active' : ''}`}
                   style={{ animationDelay: `${index * 0.08}s` }}
                   role="button"
@@ -620,9 +644,7 @@ export default function MapInsetChart({
                     const curX = scaleLinear(curRow.avg_delivery_duration_min, vehicleXDomain, [PAD.left + 12, PAD.left + plotW - 28]);
                     const maxCurOrders = Math.max(1, ...currentVehicleRows.map(v => v.order_count));
                     const curR = 5 + clamp(curRow.order_count / maxCurOrders) * 10;
-                    const curColor = curRow.avg_delivery_duration_min < row.avg_delivery_duration_min * 0.97 ? '#10b981'
-                      : curRow.avg_delivery_duration_min > row.avg_delivery_duration_min * 1.03 ? '#ef4444'
-                      : '#64748b';
+                    const curColor = gradientCompareColor(curRow.avg_delivery_duration_min, row.avg_delivery_duration_min);
                     return (
                       <>
                         <circle cx={curX} cy={y - r - 18} r={curR} fill={curColor} opacity={0.85} />
