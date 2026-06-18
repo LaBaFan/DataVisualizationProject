@@ -62,10 +62,10 @@ export default function ScenarioScatterPlot({
       />
 
       <text className="scatter-ref-label" x={PAD.left + 8} y={y(globalAvgDuration) - 6}>
-        全局平均 {globalAvgDuration.toFixed(1)} min
+        全局平均 {globalAvgDuration.toFixed(1)} 分钟
       </text>
       <text className="scatter-ref-label scatter-ref-label-scenario" x={PAD.left + 8} y={y(scenarioAvgDuration) + 16}>
-        当前场景 {scenarioAvgDuration.toFixed(1)} min
+        当前场景 {scenarioAvgDuration.toFixed(1)} 分钟
       </text>
 
       {points.map((point) => {

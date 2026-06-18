@@ -50,7 +50,6 @@ function vehicleStroke(vehicle: string | null | undefined) {
   const normalized = (vehicle ?? '').toLowerCase();
   if (normalized.includes('electric')) return '7 4';
   if (normalized.includes('scooter')) return '2 3';
-  if (normalized.includes('bicycle')) return '1 4';
   return undefined;
 }
 
@@ -121,7 +120,7 @@ export default function RiskScenarioBubblePlot({ scenarios, selectedScenarioId, 
         <line className="risk-reference-line" x1={plot.thresholdX} x2={plot.thresholdX} y1={margin.top} y2={height - margin.bottom} />
         <line className="risk-reference-line" x1={margin.left} x2={width - margin.right} y1={plot.avgDelayY} y2={plot.avgDelayY} />
 
-        <text className="risk-reference-label" x={plot.thresholdX + 8} y={margin.top + 14}>32 min 阈值</text>
+        <text className="risk-reference-label" x={plot.thresholdX + 8} y={margin.top + 14}>32 分钟阈值</text>
         <text className="risk-reference-label" x={width - margin.right - 110} y={plot.avgDelayY - 8}>平均延迟率 {formatPercent(plot.avgDelayRate)}</text>
         <text className="risk-quadrant-label" x={width - margin.right - 96} y={margin.top + 42}>高风险组合</text>
 
@@ -144,8 +143,8 @@ export default function RiskScenarioBubblePlot({ scenarios, selectedScenarioId, 
           );
         })}
 
-        <text className="risk-axis-label" x={width / 2} y={height - 15}>平均配送时长 avg_delivery_duration_min</text>
-        <text className="risk-axis-label" transform={`translate(20 ${height / 2 + 58}) rotate(-90)`}>延迟率 delay_rate</text>
+        <text className="risk-axis-label" x={width / 2} y={height - 15}>平均配送时长</text>
+        <text className="risk-axis-label" transform={`translate(20 ${height / 2 + 58}) rotate(-90)`}>延迟率</text>
 
         {plot.points.map((point) => {
           const active = selectedScenarioId === point.scenario.scenario_id;
@@ -205,9 +204,9 @@ export default function RiskScenarioBubblePlot({ scenarios, selectedScenarioId, 
           <span>{[hovered.scenario.weather, hovered.scenario.traffic_density, hovered.scenario.time_period, hovered.scenario.vehicle_type].map(labelOf).join(' · ')}</span>
           <dl>
             <div><dt>订单数</dt><dd>{hovered.scenario.order_count.toLocaleString()}</dd></div>
-            <div><dt>平均时长</dt><dd>{formatNumber(hovered.scenario.avg_delivery_duration_min, 1)} min</dd></div>
+            <div><dt>平均时长</dt><dd>{formatNumber(hovered.scenario.avg_delivery_duration_min, 1)} 分钟</dd></div>
             <div><dt>延迟率</dt><dd>{formatPercent(hovered.scenario.delay_rate)}</dd></div>
-            <div><dt>平均距离</dt><dd>{formatNumber(hovered.scenario.avg_distance_km, 1)} km</dd></div>
+            <div><dt>平均距离</dt><dd>{formatNumber(hovered.scenario.avg_distance_km, 1)} 公里</dd></div>
           </dl>
         </div>
       ) : null}

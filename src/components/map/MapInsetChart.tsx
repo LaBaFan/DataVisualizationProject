@@ -70,7 +70,6 @@ const VEHICLE_LABELS: Record<string, string> = {
   electric_scooter: '电动车',
   scooter: '踏板车',
   motorcycle: '摩托车',
-  bicycle: '自行车',
   Unknown: '未知载具'
 };
 
@@ -636,7 +635,7 @@ export default function MapInsetChart({
                 </g>
               );
             })}
-            <text className="map-inset-label" x={PAD.left + plotW - 92} y={PAD.top + plotH + 34}>平均配送时长 / min</text>
+            <text className="map-inset-label" x={PAD.left + plotW - 92} y={PAD.top + plotH + 34}>平均配送时长（分钟）</text>
           </g>
         ) : null}
 
@@ -743,7 +742,7 @@ export default function MapInsetChart({
                   </g>
                 );
               })}
-              <text className="map-inset-label" x={RISK_PAD.left + riskPlotW - 116} y={RISK_PAD.top + riskPlotH + 38}>平均配送时长 / min</text>
+              <text className="map-inset-label" x={RISK_PAD.left + riskPlotW - 116} y={RISK_PAD.top + riskPlotH + 38}>平均配送时长（分钟）</text>
               <text className="map-inset-label" x={28} y={RISK_PAD.top + 18}>延迟率</text>
             </g>
           );
@@ -787,8 +786,8 @@ export default function MapInsetChart({
                 </g>
               );
             })}
-            <text className="map-inset-label" x={PAD.left + plotW - 78} y={PAD.top + plotH + 34}>配送距离 / km</text>
-            <text className="map-inset-label" x={24} y={PAD.top + 18}>配送时长 / min</text>
+            <text className="map-inset-label" x={PAD.left + plotW - 78} y={PAD.top + plotH + 34}>配送距离（公里）</text>
+            <text className="map-inset-label" x={24} y={PAD.top + 18}>配送时长（分钟）</text>
           </g>
         ) : null}
       </svg>

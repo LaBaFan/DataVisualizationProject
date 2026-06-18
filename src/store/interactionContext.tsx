@@ -6,7 +6,7 @@ import {
   getWeatherByModuleId,
   WeatherModuleId
 } from '../data/weatherModules';
-import { ActiveSection, MapSelection } from '../types/data';
+import { ActiveSection, MapSelection, WeatherComparisonContext } from '../types/data';
 
 export type OverallFilter = 'all' | 'weather' | 'area';
 export type ActiveModule = WeatherModuleId;
@@ -16,6 +16,8 @@ interface InteractionContextValue {
   activeModule: ActiveModule;
   selectedWeather: string;
   selectedTimePeriod: string;
+  selectedTrafficDensity: string;
+  selectedVehicleType: string;
   selectedSceneId: string;
   overallFilter: OverallFilter;
   activeSection: ActiveSection;
@@ -24,10 +26,13 @@ interface InteractionContextValue {
   selectedOrderId: string | null;
   selectedSubView: WeatherSubView;
   programmaticSection: ActiveSection | null;
+  weatherComparisonContext: WeatherComparisonContext | null;
   setActiveModule: (module: ActiveModule) => void;
   switchModule: (moduleId: ActiveModule) => void;
   setSelectedWeather: (weather: string) => void;
   setSelectedTimePeriod: (timePeriod: string) => void;
+  setSelectedTrafficDensity: (trafficDensity: string) => void;
+  setSelectedVehicleType: (vehicleType: string) => void;
   setSelectedSceneId: (sceneId: string) => void;
   setOverallFilter: (filter: OverallFilter) => void;
   setActiveSection: (section: ActiveSection) => void;
@@ -37,6 +42,7 @@ interface InteractionContextValue {
   setSelectedScenarioId: (scenarioId: string | null) => void;
   setSelectedOrderId: (orderId: string | null) => void;
   setSelectedSubView: (subView: WeatherSubView) => void;
+  setWeatherComparisonContext: (context: WeatherComparisonContext | null) => void;
   clearSelection: () => void;
 }
 
@@ -46,6 +52,8 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
   const [activeModule, setActiveModuleState] = useState<ActiveModule>('overall');
   const [selectedWeather, setSelectedWeather] = useState('All');
   const [selectedTimePeriod, setSelectedTimePeriod] = useState('All');
+  const [selectedTrafficDensity, setSelectedTrafficDensity] = useState('All');
+  const [selectedVehicleType, setSelectedVehicleType] = useState('All');
   const [selectedSceneIdState, setSelectedSceneIdState] = useState('overall');
   const [overallFilterState, setOverallFilterState] = useState<OverallFilter>('all');
   const [activeSection, setActiveSectionState] = useState<ActiveSection>('overview');
@@ -54,6 +62,7 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [selectedSubView, setSelectedSubView] = useState<WeatherSubView>('overview');
   const [programmaticSection, setProgrammaticSection] = useState<ActiveSection | null>(null);
+  const [weatherComparisonContext, setWeatherComparisonContext] = useState<WeatherComparisonContext | null>(null);
   const programmaticTimer = useRef<number | null>(null);
 
   const setActiveSection = (section: ActiveSection) => {
@@ -104,7 +113,10 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
     setSelectedItemState(null);
     setSelectedScenarioId(null);
     setSelectedOrderId(null);
+    setWeatherComparisonContext(null);
     setSelectedSubView('overview');
+    setSelectedTrafficDensity('All');
+    setSelectedVehicleType('All');
   };
 
   const setActiveModule = (moduleId: ActiveModule) => {
@@ -117,7 +129,10 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
     setSelectedItemState(null);
     setSelectedScenarioId(null);
     setSelectedOrderId(null);
+    setWeatherComparisonContext(null);
     setSelectedSubView('overview');
+    setSelectedTrafficDensity('All');
+    setSelectedVehicleType('All');
   };
 
   const setOverallFilter = (filter: OverallFilter) => {
@@ -125,6 +140,7 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
     setSelectedItemState(null);
     setSelectedScenarioId(null);
     setSelectedOrderId(null);
+    setWeatherComparisonContext(null);
   };
 
   const value = useMemo<InteractionContextValue>(
@@ -132,6 +148,8 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
       activeModule,
       selectedWeather,
       selectedTimePeriod,
+      selectedTrafficDensity,
+      selectedVehicleType,
       selectedSceneId: selectedSceneIdState,
       overallFilter: overallFilterState,
       activeSection,
@@ -140,10 +158,13 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
       selectedOrderId,
       selectedSubView,
       programmaticSection,
+      weatherComparisonContext,
       setActiveModule,
       switchModule,
       setSelectedWeather,
       setSelectedTimePeriod,
+      setSelectedTrafficDensity,
+      setSelectedVehicleType,
       setSelectedSceneId,
       setOverallFilter,
       setActiveSection,
@@ -153,9 +174,10 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
       setSelectedScenarioId,
       setSelectedOrderId,
       setSelectedSubView,
+      setWeatherComparisonContext,
       clearSelection: () => setSelectedItem(null)
     }),
-    [activeModule, selectedWeather, selectedTimePeriod, selectedSceneIdState, overallFilterState, activeSection, selectedItem, selectedScenarioId, selectedOrderId, selectedSubView, programmaticSection]
+    [activeModule, selectedWeather, selectedTimePeriod, selectedTrafficDensity, selectedVehicleType, selectedSceneIdState, overallFilterState, activeSection, selectedItem, selectedScenarioId, selectedOrderId, selectedSubView, programmaticSection, weatherComparisonContext]
   );
 
   return <InteractionContext.Provider value={value}>{children}</InteractionContext.Provider>;

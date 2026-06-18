@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import { loadDistanceTimeSample } from '../../api/staticDataClient';
-import type { DistanceTimePoint, RiskHeatHalo, RiskScenario } from '../../types/data';
+import type {
+  DistanceTimePoint,
+  RiskHeatHalo,
+  RiskScenario,
+  WeatherImpactSummary,
+  WeatherTrafficSummary,
+  WeatherVehicleSummary,
+  SceneFilterSummary
+} from '../../types/data';
 import {
   formatNumber,
   formatPercent,
@@ -20,6 +28,25 @@ export { TIME_LABELS, TIME_ORDER, TRAFFIC_ORDER, WEATHER_LABELS };
 export interface WeatherViewData {
   orders: DistanceTimePoint[];
   loading: boolean;
+}
+
+export type WeatherSummaryRow = WeatherTrafficSummary | WeatherVehicleSummary | SceneFilterSummary | WeatherImpactSummary;
+
+export function rowToMetric(row: WeatherSummaryRow) {
+  return {
+    key: row.weather ?? 'All',
+    label: weatherLabel(row.weather),
+    weather: row.weather,
+    traffic_density: 'traffic_density' in row ? row.traffic_density : undefined,
+    time_period: 'time_period' in row ? row.time_period : undefined,
+    vehicle_type: 'vehicle_type' in row ? row.vehicle_type : undefined,
+    order_count: row.order_count,
+    delayed_orders: Math.round(row.order_count * row.delay_rate),
+    avg_delivery_duration_min: row.avg_delivery_duration_min,
+    avg_distance_km: row.avg_distance_km ?? 0,
+    delay_rate: row.delay_rate,
+    risk_score: row.risk_score ?? row.delay_rate
+  };
 }
 
 export function useWeatherViewData() {

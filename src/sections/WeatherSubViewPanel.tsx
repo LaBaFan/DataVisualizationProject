@@ -5,6 +5,7 @@ import WeatherTimeView from './weather/WeatherTimeView';
 import WeatherTrafficView from './weather/WeatherTrafficView';
 import WeatherVehicleView from './weather/WeatherVehicleView';
 import { useWeatherViewData } from './weather/weatherViewUtils';
+import { useInteraction } from '../store/interactionContext';
 import type { WeatherSubView } from '../store/interactionContext';
 
 interface WeatherSubViewPanelProps {
@@ -19,14 +20,15 @@ export default function WeatherSubViewPanel({
   selectedTimePeriod
 }: WeatherSubViewPanelProps) {
   const data = useWeatherViewData();
+  const { selectedTrafficDensity, selectedVehicleType } = useInteraction();
 
   switch (selectedSubView) {
     case 'traffic':
-      return <WeatherTrafficView selectedWeather={selectedWeather} data={data} />;
+      return <WeatherTrafficView selectedWeather={selectedWeather} selectedTrafficDensity={selectedTrafficDensity} data={data} />;
     case 'time':
       return <WeatherTimeView selectedWeather={selectedWeather} selectedTimePeriod={selectedTimePeriod} data={data} />;
     case 'vehicle':
-      return <WeatherVehicleView selectedWeather={selectedWeather} selectedTimePeriod={selectedTimePeriod} data={data} />;
+      return <WeatherVehicleView selectedWeather={selectedWeather} selectedTimePeriod={selectedTimePeriod} selectedVehicleType={selectedVehicleType} data={data} />;
     case 'risk':
       return <WeatherRiskView selectedWeather={selectedWeather} selectedTimePeriod={selectedTimePeriod} data={data} />;
     case 'orders':

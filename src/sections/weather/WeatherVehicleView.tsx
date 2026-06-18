@@ -1,15 +1,13 @@
-import {
-  aggregateByVehicleType,
-  DELAY_THRESHOLD_MIN,
-  filterOrdersByTimePeriod,
-  filterOrdersByWeather,
-  getWeatherInsight
-} from './weatherAnalytics';
-import { fmt, pct, vehicleLabel, type WeatherViewData } from './weatherViewUtils';
+import { useEffect, useState } from 'react';
+import { getWeatherVehicleRows } from '../../data/weatherSelectors';
+import { DELAY_THRESHOLD_MIN, getWeatherInsight } from './weatherAnalytics';
+import { fmt, pct, rowToMetric, vehicleLabel, type WeatherViewData } from './weatherViewUtils';
+import type { WeatherVehicleSummary } from '../../types/data';
 
 interface WeatherVehicleViewProps {
   selectedWeather: string;
   selectedTimePeriod: string;
+  selectedVehicleType: string;
   data: WeatherViewData;
 }
 
@@ -17,10 +15,25 @@ const W = 740;
 const H = 330;
 const PAD = { left: 96, right: 72, top: 30, bottom: 46 };
 
-export default function WeatherVehicleView({ selectedWeather, selectedTimePeriod, data }: WeatherVehicleViewProps) {
-  const weatherOrders = filterOrdersByWeather(data.orders, selectedWeather);
-  const scopedOrders = filterOrdersByTimePeriod(weatherOrders, selectedTimePeriod);
-  const rows = aggregateByVehicleType(scopedOrders);
+export default function WeatherVehicleView({ selectedWeather, selectedTimePeriod, selectedVehicleType, data }: WeatherVehicleViewProps) {
+  const [rows, setRows] = useState<WeatherVehicleSummary[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    getWeatherVehicleRows(selectedWeather)
+      .then((nextRows) => {
+        if (mounted) setRows(nextRows);
+      })
+      .catch((error) => {
+        console.warn('[WeatherVehicleView] Failed to load weather vehicle summary.', error);
+        if (mounted) setRows([]);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedWeather]);
+
   const maxDuration = Math.max(DELAY_THRESHOLD_MIN + 8, ...rows.map((row) => row.avg_delivery_duration_min)) * 1.08;
   const plotW = W - PAD.left - PAD.right;
   const rowH = rows.length ? (H - PAD.top - PAD.bottom) / rows.length : 0;
@@ -32,7 +45,7 @@ export default function WeatherVehicleView({ selectedWeather, selectedTimePeriod
       <div className="weather-subview-copy">
         <span className="detail-eyebrow">载具 / 04</span>
         <h2>载具配送时长排序</h2>
-        <p>{getWeatherInsight('vehicle', rows, selectedWeather)}</p>
+        <p>{getWeatherInsight('vehicle', rows.map((row) => ({ ...rowToMetric(row), key: row.vehicle_type, label: vehicleLabel(row.vehicle_type) })), selectedWeather)}</p>
       </div>
 
       <div className="weather-chart-card">
@@ -53,8 +66,10 @@ export default function WeatherVehicleView({ selectedWeather, selectedTimePeriod
               const y = PAD.top + index * rowH + rowH * 0.23;
               const h = Math.max(16, rowH * 0.46);
               const fill = row.avg_delivery_duration_min > DELAY_THRESHOLD_MIN ? '#dc2626' : row.delay_rate >= 0.3 ? '#f97316' : '#2563eb';
+              const active = selectedVehicleType === row.vehicle_type;
+              const muted = selectedVehicleType !== 'All' && !active;
               return (
-                <g key={row.key}>
+                <g key={row.vehicle_type} className={`${active ? 'is-highlight' : ''}${muted ? ' is-muted' : ''}`} style={{ opacity: muted ? 0.32 : 1 }}>
                   <text x={PAD.left - 12} y={y + h * 0.68} textAnchor="end" className="weather-axis-label">{vehicleLabel(row.vehicle_type)}</text>
                   <rect x={PAD.left} y={y} width={Math.max(4, x(row.avg_delivery_duration_min) - PAD.left)} height={h} rx={6} fill={fill} className="weather-duration-bar">
                     <title>{`${vehicleLabel(row.vehicle_type)}：平均 ${fmt(row.avg_delivery_duration_min, 1)} 分钟，延迟率 ${pct(row.delay_rate)}，订单 ${row.order_count} 单`}</title>
@@ -69,6 +84,9 @@ export default function WeatherVehicleView({ selectedWeather, selectedTimePeriod
             <text x={(PAD.left + W - PAD.right) / 2} y={H - 4} textAnchor="middle" className="weather-axis-label">平均配送时长（分钟）</text>
           </svg>
         ) : <p className="detail-empty">暂无当前筛选下的载具样本</p>}
+        <div className="weather-chart-legend">
+          <em>数据源：risk_scenario_summary.json；范围：组合场景加权汇总</em>
+        </div>
       </div>
     </section>
   );

@@ -301,10 +301,10 @@ export default function InteractiveSceneMap() {
   };
 
   return (
-    <main className="scene-map-stage" aria-label="Interactive FoodETA Map">
+    <main className="scene-map-stage" aria-label="FoodETA 交互地图">
       <SceneTitle
         index={sceneIndex(selectedScene.type)}
-        kicker={`FOODETA / ${selectedScene.type.toUpperCase()}`}
+        kicker={`FoodETA ${selectedScene.type === 'weather' ? '天气模块' : selectedScene.type === 'overall' ? '总览模块' : '分析模块'}`}
         title={selectedScene.title}
         question={selectedScene.question}
       />

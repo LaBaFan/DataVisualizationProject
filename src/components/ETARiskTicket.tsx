@@ -44,19 +44,19 @@ const VEHICLE_LABELS: Record<string, string> = {
   scooter: '踏板车',
   electric_scooter: '电动车',
   motorcycle: '摩托车',
-  bicycle: '自行车',
   Unknown: '未知载具'
 };
 
 type TicketKind = 'order' | 'scenario' | 'weather';
 type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 type ImpactLevel = '低' | '中' | '中高' | '高';
+type DeliveryStatus = '已延迟' | '临近延迟' | '正常' | '需关注';
 
 interface TicketModel {
   kind: TicketKind;
   title: string;
   identifier?: string;
-  status: 'DELAYED' | 'AT RISK' | 'ON TIME';
+  status: DeliveryStatus;
   statusLabel: string;
   riskLevel: RiskLevel;
   riskLabel: string;
@@ -122,10 +122,10 @@ function riskLabel(level: RiskLevel) {
 }
 
 function statusFor(duration: number | undefined) {
-  if (typeof duration !== 'number') return { status: 'AT RISK' as const, statusLabel: '需关注' };
-  if (duration > DELAY_THRESHOLD_MIN) return { status: 'DELAYED' as const, statusLabel: '已延迟' };
-  if (duration >= 28) return { status: 'AT RISK' as const, statusLabel: '临近延迟' };
-  return { status: 'ON TIME' as const, statusLabel: '正常' };
+  if (typeof duration !== 'number') return { status: '需关注' as const, statusLabel: '需关注' };
+  if (duration > DELAY_THRESHOLD_MIN) return { status: '已延迟' as const, statusLabel: '已延迟' };
+  if (duration >= 28) return { status: '临近延迟' as const, statusLabel: '临近延迟' };
+  return { status: '正常' as const, statusLabel: '正常' };
 }
 
 function safeRiskScore(item: object) {
@@ -216,7 +216,7 @@ function riskSources(model: {
     const harshWeather = weather && ['暴雨', '沙尘', '雾天', '大风'].includes(weather);
     sources.push({
       label: vehicle,
-      level: vehicle === '自行车' && harshWeather ? '中高' : vehicle === '踏板车' && harshWeather ? '中' : '低'
+      level: vehicle === '踏板车' && harshWeather ? '中' : '低'
     });
   }
 
@@ -290,7 +290,7 @@ function buildTicketModel(selection: MapSelection): TicketModel {
       ['配送时长', typeof duration === 'number' ? `${formatNumber(duration, 1)} 分钟` : undefined],
       ['延迟阈值', `${DELAY_THRESHOLD_MIN.toFixed(1)} 分钟`],
       ['延迟状态', statusLabel],
-      ['延迟率', delayRate !== undefined ? formatPercent(delayRate) : status === 'DELAYED' ? '100%' : '0%']
+      ['延迟率', delayRate !== undefined ? formatPercent(delayRate) : status === '已延迟' ? '100%' : '0%']
     ]
     : [
       ['订单量', orderCount ? `${formatNumber(orderCount)} 单` : undefined],
@@ -349,7 +349,7 @@ export default function ETARiskTicket({ selection, onClose, onOpenAnalysis }: ET
       <div className="eta-receipt-perf" aria-hidden="true" />
       <div className="eta-ticket-head">
         <div>
-          <span>FOODETA DELIVERY</span>
+          <span>FoodETA 配送小票</span>
           <h2>{ticket.title}</h2>
         </div>
         <button type="button" aria-label="关闭 ETA 风险小票" onClick={onClose}>
@@ -359,7 +359,7 @@ export default function ETARiskTicket({ selection, onClose, onOpenAnalysis }: ET
 
       <div className="eta-receipt-idline">
         <div>
-          <small>{ticket.kind === 'order' ? 'ORDER' : ticket.kind === 'weather' ? 'WEATHER' : 'SCENARIO'}</small>
+          <small>{ticket.kind === 'order' ? '订单' : ticket.kind === 'weather' ? '天气' : '组合'}</small>
           <strong>{ticket.kind === 'order' ? `#${ticket.identifier ?? 'UNKNOWN'}` : ticket.identifier}</strong>
         </div>
         <em className="eta-risk-stamp">{ticket.riskLabel}</em>
@@ -379,7 +379,7 @@ export default function ETARiskTicket({ selection, onClose, onOpenAnalysis }: ET
       ) : null}
 
       <section className="eta-total-block" aria-label="核心 ETA">
-        <span>ETA TOTAL</span>
+        <span>配送总时长</span>
         <strong>{formatNumber(ticket.duration, 1)} 分钟</strong>
         {typeof ticket.overTime === 'number' ? (
           <em className={ticket.overTime > 0 ? 'is-delayed' : 'is-early'}>
@@ -432,7 +432,7 @@ export default function ETARiskTicket({ selection, onClose, onOpenAnalysis }: ET
         </button>
       </div>
 
-      <p className="eta-receipt-footer">ETA Risk Checked by FoodETA</p>
+      <p className="eta-receipt-footer">FoodETA ETA 风险识别完成</p>
       <div className="eta-receipt-perf is-bottom" aria-hidden="true" />
     </aside>
   );

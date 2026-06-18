@@ -93,7 +93,7 @@ export default function WeatherOrdersView({ selectedWeather, selectedTimePeriod,
         <div className="weather-chart-legend">
           <span><i style={{ background: '#2563eb' }} />正常</span>
           <span><i style={{ background: '#dc2626' }} />延迟</span>
-          <em>散点仅做展示，统计口径来自完整天气订单</em>
+          <em>数据源：distance_time_sample.json；范围：抽样配送记录</em>
         </div>
       </div>
     </section>

@@ -4,19 +4,6 @@ export type { SceneHotspot };
 
 export const overallHotspots: SceneHotspot[] = [
   {
-    id: 'overall_risk_hotspot',
-    targetSceneId: 'overall',
-    targetModule: 'overall',
-    label: '高风险组合',
-    type: 'polygon',
-    coords: [615, 363, 858, 343, 989, 433, 938, 565, 716, 595, 555, 504],
-    description: '非地理统计入口，用于回到总览并查看 延迟率与异常订单的全局基线。',
-    order_count: 4613,
-    avg_delivery_duration_min: 26.4,
-    delay_rate: 0.203,
-    risk_score: 0.488
-  },
-  {
     id: 'sunny_zone_hotspot',
     targetSceneId: 'sunny',
     targetModule: 'sunny',

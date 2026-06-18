@@ -15,29 +15,59 @@ function formatPercent(value: number | undefined) {
   return typeof value === 'number' ? `${Math.round(value * 100)}%` : '';
 }
 
+const WEATHER_LABELS: Record<string, string> = {
+  Sunny: '晴天',
+  Cloudy: '多云',
+  Fog: '雾天',
+  Windy: '大风',
+  Stormy: '暴雨',
+  Sandstorms: '沙尘'
+};
+
+const TRAFFIC_LABELS: Record<string, string> = {
+  Low: '低密度',
+  Medium: '中密度',
+  High: '高密度',
+  Jam: '拥堵',
+  Unknown: '未知交通'
+};
+
+const TIME_LABELS: Record<string, string> = {
+  breakfast: '早餐',
+  lunch_peak: '午高峰',
+  afternoon: '下午',
+  dinner_peak: '晚高峰',
+  night: '夜间'
+};
+
+const VEHICLE_LABELS: Record<string, string> = {
+  motorcycle: '摩托车',
+  scooter: '踏板车',
+  electric_scooter: '电动车'
+};
+
 function tooltipMetrics(selection: MapSelection): Array<[string, string]> {
   const item = selection.item;
   const metrics: Array<[string, string]> = [];
 
-  if ('weather' in item && item.weather) metrics.push(['weather', item.weather]);
-  if ('order_id' in item && item.order_id) metrics.push(['order_id', item.order_id]);
-  if ('traffic_density' in item && item.traffic_density) metrics.push(['traffic_density', item.traffic_density]);
-  if ('time_period' in item && item.time_period) metrics.push(['time_period', item.time_period]);
-  if ('vehicle_type' in item && item.vehicle_type) metrics.push(['vehicle_type', item.vehicle_type]);
-  if ('order_count' in item && item.order_count) metrics.push(['order_count', formatNumber(item.order_count)]);
+  if ('weather' in item && item.weather) metrics.push(['天气', WEATHER_LABELS[item.weather] ?? item.weather]);
+  if ('order_id' in item && item.order_id) metrics.push(['订单', item.order_id]);
+  if ('traffic_density' in item && item.traffic_density) metrics.push(['交通密度', TRAFFIC_LABELS[item.traffic_density] ?? item.traffic_density]);
+  if ('time_period' in item && item.time_period) metrics.push(['时段', TIME_LABELS[item.time_period] ?? item.time_period]);
+  if ('vehicle_type' in item && item.vehicle_type) metrics.push(['载具', VEHICLE_LABELS[item.vehicle_type] ?? item.vehicle_type]);
+  if ('order_count' in item && item.order_count) metrics.push(['订单量', formatNumber(item.order_count)]);
   if ('avg_delivery_duration_min' in item && item.avg_delivery_duration_min) {
-    metrics.push(['avg_delivery_duration_min', `${formatNumber(item.avg_delivery_duration_min, 1)} min`]);
+    metrics.push(['平均配送时长', `${formatNumber(item.avg_delivery_duration_min, 1)} 分钟`]);
   }
   if ('delivery_duration_min' in item && item.delivery_duration_min) {
-    metrics.push(['delivery_duration_min', `${formatNumber(item.delivery_duration_min, 1)} min`]);
+    metrics.push(['配送时长', `${formatNumber(item.delivery_duration_min, 1)} 分钟`]);
   }
-  if ('delay_rate' in item && typeof item.delay_rate === 'number') metrics.push(['delay_rate', formatPercent(item.delay_rate)]);
-  if ('risk_score' in item && item.risk_score) metrics.push(['risk_score', formatNumber(item.risk_score, 2)]);
-  if ('avg_distance_km' in item && item.avg_distance_km) metrics.push(['avg_distance_km', `${formatNumber(item.avg_distance_km, 1)} km`]);
+  if ('delay_rate' in item && typeof item.delay_rate === 'number') metrics.push(['延迟率', formatPercent(item.delay_rate)]);
+  if ('avg_distance_km' in item && item.avg_distance_km) metrics.push(['平均距离', `${formatNumber(item.avg_distance_km, 1)} 公里`]);
   if ('distance_km' in item && item.distance_km) {
-    metrics.push(['distance_km', `${formatNumber(item.distance_km, 1)} km`]);
+    metrics.push(['配送距离', `${formatNumber(item.distance_km, 1)} 公里`]);
   }
-  if ('is_delayed' in item && typeof item.is_delayed === 'boolean') metrics.push(['is_delayed', item.is_delayed ? 'true' : 'false']);
+  if ('is_delayed' in item && typeof item.is_delayed === 'boolean') metrics.push(['延迟状态', item.is_delayed ? '已延迟' : '正常']);
 
   return metrics;
 }

@@ -16,12 +16,22 @@ function percent(value: number | undefined) {
   return `${Math.round(normalized * 100)}%`;
 }
 
+function trafficLabel(value: string | null | undefined) {
+  const labels: Record<string, string> = {
+    Low: '低密度',
+    Medium: '中密度',
+    High: '高密度',
+    Jam: '拥堵'
+  };
+  return labels[value ?? ''] ?? value ?? '-';
+}
+
 export default function TrafficDensityTooltip({ item, x, y }: TrafficDensityTooltipProps) {
   if (!item) return null;
 
   return (
     <div className="traffic-density-tooltip" style={{ left: x + 14, top: y + 14 }}>
-      <strong>{item.traffic_density}</strong>
+      <strong>{trafficLabel(item.traffic_density)}</strong>
       <span>交通压力分层</span>
       <dl>
         <div>
@@ -30,7 +40,7 @@ export default function TrafficDensityTooltip({ item, x, y }: TrafficDensityTool
         </div>
         <div>
           <dt>平均配送时长</dt>
-          <dd>{number(item.avg_delivery_duration_min, 1)} min</dd>
+          <dd>{number(item.avg_delivery_duration_min, 1)} 分钟</dd>
         </div>
         <div>
           <dt>延迟率</dt>
@@ -38,7 +48,7 @@ export default function TrafficDensityTooltip({ item, x, y }: TrafficDensityTool
         </div>
         <div>
           <dt>平均距离</dt>
-          <dd>{number(item.avg_distance_km, 1)} km</dd>
+          <dd>{number(item.avg_distance_km, 1)} 公里</dd>
         </div>
       </dl>
     </div>

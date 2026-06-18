@@ -33,7 +33,7 @@ export default function RiskScenarioDetailPanel({ scenario, fallbackScenario, se
   if (!activeScenario) {
     return (
       <aside className="risk-detail-panel">
-        <span className="risk-detail-eyebrow">Scenario Explanation</span>
+        <span className="risk-detail-eyebrow">场景说明</span>
         <h3>暂无可解释场景</h3>
         <p>等待风险场景数据加载后展示最高风险组合。</p>
       </aside>
@@ -49,7 +49,7 @@ export default function RiskScenarioDetailPanel({ scenario, fallbackScenario, se
 
   return (
     <aside className={`risk-detail-panel${selected ? ' is-selected' : ''}`}>
-      <span className="risk-detail-eyebrow">{selected ? 'Selected Scenario' : 'Highest Risk Scenario'}</span>
+      <span className="risk-detail-eyebrow">{selected ? '已选场景' : '最高延迟场景'}</span>
       <h3>{activeScenario.label}</h3>
       <p>
         {conditions.map(([, value]) => value).join('、')} 同时出现时，平均配送时长达到{' '}
@@ -74,7 +74,7 @@ export default function RiskScenarioDetailPanel({ scenario, fallbackScenario, se
         </div>
         <div>
           <span>平均配送时长</span>
-          <strong>{formatNumber(activeScenario.avg_delivery_duration_min, 1)} min</strong>
+          <strong>{formatNumber(activeScenario.avg_delivery_duration_min, 1)} 分钟</strong>
         </div>
         <div>
           <span>延迟率</span>
@@ -82,11 +82,11 @@ export default function RiskScenarioDetailPanel({ scenario, fallbackScenario, se
         </div>
         <div>
           <span>平均距离</span>
-          <strong>{formatNumber(activeScenario.avg_distance_km, 1)} km</strong>
+          <strong>{formatNumber(activeScenario.avg_distance_km, 1)} 公里</strong>
         </div>
         <div>
           <span>平均距离</span>
-          <strong>{formatNumber(activeScenario.avg_distance_km, 1)} km</strong>
+          <strong>{formatNumber(activeScenario.avg_distance_km, 1)} 公里</strong>
         </div>
       </div>
     </aside>

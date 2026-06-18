@@ -8,7 +8,7 @@ export const mapScenes: MapScene[] = [
     type: 'overall',
     title: 'FoodETA 总览地图',
     question: '当前城市配送系统中，哪些天气条件和数据组合最需要调度关注？',
-    description: '总览图用于进入各个天气模块，并保留轻量风险、订单密度和指标标签，帮助快速定位 ETA 风险来源。',
+    description: '总览图用于进入各个天气模块，并保留订单密度、延迟率和指标标签，帮助快速定位 ETA 波动来源。',
     image: '/assets/backgrounds/overall.png',
     summary: {
       order_count: 45162,
@@ -26,12 +26,13 @@ export const mapScenes: MapScene[] = [
       { label: '默认视图', value: '总览' }
     ]
   },
+  // legacy proxy scene, not used in weather-driven main flow
   {
     id: 'dispatch_center',
     type: 'area',
-    title: '配送中心调度区',
-    question: '配送中心附近的派单压力是否正在推高平均 ETA？',
-    description: '聚焦骑手出发、补货和派单密集区域，观察订单聚集、风险热晕与调度标签。',
+    title: '峰值派单样本',
+    question: '峰值短中距离订单是否正在推高平均 ETA？',
+    description: '聚焦 time_period、city、multiple_deliveries 与 vehicle_type 条件组合，观察订单量、延迟率与调度标签。',
     image: '/assets/maps/dispatch_center.png',
     summary: {
       order_count: 4613,
@@ -41,20 +42,21 @@ export const mapScenes: MapScene[] = [
       avg_distance_km: 7.292,
       delay_threshold_min: 32.0,
       source_filter: "time_period in [lunch_peak, dinner_peak] AND city in [Metropolitian, Urban] AND distance_km between q25 and median AND (multiple_deliveries >= 1 OR vehicle_type == motorcycle)",
-      description: "都市峰值短中距离且具备多单或摩托配送特征的订单，作为配送中心出发与派单压力 proxy。"
+      description: "time_period in [lunch_peak, dinner_peak] 且具备多单或 motorcycle 特征的短中距离订单样本。"
     },
     metrics: [
-      { label: '核心能力', value: 'Dispatch' },
+      { label: '样本条件', value: 'Dispatch' },
       { label: '压力来源', value: '派单峰值' },
       { label: '建议动作', value: '补充运力' }
     ]
   },
+  // legacy proxy scene, not used in weather-driven main flow
   {
     id: 'restaurant_street',
     type: 'area',
-    title: '餐饮街区取餐区',
-    question: '餐饮街区的取餐排队是否造成短距离长耗时？',
-    description: '呈现商圈餐厅密集带的取餐等待、订单堆积和局部延迟风险。',
+    title: '短距峰值订单样本',
+    question: '餐饮峰值短距离订单是否造成短距离长耗时？',
+    description: '呈现 time_period 与 distance_km 条件组合下的订单堆积、平均时长和局部延迟。',
     image: '/assets/maps/restaurant_street.png',
     summary: {
       order_count: 11620,
@@ -64,11 +66,11 @@ export const mapScenes: MapScene[] = [
       avg_distance_km: 5.05,
       delay_threshold_min: 32.0,
       source_filter: "time_period in [lunch_peak, dinner_peak] AND order_type not null AND distance_km <= median",
-      description: "餐饮峰值短距离订单，作为餐饮街区取餐压力 proxy。"
+      description: "time_period in [lunch_peak, dinner_peak] 且 distance_km <= median 的订单样本。"
     },
     metrics: [
-      { label: '订单来源', value: '餐饮街区' },
-      { label: '典型风险', value: '取餐等待' },
+      { label: '订单条件', value: '短距峰值' },
+      { label: '典型信号', value: '等待时长' },
       { label: '关注指标', value: '延迟率' }
     ]
   },
@@ -116,16 +118,17 @@ export const mapScenes: MapScene[] = [
     },
     metrics: [
       { label: '天气', value: 'Stormy' },
-      { label: '风险', value: '高延迟' },
+      { label: '延迟', value: '高延迟' },
       { label: '调度', value: '降载' }
     ]
   },
+  // legacy proxy scene, not used in weather-driven main flow
   {
     id: 'high_risk_residential',
     type: 'risk',
-    title: '高风险住宅区',
-    question: '高风险住宅区中的哪些订单组合最容易超过 ETA？',
-    description: '高风险模块聚焦住宅末端配送、重复配送和较高延迟率的空间聚集。',
+    title: '高延迟组合样本',
+    question: '哪些字段组合最容易超过 ETA？',
+    description: '高延迟模块聚焦 is_delayed、delivery_duration 与 traffic_density 条件组合。',
     image: '/assets/maps/high_risk_residential.png',
     summary: {
       order_count: 7264,
@@ -135,12 +138,12 @@ export const mapScenes: MapScene[] = [
       avg_distance_km: 12.057,
       delay_threshold_min: 32.0,
       source_filter: "is_delayed == true AND delivery_duration >= p75 AND traffic_density in [High, Jam]",
-      description: "高延迟且高交通压力订单，作为住宅末端高风险 proxy。"
+      description: "is_delayed == true 且 delivery_duration >= p75 且 traffic_density in [High, Jam] 的订单样本。"
     },
     metrics: [
-      { label: '场景', value: 'Residential' },
-      { label: '风险', value: 'High' },
-      { label: '重点', value: '末端配送' }
+      { label: '场景', value: 'Delayed' },
+      { label: '延迟', value: 'High' },
+      { label: '重点', value: '字段组合' }
     ]
   },
   {
@@ -164,15 +167,16 @@ export const mapScenes: MapScene[] = [
     metrics: [
       { label: '时段', value: 'Night' },
       { label: '订单压力', value: 'Low' },
-      { label: '风险点', value: '长距离' }
+      { label: '关注点', value: '长距离' }
     ]
   },
+  // legacy proxy scene, not used in weather-driven main flow
   {
     id: 'traffic_hub',
     type: 'traffic',
-    title: '交通主干道压力区',
-    question: '交通主干道拥堵是否是 ETA 延迟的主要瓶颈？',
-    description: '交通模块关注主干道路、拥堵节点和道路压力对配送时长的影响。',
+    title: '高交通密度样本',
+    question: 'traffic_density == High/Jam 是否是 ETA 延迟的主要瓶颈？',
+    description: '交通模块关注 traffic_density 条件下的订单量、平均时长和延迟率。',
     image: '/assets/maps/traffic_hub.png',
     summary: {
       order_count: 18450,
@@ -182,20 +186,21 @@ export const mapScenes: MapScene[] = [
       avg_distance_km: 10.24,
       delay_threshold_min: 32.0,
       source_filter: "traffic_density in [High, Jam]",
-      description: "高交通压力订单，作为主干道压力 proxy。"
+      description: "traffic_density in [High, Jam] 的订单样本。"
     },
     metrics: [
       { label: '交通', value: 'High/Jam' },
-      { label: '瓶颈', value: '主干道' },
+      { label: '瓶颈', value: 'High/Jam' },
       { label: '指标', value: 'Traffic' }
     ]
   },
+  // legacy proxy scene, not used in weather-driven main flow
   {
     id: 'mixed_food_community',
     type: 'area',
-    title: '餐饮社区混合区',
-    question: '餐饮与住宅混合区如何形成取餐和送达双重压力？',
-    description: '混合区模块同时展示餐厅供给端和社区需求端的订单密度与延迟风险。',
+    title: '峰值中长距订单样本',
+    question: '峰值中长距离订单如何形成双端压力？',
+    description: '混合模块展示 time_period、city、order_type 与 distance_km 条件组合下的订单密度与延迟率。',
     image: '/assets/maps/mixed_food_community.png',
     summary: {
       order_count: 6118,
@@ -205,12 +210,12 @@ export const mapScenes: MapScene[] = [
       avg_distance_km: 11.409,
       delay_threshold_min: 32.0,
       source_filter: "time_period in [lunch_peak, dinner_peak] AND city in [Metropolitian, Urban] AND order_type not null AND distance_km between median and q75 AND NOT dispatch_center",
-      description: "都市峰值中长距离餐饮订单，排除配送中心出发压力样本后作为餐饮社区混合区 proxy。"
+      description: "time_period in [lunch_peak, dinner_peak] 且 distance_km between median and q75 的订单样本。"
     },
     metrics: [
       { label: '结构', value: 'Mixed' },
       { label: '压力', value: '双端聚集' },
-      { label: '对象', value: '餐饮+社区' }
+      { label: '对象', value: '订单样本' }
     ]
   },
   {
@@ -234,7 +239,7 @@ export const mapScenes: MapScene[] = [
     metrics: [
       { label: '天气', value: 'Sunny' },
       { label: '用途', value: '基准' },
-      { label: '风险', value: '低-中' }
+      { label: '延迟', value: '低-中' }
     ]
   },
   {
@@ -258,7 +263,7 @@ export const mapScenes: MapScene[] = [
     metrics: [
       { label: '天气', value: 'Sandstorms' },
       { label: '影响', value: '能见度' },
-      { label: '风险', value: '中高' }
+      { label: '延迟', value: '中高' }
     ]
   },
   {
@@ -282,7 +287,7 @@ export const mapScenes: MapScene[] = [
     metrics: [
       { label: '天气', value: 'Cloudy' },
       { label: '影响', value: '稳定性波动' },
-      { label: '风险', value: '中' }
+      { label: '延迟', value: '中' }
     ]
   },
   {
@@ -306,7 +311,7 @@ export const mapScenes: MapScene[] = [
     metrics: [
       { label: '天气', value: 'Windy' },
       { label: '影响', value: '速度波动' },
-      { label: '风险', value: '中' }
+      { label: '延迟', value: '中' }
     ]
   }
 ];

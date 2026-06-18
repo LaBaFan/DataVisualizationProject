@@ -1,12 +1,12 @@
-import {
-  aggregateByTrafficDensity,
-  filterOrdersByWeather,
-  getWeatherInsight
-} from './weatherAnalytics';
-import { fmt, pct, trafficLabel, type WeatherViewData } from './weatherViewUtils';
+import { useEffect, useState } from 'react';
+import { getWeatherTrafficRows } from '../../data/weatherSelectors';
+import { getWeatherInsight } from './weatherAnalytics';
+import { fmt, pct, rowToMetric, trafficLabel, type WeatherViewData } from './weatherViewUtils';
+import type { WeatherTrafficSummary } from '../../types/data';
 
 interface WeatherTrafficViewProps {
   selectedWeather: string;
+  selectedTrafficDensity: string;
   data: WeatherViewData;
 }
 
@@ -14,9 +14,25 @@ const W = 720;
 const H = 330;
 const PAD = { left: 92, right: 42, top: 34, bottom: 54 };
 
-export default function WeatherTrafficView({ selectedWeather, data }: WeatherTrafficViewProps) {
-  const weatherOrders = filterOrdersByWeather(data.orders, selectedWeather);
-  const rows = aggregateByTrafficDensity(weatherOrders);
+export default function WeatherTrafficView({ selectedWeather, selectedTrafficDensity, data }: WeatherTrafficViewProps) {
+  const [rows, setRows] = useState<WeatherTrafficSummary[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    getWeatherTrafficRows(selectedWeather)
+      .then((nextRows) => {
+        if (mounted) setRows(nextRows);
+      })
+      .catch((error) => {
+        console.warn('[WeatherTrafficView] Failed to load weather traffic summary.', error);
+        if (mounted) setRows([]);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedWeather]);
+
   const maxOrders = Math.max(1, ...rows.map((row) => row.order_count));
   const maxDelay = Math.max(0.55, ...rows.map((row) => row.delay_rate)) * 1.08;
   const plotW = W - PAD.left - PAD.right;
@@ -28,7 +44,7 @@ export default function WeatherTrafficView({ selectedWeather, data }: WeatherTra
       <div className="weather-subview-copy">
         <span className="detail-eyebrow">交通 / 02</span>
         <h2>交通密度分带</h2>
-        <p>{getWeatherInsight('traffic', rows, selectedWeather)}</p>
+        <p>{getWeatherInsight('traffic', rows.map(rowToMetric), selectedWeather)}</p>
       </div>
 
       <div className="weather-chart-card">
@@ -46,8 +62,10 @@ export default function WeatherTrafficView({ selectedWeather, data }: WeatherTra
             {rows.map((row, index) => {
               const y = PAD.top + (index + 0.5) * (plotH / rows.length);
               const radius = 9 + (row.order_count / maxOrders) * 22;
+              const active = selectedTrafficDensity === row.traffic_density;
+              const muted = selectedTrafficDensity !== 'All' && !active;
               return (
-                <g key={row.key} className="weather-bubble-row">
+                <g key={row.traffic_density ?? index} className={`weather-bubble-row${active ? ' is-highlight' : ''}${muted ? ' is-muted' : ''}`} style={{ opacity: muted ? 0.32 : 1 }}>
                   <text x={PAD.left - 14} y={y + 4} textAnchor="end" className="weather-axis-label">{trafficLabel(row.traffic_density)}</text>
                   <line x1={PAD.left} x2={x(row.delay_rate)} y1={y} y2={y} className="weather-risk-bar" style={{ stroke: row.delay_rate >= 0.5 ? '#dc2626' : row.delay_rate >= 0.3 ? '#f97316' : '#2563eb' }} />
                   <circle cx={x(row.delay_rate)} cy={y} r={radius} fill={row.delay_rate >= 0.5 ? '#dc2626' : row.delay_rate >= 0.3 ? '#f97316' : '#2563eb'} className="weather-risk-bubble">
@@ -67,7 +85,7 @@ export default function WeatherTrafficView({ selectedWeather, data }: WeatherTra
           <span><i style={{ background: '#2563eb' }} />低延迟</span>
           <span><i style={{ background: '#f97316' }} />中高延迟</span>
           <span><i style={{ background: '#dc2626' }} />高延迟</span>
-          <em>气泡大小 = 订单量</em>
+          <em>数据源：weather_traffic_summary.json；范围：当前天气汇总</em>
         </div>
       </div>
     </section>

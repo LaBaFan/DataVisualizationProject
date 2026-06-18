@@ -1,10 +1,8 @@
-import {
-  aggregateByTimePeriod,
-  DELAY_THRESHOLD_MIN,
-  filterOrdersByWeather,
-  getWeatherInsight
-} from './weatherAnalytics';
-import { fmt, pct, timeLabel, type WeatherViewData } from './weatherViewUtils';
+import { useEffect, useState } from 'react';
+import { getWeatherTimeRows } from '../../data/weatherSelectors';
+import { DELAY_THRESHOLD_MIN, getWeatherInsight } from './weatherAnalytics';
+import { fmt, pct, rowToMetric, timeLabel, type WeatherViewData } from './weatherViewUtils';
+import type { SceneFilterSummary } from '../../types/data';
 
 interface WeatherTimeViewProps {
   selectedWeather: string;
@@ -17,22 +15,38 @@ const H = 340;
 const PAD = { left: 58, right: 28, top: 34, bottom: 64 };
 
 export default function WeatherTimeView({ selectedWeather, selectedTimePeriod, data }: WeatherTimeViewProps) {
-  const weatherOrders = filterOrdersByWeather(data.orders, selectedWeather);
-  const rows = aggregateByTimePeriod(weatherOrders);
+  const [rows, setRows] = useState<SceneFilterSummary[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    getWeatherTimeRows(selectedWeather)
+      .then((nextRows) => {
+        if (mounted) setRows(nextRows);
+      })
+      .catch((error) => {
+        console.warn('[WeatherTimeView] Failed to load weather time summary.', error);
+        if (mounted) setRows([]);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedWeather]);
+
   const maxDuration = Math.max(DELAY_THRESHOLD_MIN + 8, ...rows.map((row) => row.avg_delivery_duration_min)) * 1.08;
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
   const barGap = 20;
   const barW = rows.length ? (plotW - barGap * (rows.length - 1)) / rows.length : 0;
   const y = (value: number) => H - PAD.bottom - (value / maxDuration) * plotH;
-  const slowestKey = rows.reduce((top, row) => row.avg_delivery_duration_min > (top?.avg_delivery_duration_min ?? -1) ? row : top, rows[0])?.key;
+  const slowestKey = rows.reduce((top, row) => row.avg_delivery_duration_min > (top?.avg_delivery_duration_min ?? -1) ? row : top, rows[0])?.time_period;
 
   return (
     <section className="weather-subview" aria-label="天气条件下的时段节奏">
       <div className="weather-subview-copy">
         <span className="detail-eyebrow">时段 / 03</span>
         <h2>时段平均配送时长</h2>
-        <p>{getWeatherInsight('time', rows, selectedWeather)}</p>
+        <p>{getWeatherInsight('time', rows.map((row) => ({ ...rowToMetric(row), key: row.time_period ?? 'Unknown', label: timeLabel(row.time_period) })), selectedWeather)}</p>
       </div>
 
       <div className="weather-chart-card">
@@ -54,10 +68,10 @@ export default function WeatherTimeView({ selectedWeather, selectedTimePeriod, d
               const height = H - PAD.bottom - y(row.avg_delivery_duration_min);
               const active = selectedTimePeriod === row.time_period;
               const muted = selectedTimePeriod !== 'All' && !active;
-              const highest = row.key === slowestKey;
+              const highest = row.time_period === slowestKey;
               const fill = row.avg_delivery_duration_min > DELAY_THRESHOLD_MIN ? '#dc2626' : row.delay_rate >= 0.3 ? '#f97316' : '#2563eb';
               return (
-                <g key={row.key} className={`${muted ? 'is-muted' : ''}${highest ? ' is-highlight' : ''}`}>
+                <g key={row.time_period ?? index} className={`${muted ? 'is-muted' : ''}${highest ? ' is-highlight' : ''}`} style={{ opacity: muted ? 0.32 : 1 }}>
                   <rect
                     x={x}
                     y={y(row.avg_delivery_duration_min)}
@@ -82,6 +96,9 @@ export default function WeatherTimeView({ selectedWeather, selectedTimePeriod, d
             <text x={16} y={H / 2} textAnchor="middle" className="weather-axis-label" transform={`rotate(-90 16 ${H / 2})`}>平均配送时长（分钟）</text>
           </svg>
         ) : <p className="detail-empty">暂无当前天气的时段节奏数据</p>}
+        <div className="weather-chart-legend">
+          <em>数据源：scene_filter_summary.json；范围：天气与时段汇总</em>
+        </div>
       </div>
     </section>
   );

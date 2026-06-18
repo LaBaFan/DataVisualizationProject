@@ -18,7 +18,7 @@ function percent(value: number | undefined) {
 }
 
 function minutes(value: number | undefined) {
-  return typeof value === 'number' ? `${Math.round(value)}m` : '-';
+  return typeof value === 'number' ? `${Math.round(value)}分钟` : '-';
 }
 
 export default function MiniMetricTagLayer({

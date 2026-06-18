@@ -1,8 +1,6 @@
-import {
-  aggregateWeatherOverview,
-  getWeatherInsight,
-  DELAY_THRESHOLD_MIN
-} from './weatherAnalytics';
+import { useEffect, useState } from 'react';
+import { getWeatherOverviewSummary, type WeatherOverviewSummaryPair } from '../../data/weatherSelectors';
+import { getWeatherInsight, DELAY_THRESHOLD_MIN } from './weatherAnalytics';
 import { barWidth, fmt, pct, weatherLabel, type WeatherViewData } from './weatherViewUtils';
 
 interface WeatherOverviewViewProps {
@@ -16,7 +14,34 @@ function deltaText(value: number, unit: string, reverse = false) {
 }
 
 export default function WeatherOverviewView({ selectedWeather, data }: WeatherOverviewViewProps) {
-  const overview = aggregateWeatherOverview(data.orders, selectedWeather);
+  const [overview, setOverview] = useState<WeatherOverviewSummaryPair | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    getWeatherOverviewSummary(selectedWeather)
+      .then((nextOverview) => {
+        if (mounted) setOverview(nextOverview);
+      })
+      .catch((error) => {
+        console.warn('[WeatherOverviewView] Failed to load weather overview summary.', error);
+        if (mounted) setOverview(null);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [selectedWeather]);
+
+  if (!overview) {
+    return (
+      <section className="weather-subview weather-overview-view" aria-label="天气概览">
+        <div className="weather-chart-card">
+          <p className="detail-empty">正在加载天气汇总数据</p>
+        </div>
+      </section>
+    );
+  }
+
   const { current, baseline } = overview;
   const maxDuration = Math.max(1, current.avg_delivery_duration_min ?? 0, baseline.avg_delivery_duration_min ?? 0);
   const maxDistance = Math.max(1, current.avg_distance_km ?? 0, baseline.avg_distance_km ?? 0);
@@ -82,7 +107,7 @@ export default function WeatherOverviewView({ selectedWeather, data }: WeatherOv
 
         <div className="weather-chart-insight">
           <strong>统一阈值</strong>
-          <span>延迟定义为配送时长 &gt; {DELAY_THRESHOLD_MIN} 分钟，延迟率仅展示时转百分比。</span>
+          <span>数据源：weather_impact_summary.json + overview_summary.json；范围：汇总记录。延迟定义为配送时长 &gt; {DELAY_THRESHOLD_MIN} 分钟。</span>
           {sampleWarning ? <b>当前天气样本少于 50 单，结论需谨慎。</b> : null}
         </div>
       </div>

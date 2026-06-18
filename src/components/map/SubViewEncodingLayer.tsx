@@ -66,7 +66,6 @@ const VEHICLE_LABELS: Record<string, string> = {
   electric_scooter: '电动车',
   scooter: '踏板车',
   motorcycle: '摩托车',
-  bicycle: '自行车',
   Unknown: '未知载具'
 };
 

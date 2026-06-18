@@ -15,7 +15,7 @@ const fallbackOptions = {
   city: ['Metropolitian', 'Urban', 'Semi-Urban', 'Unknown'],
   weather: ['Sunny', 'Cloudy', 'Fog', 'Stormy', 'Sandstorms', 'Windy', 'Unknown'],
   traffic_density: ['Low', 'Medium', 'High', 'Jam', 'Unknown'],
-  vehicle_type: ['motorcycle', 'scooter', 'electric_scooter', 'bicycle', 'Unknown'],
+  vehicle_type: ['motorcycle', 'scooter', 'electric_scooter', 'Unknown'],
   time_period: ['breakfast', 'lunch_peak', 'afternoon', 'dinner_peak', 'night', 'Unknown'],
   is_delayed: ['true', 'false']
 };
@@ -27,6 +27,10 @@ function valueOf(value: string | null | undefined): string {
 function uniqueSorted(values: Array<string | null | undefined>, fallback: string[]): string[] {
   const valuesSet = new Set(values.map(valueOf).filter(Boolean));
   return valuesSet.size ? Array.from(valuesSet).sort((a, b) => a.localeCompare(b)) : fallback;
+}
+
+function withoutUnsupportedVehicles(values: string[]): string[] {
+  return values.filter((value) => value !== 'bicycle');
 }
 
 export default function FilterPanel({ scenarios = [], orders = [], onReset }: FilterPanelProps) {
@@ -43,10 +47,10 @@ export default function FilterPanel({ scenarios = [], orders = [], onReset }: Fi
         [...scenarios.map((scenario) => scenario.traffic_density), ...orders.map((order) => order.traffic_density)],
         fallbackOptions.traffic_density
       ),
-      vehicle_type: uniqueSorted(
+      vehicle_type: withoutUnsupportedVehicles(uniqueSorted(
         [...scenarios.map((scenario) => scenario.vehicle_type), ...orders.map((order) => order.vehicle_type)],
         fallbackOptions.vehicle_type
-      ),
+      )),
       time_period: uniqueSorted(
         [...scenarios.map((scenario) => scenario.time_period), ...orders.map((order) => order.time_period)],
         fallbackOptions.time_period

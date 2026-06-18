@@ -12,7 +12,7 @@ export const DELAY_THRESHOLD_MIN = 32;
 export const WEATHER_ORDER = ['Sunny', 'Cloudy', 'Fog', 'Windy', 'Stormy', 'Sandstorms'];
 export const TRAFFIC_ORDER = ['Low', 'Medium', 'High', 'Jam'];
 export const TIME_ORDER = ['breakfast', 'lunch_peak', 'afternoon', 'dinner_peak', 'night'];
-export const VEHICLE_ORDER = ['motorcycle', 'scooter', 'electric_scooter', 'bicycle'];
+export const VEHICLE_ORDER = ['motorcycle', 'scooter', 'electric_scooter'];
 
 export const RISK_COLORS = {
   low: '#2563eb',
@@ -56,7 +56,6 @@ export const VEHICLE_LABELS: Record<string, string> = {
   motorcycle: '摩托车',
   scooter: '踏板车',
   electric_scooter: '电动车',
-  bicycle: '自行车',
   Unknown: '未知载具'
 };
 

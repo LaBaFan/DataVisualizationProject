@@ -79,6 +79,36 @@ export interface WeatherImpactSummary extends MetricSummary {
   risk_score?: number;
 }
 
+export type WeatherComparisonMode = 'all' | 'time_period' | 'traffic_density' | 'vehicle_type';
+
+export type WeatherComparisonMetric =
+  | 'delay_rate'
+  | 'avg_delivery_duration_min'
+  | 'order_count';
+
+export type WeatherComparisonWeather = 'Sunny' | 'Fog' | 'Cloudy' | 'Stormy' | 'Sandstorms' | 'Windy';
+
+export interface WeatherComparisonRow {
+  weather: WeatherComparisonWeather;
+  moduleId: import('../data/weatherModules').WeatherModuleId;
+  order_count: number | null;
+  avg_delivery_duration_min: number | null;
+  delay_rate: number | null;
+  risk_score: number | null;
+  avg_distance_km?: number | null;
+  dataFilter: string;
+  sourceFile: string;
+  description: string;
+}
+
+export interface WeatherComparisonContext {
+  mode: WeatherComparisonMode;
+  condition: string;
+  metric: WeatherComparisonMetric;
+  row: WeatherComparisonRow | null;
+  isPreview: boolean;
+}
+
 export interface TrafficSegmentSummary extends MetricSummary {
   segment_id: string;
   label?: string;
@@ -400,6 +430,17 @@ export interface SceneHotspot {
   time_period?: string;
 }
 
+export interface OverviewMetricSelection {
+  id: string;
+  metricKey: keyof OverviewSummary | string;
+  label: string;
+  value: string;
+  definition: string;
+  dataFilter: string;
+  sourceFile: string;
+  unit?: string;
+}
+
 export type MapSelection =
   | { type: 'module'; item: MapModule }
   | { type: 'traffic_segment'; item: TrafficSegment }
@@ -408,6 +449,7 @@ export type MapSelection =
   | { type: 'metric_tag'; item: MiniMetricTag }
   | { type: 'risk_heat_halo'; item: RiskHeatHalo }
   | { type: 'delivery_flow_segment'; item: DeliveryFlowSegment }
+  | { type: 'overview_metric'; item: OverviewMetricSelection }
   | { type: 'scene_hotspot'; item: SceneHotspot };
 
 export type ActiveSection = 'overview' | 'weather' | 'traffic' | 'time' | 'risk' | 'outlier';
