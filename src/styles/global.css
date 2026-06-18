@@ -1785,44 +1785,37 @@ button:focus-visible,
   right: 24px;
   bottom: 24px;
   z-index: 5;
-  width: clamp(520px, 38vw, 640px);
-  height: clamp(320px, 34vh, 420px);
-  max-width: 45%;
-  max-height: 48%;
+  width: clamp(580px, 44vw, 760px);
+  height: clamp(360px, 40vh, 500px);
+  max-width: 52%;
+  max-height: 56%;
   border: 1px solid rgb(15 23 42 / 0.14);
   border-radius: 8px;
   background: rgb(248 250 252 / 0.82);
   box-shadow: 0 16px 34px rgb(15 23 42 / 0.14);
-  padding: 12px 13px 11px;
+  padding: 10px 12px 11px;
   backdrop-filter: blur(12px);
 }
 
 .map-inset-chart-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
+  justify-content: flex-start;
+  margin-bottom: 4px;
   color: #0f172a;
-  font-size: 0.82rem;
-  font-weight: 850;
+  font-size: 0.86rem;
+  font-weight: 900;
 }
 
-.map-inset-chart-head div {
-  display: grid;
-  gap: 2px;
-}
-
-.map-inset-chart-head span,
-.map-inset-chart-head em {
-  color: #64748b;
-  font-size: 0.74rem;
-  font-style: normal;
+.map-inset-chart-head strong {
+  color: #0f172a;
+  letter-spacing: 0;
 }
 
 .map-inset-chart svg {
   display: block;
   width: 100%;
-  height: calc(100% - 44px);
+  height: calc(100% - 28px);
 }
 
 .view-context-hud {
@@ -2360,6 +2353,18 @@ button:focus-visible,
   font-size: 11px;
   font-weight: 820;
   fill: #0f172a;
+}
+
+.map-inset-delay-value {
+  font-size: 12px;
+  font-weight: 900;
+  fill: #0f172a;
+}
+
+.map-inset-sample-note {
+  fill: #64748b;
+  font-size: 9px;
+  font-weight: 760;
 }
 
 .map-inset-label-text {
@@ -4578,10 +4583,10 @@ button.order-row.is-selected {
   }
 
   .map-inset-chart {
-    width: clamp(420px, 42vw, 520px);
-    height: 340px;
-    max-width: 48%;
-    max-height: 48%;
+    width: clamp(500px, 48vw, 620px);
+    height: 380px;
+    max-width: 54%;
+    max-height: 54%;
     min-width: 0;
   }
 

@@ -143,12 +143,12 @@ function colorByRate(value: number | undefined) {
 
 function chartTitle(subView: WeatherSubView) {
   const labels: Record<WeatherSubView, string> = {
-    overview: '天气基线对比',
+    overview: '总体对比',
     traffic: '交通密度分组',
     time: '时段节奏',
     vehicle: '载具表现',
     risk: '风险组合',
-    orders: '距离-时长订单散点'
+    orders: '距离订单散点'
   };
   return labels[subView];
 }
@@ -167,10 +167,6 @@ function timeLabel(value: string | null | undefined) {
 
 function vehicleLabel(value: string | null | undefined) {
   return VEHICLE_LABELS[value ?? ''] ?? value ?? '-';
-}
-
-function subViewLabel(value: WeatherSubView) {
-  return chartTitle(value);
 }
 
 function keySelect(event: KeyboardEvent<SVGGElement>, selection: MapSelection, onSelect: (selection: MapSelection) => void) {
@@ -308,7 +304,6 @@ export default function MapInsetChart({
   const plotH = HEIGHT - PAD.top - PAD.bottom;
   const riskPlotW = WIDTH - RISK_PAD.left - RISK_PAD.right;
   const riskPlotH = HEIGHT - RISK_PAD.top - RISK_PAD.bottom;
-  const dataFilter = selectedWeather === 'All' ? '全部订单' : `当前筛选：${weatherLabel(selectedWeather)}`;
   const isTimeFiltered = selectedTimePeriod !== 'All' && selectedTimePeriod !== '';
 
   // Current time period overview (aggregated from riskRows)
@@ -414,15 +409,25 @@ export default function MapInsetChart({
   const riskYDomain = paddedDomain(riskRowsForChart.map((row) => rate(row.delay_rate)), [0, 0.7], 0.18);
   const vehicleXDomain = paddedDomain(vehicleRows.map((row) => row.avg_delivery_duration_min), [0, 45], 0.14);
   const metricRows = metricSelections(summary, selectedWeather);
+  const trafficRowsForChart = useMemo(() => {
+    return trafficRows
+      .slice()
+      .sort((a, b) => {
+        const delayDelta = rate(b.delay_rate) - rate(a.delay_rate);
+        if (Math.abs(delayDelta) > 0.0001) return delayDelta;
+        return TRAFFIC_ORDER.indexOf(a.traffic_density ?? '') - TRAFFIC_ORDER.indexOf(b.traffic_density ?? '');
+      });
+  }, [trafficRows]);
+  const maxTrafficDelayRate = Math.max(
+    0.01,
+    ...trafficRowsForChart.map((row) => rate(row.delay_rate)),
+    ...currentTrafficRows.map((row) => rate(row.delay_rate))
+  );
 
   return (
     <aside className={`map-inset-chart inset-${selectedSubView}`} aria-label="天气模块主交互图表">
       <div className="map-inset-chart-head">
-        <div>
-          <strong>{weatherLabel(selectedWeather)} / {chartTitle(selectedSubView)}</strong>
-          <span>{dataFilter}</span>
-        </div>
-        <em>{subViewLabel(selectedSubView)}</em>
+        <strong>{chartTitle(selectedSubView)}</strong>
       </div>
       <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={`${weatherLabel(selectedWeather)} ${chartTitle(selectedSubView)}图表`}>
         <rect className="map-inset-plot-bg" x={PAD.left} y={PAD.top} width={plotW} height={plotH} rx={10} />
@@ -493,19 +498,17 @@ export default function MapInsetChart({
 
         {selectedSubView === 'traffic' ? (
           <g>
-            {trafficRows
-              .slice()
-              .sort((a, b) => TRAFFIC_ORDER.indexOf(a.traffic_density ?? '') - TRAFFIC_ORDER.indexOf(b.traffic_density ?? ''))
+            {trafficRowsForChart
               .map((row, index) => {
                 const selection = trafficSelection(row);
-                const bandH = plotH / TRAFFIC_ORDER.length;
+                const bandH = plotH / Math.max(1, trafficRowsForChart.length);
                 const y = PAD.top + index * bandH + 10;
                 const barX = PAD.left + 104;
-                const barW = plotW - 178;
-                const width = Math.max(18, clamp(row.order_count / maxOrders) * barW);
+                const barW = plotW - 214;
+                const width = Math.max(18, clamp(rate(row.delay_rate) / maxTrafficDelayRate) * barW);
                 const active = selectedId === selection.item.id;
                 const curRow = currentTrafficRows.find((r) => r.traffic_density === row.traffic_density);
-                const curWidth = curRow ? Math.max(18, clamp(curRow.order_count / maxOrders) * barW) : null;
+                const curWidth = curRow ? Math.max(18, clamp(rate(curRow.delay_rate) / maxTrafficDelayRate) * barW) : null;
                 const compareColor = curRow
                   ? (curRow.order_count < row.order_count * 0.97 ? '#10b981' : curRow.order_count > row.order_count * 1.03 ? '#ef4444' : colorByRate(curRow.delay_rate))
                   : colorByRate(row.delay_rate);
@@ -527,23 +530,21 @@ export default function MapInsetChart({
                     <rect className="map-inset-hit-area" x={PAD.left} y={y - 6} width={plotW} height={bandH - 6} rx={8} />
                     <text className="map-inset-category" x={PAD.left} y={y + 20}>{trafficLabel(row.traffic_density)}</text>
                     <rect className="map-inset-track" x={barX} y={y} width={barW} height={22} rx={6} />
-                    {/* Baseline bar (unchanged) */}
                     <rect className="map-inset-bar" x={barX} y={y} width={width} height={22} rx={6} fill={colorByRate(row.delay_rate)} style={{ animationDelay: `${index * 0.08}s` }} />
-                    <text className="map-inset-value" x={barX + barW + 12} y={y + 15}>{row.order_count}</text>
-                    <text className="map-inset-note" x={barX + Math.min(width + 10, barW - 42)} y={y - 4}>{pct(row.delay_rate)}</text>
-                    {/* Current time period bar (new bar below) */}
+                    <text className="map-inset-value map-inset-delay-value" x={barX + barW + 14} y={y + 9} textAnchor="start">{pct(row.delay_rate)}</text>
+                    <text className="map-inset-note map-inset-sample-note" x={barX + barW + 14} y={y + 24} textAnchor="start">样本 {row.order_count}</text>
                     {curRow && curWidth != null && isTimeFiltered && (
                       <>
                         <rect className="map-inset-track" x={barX} y={y + 28} width={barW} height={22} rx={6} />
                         <rect x={barX} y={y + 28} width={curWidth} height={22} rx={6} fill={compareColor} opacity={0.85} style={{ animationDelay: `${index * 0.08 + 0.3}s` }} className="map-inset-bar" />
-                        <text className="map-inset-value" x={barX + barW + 12} y={y + 43} fill={compareColor} fontWeight={800}>{curRow.order_count}</text>
-                        <text className="map-inset-note" x={barX + Math.min(curWidth + 10, barW - 42)} y={y + 24}>{pct(curRow.delay_rate)}</text>
+                        <text className="map-inset-value map-inset-delay-value" x={barX + barW + 14} y={y + 37} textAnchor="start" fill={compareColor} fontWeight={800}>{pct(curRow.delay_rate)}</text>
+                        <text className="map-inset-note map-inset-sample-note" x={barX + barW + 14} y={y + 52} textAnchor="start">时段 {curRow.order_count}</text>
                       </>
                     )}
                   </g>
                 );
               })}
-            <text className="map-inset-label" x={PAD.left + plotW - 56} y={PAD.top + plotH + 34}>订单量</text>
+            <text className="map-inset-label" x={PAD.left + plotW - 80} y={PAD.top + plotH + 34}>按延迟率排序 · 条长=延迟率</text>
           </g>
         ) : null}
 
