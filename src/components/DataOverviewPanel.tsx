@@ -552,7 +552,7 @@ function buildReceipt(selection: MapSelection, filteredRow?: SceneFilterSummary 
     traffic,
     timePeriod,
     vehicle,
-    note: note(note)
+    note
   };
 }
 

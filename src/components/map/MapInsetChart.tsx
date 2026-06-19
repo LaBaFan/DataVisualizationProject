@@ -414,7 +414,11 @@ export default function MapInsetChart({
   }, [riskRows, currentRiskRows, isTimeFiltered]);
   const riskXDomain = paddedDomain(riskRowsForChart.map((row) => row.avg_delivery_duration_min), [0, 45], 0.18);
   const riskYDomain = paddedDomain(riskRowsForChart.map((row) => rate(row.delay_rate)), [0, 0.7], 0.18);
-  const vehicleXDomain = paddedDomain(vehicleRows.map((row) => row.avg_delivery_duration_min), [0, 45], 0.14);
+  const vehicleXDomain = paddedDomain(
+    [...vehicleRows, ...currentVehicleRows].map((row) => row.avg_delivery_duration_min),
+    [0, 45],
+    0.14
+  );
   const metricRows = metricSelections(summary, selectedWeather);
   const trafficRowsForChart = useMemo(() => {
     return trafficRows
