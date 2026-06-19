@@ -377,6 +377,7 @@ export default function InteractiveSceneMap() {
             <SubViewEncodingLayer
               selectedSubView={'overview' as WeatherSubView}
               selectedWeather={selectedWeather}
+              selectedTimePeriod={selectedTimePeriod}
               summary={weatherSummary}
               trafficRows={weatherOverlayData.trafficRows}
               timeRows={weatherOverlayData.timeRows}

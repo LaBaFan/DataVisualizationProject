@@ -282,6 +282,7 @@ function metricSelections(summary: WeatherImpactSummary | null, weather: string)
     weather: summary.weather ?? weather,
     order_count: summary.order_count,
     avg_delivery_duration_min: summary.avg_delivery_duration_min,
+    avg_distance_km: summary.avg_distance_km,
     delay_rate: summary.delay_rate,
     risk_score: summary.risk_score
   };
@@ -649,7 +650,7 @@ export default function MapInsetChart({
                       <>
                         <circle cx={curX} cy={y - r - 18} r={curR} fill={curColor} opacity={0.85} />
                         <text className="map-inset-value" x={curX} y={y - r - 18 - curR - 4} textAnchor="middle" fill={curColor} fontWeight={800} fontSize="10">
-                          {fmt(curRow.avg_delivery_duration_min, 1)}m
+                          {fmt(curRow.avg_delivery_duration_min, 1)} 分钟
                         </text>
                       </>
                     );
@@ -673,28 +674,34 @@ export default function MapInsetChart({
           });
 
           // Compute label positions with collision avoidance
-          const LABEL_H = 14;
+          const LABEL_H = 15;
+          const LABEL_GAP = 5;
           const placedLabels: Array<{ x: number; y: number; w: number }> = [];
           const labelPositions = riskRowsForChart.map((row, index) => {
-            if (index >= 5) return null;
+            if (index >= 6) return null;
             const { x, y, r } = bubblePositions[index];
             const label = shortRiskLabel(row);
-            const labelW = Math.min(label.length * 7, 90);
+            const labelW = Math.min(Math.max(label.length * 7, 30), 90);
             const preferRight = x < RISK_PAD.left + riskPlotW * 0.55;
-            const desiredX = preferRight ? x + r + 8 : x - r - labelW - 4;
-            let desiredY = y + 4;
+            const rawX = preferRight ? x + r + 8 : x - r - labelW - 4;
+            const desiredX = clamp(rawX, RISK_PAD.left + 4, RISK_PAD.left + riskPlotW - labelW - 4);
+            const minY = RISK_PAD.top + 12;
+            const maxY = RISK_PAD.top + riskPlotH - 8;
+            const offsets = [0, -18, 18, -36, 36, -54, 54, -72, 72];
+            let desiredY = clamp(y + 4, minY, maxY);
 
-            // Push down to avoid overlapping with previously placed labels
-            for (const prev of placedLabels) {
-              const xClose = desiredX < prev.x + prev.w + 4 && desiredX + labelW > prev.x - 4;
-              const yClose = Math.abs(desiredY - prev.y) < LABEL_H;
-              if (xClose && yClose) {
-                desiredY = prev.y + LABEL_H + 2;
+            for (const offset of offsets) {
+              const candidateY = clamp(y + 4 + offset, minY, maxY);
+              const overlaps = placedLabels.some((prev) => {
+                const xClose = desiredX < prev.x + prev.w + LABEL_GAP && desiredX + labelW > prev.x - LABEL_GAP;
+                const yClose = Math.abs(candidateY - prev.y) < LABEL_H;
+                return xClose && yClose;
+              });
+              if (!overlaps) {
+                desiredY = candidateY;
+                break;
               }
             }
-
-            // Clamp within plot area
-            desiredY = clamp(desiredY, RISK_PAD.top + 10, RISK_PAD.top + riskPlotH - 6);
 
             placedLabels.push({ x: desiredX, y: desiredY, w: labelW });
             return { x: desiredX, y: desiredY, w: labelW, text: label, anchor: preferRight ? 'start' : 'end', bubbleX: x, bubbleY: y, bubbleR: r };

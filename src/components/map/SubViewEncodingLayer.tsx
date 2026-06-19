@@ -16,6 +16,7 @@ import type {
 interface SubViewEncodingLayerProps {
   selectedSubView: WeatherSubView;
   selectedWeather: string;
+  selectedTimePeriod: string;
   summary: WeatherImpactSummary | null;
   trafficRows: WeatherTrafficSummary[];
   timeRows: SceneFilterSummary[];
@@ -137,11 +138,16 @@ function keySelect<T>(event: KeyboardEvent<SVGGElement>, item: T, onSelect: (ite
   onSelect(item);
 }
 
-function summaryTags(summary: WeatherImpactSummary | null, weather: string): MiniMetricTag[] {
+function summaryTags(
+  summary: WeatherImpactSummary | SceneFilterSummary | null,
+  weather: string,
+  selectedTimePeriod: string
+): MiniMetricTag[] {
   if (!summary) return [];
+  const idSuffix = selectedTimePeriod === 'All' ? weather : `${weather}-${selectedTimePeriod}`;
   return [
     {
-      id: `weather-summary-avg-${weather}`,
+      id: `weather-summary-avg-${idSuffix}`,
       label: '平均时长',
       x: 360,
       y: 250,
@@ -152,7 +158,7 @@ function summaryTags(summary: WeatherImpactSummary | null, weather: string): Min
       risk_score: summary.risk_score
     },
     {
-      id: `weather-summary-delay-${weather}`,
+      id: `weather-summary-delay-${idSuffix}`,
       label: '延迟率',
       x: 720,
       y: 210,
@@ -163,13 +169,14 @@ function summaryTags(summary: WeatherImpactSummary | null, weather: string): Min
       risk_score: summary.risk_score
     },
     {
-      id: `weather-summary-distance-${weather}`,
+      id: `weather-summary-distance-${idSuffix}`,
       label: '平均距离',
       x: 1060,
       y: 270,
       weather: summary.weather ?? weather,
       order_count: summary.order_count,
       avg_delivery_duration_min: summary.avg_delivery_duration_min,
+      avg_distance_km: summary.avg_distance_km,
       delay_rate: summary.delay_rate
     }
   ];
@@ -254,6 +261,7 @@ function riskSelection(row: RiskScenario, index: number): ScenarioAnchor {
 export default function SubViewEncodingLayer({
   selectedSubView,
   selectedWeather,
+  selectedTimePeriod,
   summary,
   trafficRows,
   timeRows,
@@ -269,6 +277,9 @@ export default function SubViewEncodingLayer({
   const maxTrafficOrders = Math.max(1, ...trafficRows.map((row) => row.order_count));
   const maxVehicleOrders = Math.max(1, ...vehicleRows.map((row) => row.order_count));
   const maxTimeOrders = Math.max(1, ...timeRows.map((row) => row.order_count));
+  const overviewSummary = selectedTimePeriod !== 'All'
+    ? timeRows.find((row) => row.time_period === selectedTimePeriod) ?? summary
+    : summary;
 
   return (
     <svg
@@ -279,21 +290,9 @@ export default function SubViewEncodingLayer({
       aria-label="天气子视图编码层"
     >
       <g className={`weather-encoding-group${selectedSubView === 'overview' ? ' is-visible' : ''}`}>
-        {summaryTags(summary, selectedWeather).map((tag, index) => {
+        {summaryTags(overviewSummary, selectedWeather, selectedTimePeriod).map((tag, index) => {
           const active = hoveredId === tag.id || selectedId === tag.id;
-          const haloTag: RiskHeatHalo = {
-            id: `${tag.id}-halo`,
-            label: tag.label,
-            x: tag.x,
-            y: tag.y,
-            radius: 54,
-            weather: tag.weather,
-            order_count: tag.order_count ?? 0,
-            avg_delivery_duration_min: tag.avg_delivery_duration_min,
-            delay_rate: tag.delay_rate ?? 0,
-            risk_score: tag.risk_score ?? tag.delay_rate ?? 0
-          };
-          const summarySelection: EncodedSelection = index === 2 ? { type: 'risk_heat_halo', item: haloTag } : { type: 'metric_tag', item: tag };
+          const summarySelection: EncodedSelection = { type: 'metric_tag', item: tag };
           return (
             <g
               key={tag.id}
