@@ -1,7 +1,6 @@
 import { createContext, ReactNode, useContext, useMemo, useRef, useState } from 'react';
 import {
   getModuleIdBySceneId,
-  getRenderableSceneIdByModuleId,
   getSceneIdByModuleId,
   getWeatherByModuleId,
   WeatherModuleId
@@ -107,7 +106,7 @@ export function InteractionProvider({ children }: { children: ReactNode }) {
   const switchModule = (moduleId: ActiveModule) => {
     setActiveModuleState(moduleId);
     setSelectedWeather(getWeatherByModuleId(moduleId));
-    setSelectedSceneIdState(getRenderableSceneIdByModuleId(moduleId));
+    setSelectedSceneIdState(getSceneIdByModuleId(moduleId));
     setOverallFilterState('all');
     setActiveSectionState(moduleId === 'overall' ? 'overview' : 'weather');
     setSelectedItemState(null);

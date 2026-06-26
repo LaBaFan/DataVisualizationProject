@@ -8,7 +8,6 @@ import {
 } from '../api/staticDataClient';
 import { mapScenes, getMapSceneById } from '../data/mapScenes';
 import { overallHotspots } from '../data/overallHotspots';
-import { sceneMiniMetricTags, sceneOrderDots, sceneRiskHeatHalos } from '../data/sceneOverlayData';
 import { buildSceneHudMetrics } from '../data/sceneMetrics';
 import {
   getWeatherOrderSamples,
@@ -22,11 +21,8 @@ import { useInteraction, type WeatherSubView } from '../store/interactionContext
 import {
   ActiveSection,
   MapSelection,
-  MiniMetricTag,
-  OrderDot,
   OverviewSummary,
   RiskScenario,
-  RiskHeatHalo,
   SceneFilterSummary,
   TimePeriodSummary,
   TrafficDensitySummary,
@@ -211,34 +207,9 @@ export default function InteractiveSceneMap() {
     });
   }, [overallFilter]);
 
-  // Base overlays filtered by scene, then by overallFilter on the overall scene
   const baseOverlays = useMemo(
-    () => {
-      const halos = sceneRiskHeatHalos.filter((item) => {
-        if (item.sceneId !== selectedScene.id) return false;
-        // On overall scene, filter by group
-        if (selectedScene.id === 'overall' && overallFilter !== 'all' && item.group) {
-          return item.group === overallFilter;
-        }
-        return true;
-      });
-      const dots = sceneOrderDots.filter((item) => {
-        if (item.sceneId !== selectedScene.id) return false;
-        if (selectedScene.id === 'overall' && overallFilter !== 'all' && item.group) {
-          return item.group === overallFilter;
-        }
-        return true;
-      });
-      const tags = sceneMiniMetricTags.filter((item) => {
-        if (item.sceneId !== selectedScene.id) return false;
-        if (selectedScene.id === 'overall' && overallFilter !== 'all' && item.group) {
-          return item.group === overallFilter;
-        }
-        return true;
-      });
-      return { halos, dots, tags };
-    },
-    [selectedScene.id, overallFilter]
+    () => ({ halos: [], dots: [], tags: [] }),
+    []
   );
 
   // Compute filtered overlays: update metrics from scene_filter_summary

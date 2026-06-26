@@ -480,82 +480,19 @@ def _scene_record(
 
 
 def _build_scene_rules(df: pd.DataFrame) -> list[tuple[str, pd.Series, str, str]]:
-    """Return scene masks used by both scene summary and scene filter summary."""
+    """Return final Overall + Weather Module scene masks."""
     if df.empty:
         return []
-
-    distance_q25 = df["distance_km"].quantile(0.25)
-    distance_median = df["distance_km"].median()
-    distance_q75 = df["distance_km"].quantile(0.75)
-    distance_iqr = df["distance_km"].quantile(0.75) - df["distance_km"].quantile(0.25)
-    distance_band = max(float(distance_iqr) / 2, 1.0)
-    p75_duration = df["delivery_duration_min"].quantile(0.75)
-
-    city_proxy = df["city"].isin(["Metropolitian", "Urban"]) if "city" in df else pd.Series(True, index=df.index)
-    lunch_dinner = df["time_period"].isin(["lunch_peak", "dinner_peak"])
-    has_dispatch_load = (
-        pd.to_numeric(df["multiple_deliveries"], errors="coerce").ge(1)
-        if "multiple_deliveries" in df
-        else pd.Series(False, index=df.index)
-    )
-    motorcycle_proxy = (
-        df["vehicle_type"].eq("motorcycle") if "vehicle_type" in df else pd.Series(False, index=df.index)
-    )
-    dispatch_center_mask = (
-        lunch_dinner
-        & city_proxy
-        & df["distance_km"].between(distance_q25, distance_median)
-        & (has_dispatch_load | motorcycle_proxy)
-    )
-    mixed_food_community_mask = (
-        lunch_dinner
-        & city_proxy
-        & df["order_type"].notna()
-        & df["distance_km"].between(distance_median, distance_q75)
-        & ~dispatch_center_mask
-    )
 
     return [
         ("overall", pd.Series(True, index=df.index), "all clean orders", "全量清洗订单。"),
         ("sunny", df["weather"].eq("Sunny"), "weather == Sunny", "晴天订单，用作天气基准。"),
+        ("fog", df["weather"].eq("Fog"), "weather == Fog", "雾天订单。"),
+        ("stormy", df["weather"].eq("Stormy"), "weather == Stormy", "雷暴天气订单。"),
+        ("sandstorms", df["weather"].eq("Sandstorms"), "weather == Sandstorms", "沙尘天气订单。"),
         ("cloudy", df["weather"].eq("Cloudy"), "weather == Cloudy", "多云天气订单。"),
-        ("fog_business", df["weather"].eq("Fog"), "weather == Fog", "雾天订单，作为低能见度商务区 proxy。"),
-        ("storm_area", df["weather"].eq("Stormy"), "weather == Stormy", "暴雨雷暴订单，作为极端天气区域 proxy。"),
-        ("sandstorm", df["weather"].eq("Sandstorms"), "weather == Sandstorms", "沙尘天气订单。"),
         ("windy", df["weather"].eq("Windy"), "weather == Windy", "大风天气订单。"),
-        ("night_low_peak", df["time_period"].eq("night"), "time_period == night", "夜间订单。"),
-        (
-            "traffic_hub",
-            df["traffic_density"].isin(["High", "Jam"]),
-            "traffic_density in [High, Jam]",
-            "高交通压力订单，作为主干道压力 proxy。",
-        ),
-        (
-            "restaurant_street",
-            lunch_dinner & df["order_type"].notna() & df["distance_km"].le(distance_median),
-            "time_period in [lunch_peak, dinner_peak] AND order_type not null AND distance_km <= median",
-            "餐饮峰值短距离订单，作为餐饮街区取餐压力 proxy。",
-        ),
-        (
-            "dispatch_center",
-            dispatch_center_mask,
-            "time_period in [lunch_peak, dinner_peak] AND city in [Metropolitian, Urban] AND distance_km between q25 and median AND (multiple_deliveries >= 1 OR vehicle_type == motorcycle)",
-            "都市峰值短中距离且具备多单或摩托配送特征的订单，作为配送中心出发与派单压力 proxy。",
-        ),
-        (
-            "high_risk_residential",
-            df["is_delayed"] & df["delivery_duration_min"].ge(p75_duration) & df["traffic_density"].isin(["High", "Jam"]),
-            "is_delayed == true AND delivery_duration >= p75 AND traffic_density in [High, Jam]",
-            "高延迟且高交通压力订单，作为住宅末端高风险 proxy。",
-        ),
-        (
-            "mixed_food_community",
-            mixed_food_community_mask,
-            "time_period in [lunch_peak, dinner_peak] AND city in [Metropolitian, Urban] AND order_type not null AND distance_km between median and q75 AND NOT dispatch_center",
-            "都市峰值中长距离餐饮订单，排除配送中心出发压力样本后作为餐饮社区混合区 proxy。",
-        ),
     ]
-
 
 def build_scene_summary(df: pd.DataFrame) -> list[dict[str, Any]]:
     if df.empty:

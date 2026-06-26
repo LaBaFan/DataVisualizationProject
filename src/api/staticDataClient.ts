@@ -21,7 +21,6 @@ import {
   mockWeatherImpact,
   mockWeatherTraffic
 } from '../data/mockFallbacks';
-export { mockDeliveryFlowSegments, mockOrderDensityDots, mockRiskHeatHalos } from '../data/mockFallbacks';
 
 const DATA_BASE_PATH = '/data';
 function isTrafficDensity(value: string | null | undefined): value is TrafficDensitySummary['traffic_density'] {

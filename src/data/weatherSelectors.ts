@@ -47,12 +47,9 @@ function matchesSelected(value: string | null | undefined, selected: string) {
 const sceneWeatherMap: Record<string, string> = {
   sunny: 'Sunny',
   fog: 'Fog',
-  fog_business: 'Fog',
   cloudy: 'Cloudy',
   stormy: 'Stormy',
-  storm_area: 'Stormy',
   sandstorms: 'Sandstorms',
-  sandstorm: 'Sandstorms',
   windy: 'Windy'
 };
 

@@ -46,12 +46,9 @@ const weatherDescriptions: Record<WeatherComparisonWeather, string> = {
 const sceneWeatherMap: Record<string, WeatherComparisonWeather> = {
   sunny: 'Sunny',
   fog: 'Fog',
-  fog_business: 'Fog',
   cloudy: 'Cloudy',
   stormy: 'Stormy',
-  storm_area: 'Stormy',
   sandstorms: 'Sandstorms',
-  sandstorm: 'Sandstorms',
   windy: 'Windy'
 };
 

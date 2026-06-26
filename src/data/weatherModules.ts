@@ -17,7 +17,7 @@ export const weatherModules: WeatherModuleConfig[] = [
     label: 'Overall',
     weather: 'All',
     imageUrl: '/assets/backgrounds/overall.png',
-    summary: '以城市配送总览作为入口，快速定位不同天气条件下的 ETA 风险来源。',
+    summary: '以城市配送总览作为入口，快速定位不同天气条件下的 ETA 波动来源。',
     keyQuestion: '哪些天气模块最需要调度关注？',
     accentColor: '#f97316',
     riskHint: '总览用于进入六个天气模块，并保留城市运行基准作为非跳转参考点。'
@@ -30,7 +30,7 @@ export const weatherModules: WeatherModuleConfig[] = [
     summary: '晴天模块作为正常天气基准，用于识别非天气因素造成的 ETA 波动。',
     keyQuestion: '晴天条件下的 ETA 基准表现是什么？',
     accentColor: '#f59e0b',
-    riskHint: '风险通常较低，异常点更可能来自距离、交通或局部订单积压。'
+    riskHint: '延迟通常较低，异常点更可能来自距离、交通或局部订单积压。'
   },
   {
     id: 'fog',
@@ -40,7 +40,7 @@ export const weatherModules: WeatherModuleConfig[] = [
     summary: '雾天模块聚焦低能见度下的路径不确定性、速度下降和订单压力。',
     keyQuestion: '低能见度天气下，ETA 如何变慢？',
     accentColor: '#64748b',
-    riskHint: '关注低能见度与订单密度叠加形成的延迟风险。'
+    riskHint: '关注低能见度与订单密度叠加形成的延迟组合。'
   },
   {
     id: 'stormy',
@@ -50,7 +50,7 @@ export const weatherModules: WeatherModuleConfig[] = [
     summary: '雷暴模块用于观察暴雨、湿滑道路和极端天气对配送履约稳定性的影响。',
     keyQuestion: '暴雨雷暴是否导致高延迟率场景集中出现？',
     accentColor: '#2563eb',
-    riskHint: '关注高风险场景是否集中在暴雨、拥堵和峰值时段组合中。'
+    riskHint: '关注暴雨、拥堵和峰值时段组合是否显著拉长 ETA。'
   },
   {
     id: 'sandstorms',
@@ -60,7 +60,7 @@ export const weatherModules: WeatherModuleConfig[] = [
     summary: '沙尘模块关注能见度、空气质量和道路状态对骑手速度及异常 ETA 的影响。',
     keyQuestion: '沙尘天气是否改变骑手速度和订单履约稳定性？',
     accentColor: '#b45309',
-    riskHint: '重点观察中高风险订单是否与长距离和复杂交通共同出现。'
+    riskHint: '重点观察中高延迟订单是否与长距离和复杂交通共同出现。'
   },
   {
     id: 'cloudy',
@@ -70,7 +70,7 @@ export const weatherModules: WeatherModuleConfig[] = [
     summary: '多云模块用于观察非极端天气下订单压力和配送时长的持续波动。',
     keyQuestion: '多云天气下，订单压力和配送时长是否出现温和但持续的波动？',
     accentColor: '#0f766e',
-    riskHint: '关注中等风险是否由局部订单密度和交通压力共同推高。'
+    riskHint: '关注中等延迟是否由局部订单密度和交通压力共同推高。'
   },
   {
     id: 'windy',
@@ -80,7 +80,7 @@ export const weatherModules: WeatherModuleConfig[] = [
     summary: '大风模块解释骑行速度波动、路线不稳定和末端配送不确定性。',
     keyQuestion: '大风天气是否会提高骑手路径和速度的不稳定性？',
     accentColor: '#0891b2',
-    riskHint: '关注速度波动带来的 ETA 风险。'
+    riskHint: '关注速度波动带来的 ETA 不确定性。'
   }
 ];
 
@@ -92,18 +92,6 @@ const moduleToScene: Record<WeatherModuleId, string> = {
   sandstorms: 'sandstorms',
   cloudy: 'cloudy',
   windy: 'windy'
-};
-
-const legacySceneToModule: Record<string, WeatherModuleId> = {
-  fog_business: 'fog',
-  storm_area: 'stormy',
-  sandstorm: 'sandstorms'
-};
-
-export const legacySceneIdByWeatherModule: Partial<Record<WeatherModuleId, string>> = {
-  fog: 'fog_business',
-  stormy: 'storm_area',
-  sandstorms: 'sandstorm'
 };
 
 const sceneToModule: Record<string, WeatherModuleId> = Object.fromEntries(
@@ -128,18 +116,13 @@ export function getSceneIdByModuleId(moduleId: string | null | undefined) {
 
 export function getModuleIdBySceneId(sceneId: string | null | undefined): WeatherModuleId {
   if (!sceneId) return 'overall';
-  return sceneToModule[sceneId] ?? legacySceneToModule[sceneId] ?? 'overall';
+  return sceneToModule[sceneId] ?? 'overall';
 }
 
 export function getSceneIdByWeatherModuleId(moduleId: WeatherModuleId | string | null | undefined): string {
-  return moduleToScene[getWeatherModuleById(moduleId).id];
+  return getSceneIdByModuleId(moduleId);
 }
 
 export function getWeatherModuleIdBySceneId(sceneId: string | null | undefined) {
   return getModuleIdBySceneId(sceneId);
-}
-
-export function getRenderableSceneIdByModuleId(moduleId: string | null | undefined) {
-  const cleanSceneId = getSceneIdByModuleId(moduleId);
-  return legacySceneIdByWeatherModule[getWeatherModuleById(moduleId).id] ?? cleanSceneId;
 }
